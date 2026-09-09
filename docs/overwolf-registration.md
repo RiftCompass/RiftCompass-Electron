@@ -1,8 +1,8 @@
 # Registro de desarrollador en Overwolf (ow-electron)
 
-**Estado: enviado el 2026-08-30.** Julio creó la cuenta de desarrollador
-(login con Google, `correo-personal@gmail.com`) y Claude rellenó y
-envió el formulario de propuesta de app en
+**Estado: enviado el 2026-08-30.** La cuenta de desarrollador de Overwolf
+se creó con la cuenta personal de Google del propietario (no con
+`riftcompass@gmail.com`) y Claude rellenó y envió el formulario de propuesta de app en
 <https://dev.overwolf.com/app-idea-form> con su autorización explícita.
 Confirmación recibida: "Proposal Sent — We got you!" — Overwolf dice que
 contactarán en unos días (revisar spam si no llega nada en 48h). Mientras
@@ -54,13 +54,13 @@ Es decir: hay que solicitar acceso también en el Riot Developer Portal
 (pidiendo el tipo de API key adecuado al proyecto), esperar su
 aprobación, y mandarle a Overwolf una captura de esa aprobación junto con
 la descripción enviada a Riot. **Ese registro en el Riot Developer
-Portal solo puede iniciarlo Julio** (cuenta propia, igual que pasó con
-Overwolf) — Claude puede ayudar a redactar/rellenar la descripción de la
+Portal solo puede iniciarlo el propietario** (cuenta propia, igual que pasó
+con Overwolf) — Claude puede ayudar a redactar/rellenar la descripción de la
 app una vez exista la cuenta, igual que se hizo aquí.
 
 ## Qué queda pendiente
 
-- **Julio**: crear cuenta en el Riot Developer Portal y solicitar el tipo
+- **Propietario**: crear cuenta en el Riot Developer Portal y solicitar el tipo
   de API key adecuado para RiftCompass, siguiendo las reglas de
   cumplimiento de Riot enlazadas en su correo.
 - Una vez Riot apruebe: mandar a Overwolf (developers@overwolf.com,
@@ -115,7 +115,7 @@ esperar a nada:
 
 ## Qué queda pendiente de verdad
 
-- Lo de siempre: Julio pide acceso en el Riot Developer Portal, Overwolf
+- Lo de siempre: el propietario pide acceso en el Riot Developer Portal, Overwolf
   whitelista la app tras verlo.
 - Una vez llegue: probar `npm run dev:overwolf` con League realmente
   abierto (registro del juego, inyección, ventana overlay real apareciendo
@@ -127,3 +127,21 @@ esperar a nada:
   para que el instalador final también empaquete el binario `ow-electron`
   en vez del `electron` normal (hoy sigue en `electron-builder` a propósito,
   ya que el binario que se distribuye de verdad todavía es el normal).
+
+## Ronda de preguntas de Overwolf (2026-09-03 → 2026-09-08)
+
+Tras ver la aprobación de Riot, Overwolf preguntó: Appstore o privada,
+modelo de negocio, Overwolf Ads, Tebex (03-09); luego pidió web activa y
+conectividad app↔web (06-09, la web estaba pausada en Vercel); y el 08-09
+pidió la captura completa del Riot Developer Portal, la web activa, aceptar
+que cualquier monetización futura sea vía Overwolf Ads + Tebex en web y app,
+y explicar la barra lateral derecha de la app (les salía vacía sin sesión).
+
+Respondido el 2026-09-08 con la web ya en Netlify (ver
+`RiftCompass-Web`, hosting temporal de un día antes de pasar al servidor propio):
+captura completa del portal de Riot con la API key tapada, cláusula de
+monetización aceptada tal cual (decisión del propietario; sin monetización
+hoy, AdSense descartado), y la barra lateral explicada con una captura de
+la app con sesión iniciada (usuario arriba, perfiles guardados en carpetas
+en el medio, Ajustes abajo). Overwolf dijo que con eso procedería al
+whitelisting; falta su confirmación.

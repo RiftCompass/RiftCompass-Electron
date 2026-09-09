@@ -6,7 +6,7 @@
   ventana en la banda topmost de Windows; dentro de esa banda, quien
   reafirma foreground/topmost más recientemente (el propio motor del
   juego, en cualquier cambio de foco) pasa por delante, aunque nuestro
-  flag nunca se quite. Julio lo confirmó en real: "si minimizo el juego sí
+  flag nunca se quite. Confirmado en real: "si minimizo el juego sí
   se ve" (la ventana se dibuja bien, solo pierde la carrera de z-order con
   el tiempo). Fuente:
   [Window Features - Win32](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features),
