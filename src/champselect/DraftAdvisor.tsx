@@ -1,4 +1,4 @@
-// Draft Advisor: the "like iTero" pick recommendation Julio asked for,
+// Draft Advisor: the "like iTero" pick recommendation,
 // shown in the main app window during ChampSelect, not in the in-game
 // overlay (OverlayView.tsx keeps its own simpler, non-matchup-aware
 // suggestPicks panel untouched — see draft-help.ts). Ranks real candidates

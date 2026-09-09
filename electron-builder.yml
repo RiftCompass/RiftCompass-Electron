@@ -14,6 +14,10 @@ files:
 win:
   target: nsis
   icon: build/icons/icon.ico
+  # Fixed file name (no version) so the website can link the permanent
+  # releases/latest/download/RiftCompass-Setup.exe URL instead of being
+  # edited on every release. electron-updater finds the file via latest.yml.
+  artifactName: RiftCompass-Setup.${ext}
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
