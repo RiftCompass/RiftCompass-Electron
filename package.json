@@ -18,12 +18,13 @@
     "dev:electron:overwolf": "wait-on tcp:1421 && npm run build:electron && cross-env ELECTRON_RENDERER_URL=http://localhost:1421 ow-electron .",
     "build:renderer": "tsc --noEmit && vite build",
     "build:electron": "tsc -p tsconfig.electron.json && node scripts/bundle-preload.mjs",
-    "build": "npm run build:renderer && npm run build:electron",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "build": "node scripts/check-sensitive.mjs && npm run build:renderer && npm run build:electron",
+    "typecheck": "node scripts/check-sensitive.mjs && tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "dist": "npm run build && electron-builder",
     "pack:dir": "npm run build && node scripts/pack-unpacked.mjs",
     "release": "npm run build && electron-builder --publish always",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:sensitive": "node scripts/check-sensitive.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
