@@ -55,7 +55,7 @@ El overlay in-game de una ventana normal no puede pintarse sobre League en modo 
 ## Distribución y auto-actualización
 
 - `electron/updater.ts`: `electron-updater` contra GitHub Releases (`publish` en `electron-builder.yml`, repo público `RiftCompass/RiftCompass-Electron`). Descarga silenciosa, instala al cerrar, comprueba al arrancar y cada 4h. Solo en build empaquetada.
-- Releases publicados: `v0.1.0`, `v0.2.0`. `app.asar` solo contiene `dist/`, `dist-electron/`, `package.json` y deps de producción.
+- Releases publicados: `v0.1.0`, `v0.2.0`, `v0.2.1`. `app.asar` solo contiene `dist/`, `dist-electron/`, `package.json` y deps de producción.
 - `artifactName` ya es fijo (`RiftCompass-Setup.exe`, sin versión) y el botón de descarga de la web (`DownloadAppButton`) apunta a `.../releases/latest/download/RiftCompass-Setup.exe`: publicar una release nueva no obliga a tocar la web.
 - EULA en el instalador (`build/eula.txt` vía `nsis.license`).
 - **Firma de código pospuesta** hasta que la app sea rentable (cert OV/EV ~100-300 €/año); mientras, SmartScreen avisa de "Editor desconocido".
