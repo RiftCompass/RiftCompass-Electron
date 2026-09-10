@@ -184,3 +184,41 @@ raíz del proyecto, sección "Overlay y Overwolf"):
    requisito suyo.
 5. Decisión del propietario: Overwolf Appstore o seguir distribuyendo solo
    desde riftcompass.com y GitHub Releases.
+
+## Primera prueba real del motor — 2026-09-10
+
+Se lanzó `npm run dev:overwolf` por primera vez con el whitelisting ya
+concedido. Dos resultados:
+
+**Lo bueno: el motor está.** El arranque ya dice `[overlay] motor de Overwolf
+presente`, o sea que `app.overwolf` existe y `overlayEngine.ts` deja de ser
+código inerte por primera vez desde que se escribió. No hace falta instalar el
+cliente de Overwolf para eso.
+
+**Lo que falta: credenciales de desarrollador.** El gestor de paquetes se para
+nada más arrancar:
+
+```
+[owepm] package manager stopped by renderer - invalid verification
+```
+
+Los paquetes de juego (el overlay) **no cargan en local mientras la app no esté
+firmada**, salvo que se le pasen credenciales por variables de entorno. Overwolf
+exige que vayan como variables de entorno del proceso, no en `package.json` ni
+en un fichero de configuración suyo:
+
+- `OW_CLI_EMAIL`: el correo de la cuenta de desarrollador.
+- `OW_CLI_API_KEY`: se saca en <https://console.overwolf.com>, en
+  Profile > API Keys.
+
+Cómo queda montado en este repo: se ponen en `.env.overwolf.local` (raíz del
+repo, ignorado por git) y `scripts/dev-overwolf.mjs` las carga y arranca
+`ow-electron` con ellas. Si el fichero falta, el script lo dice y explica cómo
+conseguirlas, en vez de dejar que parezca un fallo del código. `OW_CLI_API_KEY`
+y `OW_DEV_KEY` están además en los patrones de `check-sensitive.mjs` de los dos
+repos, así que una clave no puede llegar a GitHub ni por accidente (probado con
+una clave falsa: la detecta y falla).
+
+**Esto es lo que bloquea el paso 2 de la lista de abajo.** Hasta que la clave
+exista, no se puede probar la inyección en una partida real.
+

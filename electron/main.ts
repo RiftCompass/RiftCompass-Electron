@@ -75,9 +75,16 @@ if (!gotSingleInstanceLock) {
     // injected (see overlayEngine.ts's game-injected handler) — nothing to
     // create here yet. Plain `electron` binary (today's only real
     // distribution): the normal top-level window, same as always.
+    // Logged on purpose, like updater.ts's: which of the two engines the app
+    // started with is the first thing to check when the in-game overlay does
+    // not show up, and the main process is the only place it can be seen
+    // (DevTools only reaches the renderer). Under the plain `electron`
+    // binary this always says "sin motor": that is the expected path today.
     if (isOverwolfRuntime()) {
+      console.log("[overlay] motor de Overwolf presente: se inyectara dentro del juego");
       initOverwolfOverlay();
     } else {
+      console.log("[overlay] sin motor de Overwolf: ventana normal siempre encima");
       createOverlayWindow();
     }
 
