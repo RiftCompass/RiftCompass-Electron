@@ -641,6 +641,7 @@ export const es: Messages = {
     noDataForRole: "Todavía no hay suficientes partidas rastreadas para este rol. Vuelve a comprobarlo más adelante.",
     dataFromPatch: "Datos del parche {patch}; el parche actual ({current}) aún no tiene muestras suficientes.",
     chipTooltip: "{rate}% de winrate en {games} partidas rastreadas",
+    noMatches: "No hay ningún campeón con ese nombre en este tablero.",
     rankTiers: {
       CHALLENGER: "Retador",
       GRANDMASTER: "Gran Maestro",

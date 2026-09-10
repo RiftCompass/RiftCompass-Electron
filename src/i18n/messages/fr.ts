@@ -641,6 +641,7 @@ export const fr: Messages = {
     noDataForRole: "Pas encore assez de parties suivies pour ce rôle. Revenez plus tard.",
     dataFromPatch: "Données du patch {patch} ; le patch actuel ({current}) n'a pas encore assez d'échantillons.",
     chipTooltip: "{rate}% de taux de victoire sur {games} parties suivies",
+    noMatches: "Aucun champion de ce nom n'est présent sur ce tableau.",
     rankTiers: {
       CHALLENGER: "Challenger",
       GRANDMASTER: "Grand Maître",
