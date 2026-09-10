@@ -5,3 +5,7 @@ release/
 
 *.log
 .DS_Store
+
+# Credenciales de desarrollador de Overwolf: sin ellas los paquetes de juego
+# no cargan en local, y con ellas dentro del repo (que es publico) seria una fuga.
+.env.overwolf.local

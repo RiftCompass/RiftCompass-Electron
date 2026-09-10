@@ -15,7 +15,7 @@ const PATTERNS = [
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, "private key"],
   // A throwaway local database (CI, the SSH tunnel example) is not a secret.
   [/postgres(ql)?:\/\/[^\s"'`]+:[^\s"'`@<]+@(?!localhost|127\.0\.0\.1)/, "database URL with password"],
-  [/\b(AUTH_SECRET|DESKTOP_API_SECRET|RESEND_API_KEY|RIOT_API_KEY)=[^\s<${]{8,}/, "filled-in secret variable"],
+  [/\b(AUTH_SECRET|DESKTOP_API_SECRET|RESEND_API_KEY|RIOT_API_KEY|OW_CLI_API_KEY|OW_DEV_KEY)=[^\s<${]{8,}/, "filled-in secret variable"],
   [/\b100\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/, "Tailscale address"],
   [/\b192\.168\.\d{1,3}\.\d{1,3}\b/, "LAN address"],
   [/julio\.lopez|juliolopez2003|juliolpzsu/i, "owner's personal account"],
