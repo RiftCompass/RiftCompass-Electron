@@ -16,6 +16,10 @@ import { initOverwolfOverlay, isOverwolfRuntime } from "./overlayEngine";
 // Before anything else can throw.
 initTelemetry();
 
+// Puerto del servidor de desarrollo de Vite, configurable para poder convivir
+// con otra sesion que ya tenga el 1421 tomado (ver vite.config.ts).
+const VITE_PORT = process.env.VITE_PORT ?? "1421";
+
 // Set as a real response header on every request (not a <meta> tag in
 // index.html) so script-src's 'unsafe-eval' and 'unsafe-inline' can be
 // dev-only: a static <meta> tag ships identically to dev and production.
@@ -37,13 +41,15 @@ function applyContentSecurityPolicy(): void {
     // an origin it loads images from. Both directives read the constant
     // so they can never name different hosts again.
     `img-src 'self' data: https://ddragon.leagueoflegends.com https://raw.communitydragon.org https://cdn.communitydragon.org ${BACKEND_ORIGIN}`,
-    // localhost:1421 is Vite's own dev server (HMR websocket + module
-    // fetches) — only ever reachable in dev, never bundled into what ships.
+    // El servidor de Vite (websocket de HMR y modulos), solo alcanzable en dev y
+    // nunca empaquetado. El puerto sigue a VITE_PORT: es normal tener varias
+    // sesiones a la vez y una puede estar usando otro puerto, y si la CSP se
+    // queda fija en el 1421 la app arranca en blanco sin decir por que.
     // *.sentry.io: renderer-side error reporting (telemetry.ts) — the DSN
     // host varies by org/region, so this stays a wildcard on the one
     // vendor domain rather than a single hardcoded ingest subdomain.
     `connect-src 'self' https://ddragon.leagueoflegends.com https://raw.communitydragon.org ${BACKEND_ORIGIN} https://*.sentry.io${
-      isDev ? " ws://localhost:1421 http://localhost:1421" : ""
+      isDev ? ` ws://localhost:${VITE_PORT} http://localhost:${VITE_PORT}` : ""
     }`,
   ].join("; ");
 
