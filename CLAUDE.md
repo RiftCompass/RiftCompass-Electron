@@ -6,7 +6,7 @@ App de escritorio companion de riftcompass.com para League of Legends (Windows):
 
 El overlay in-game de una ventana normal no puede pintarse sobre League en modo pantalla completa exclusiva: en Windows, mientras un proceso tiene exclusividad, DWM no compone nada encima (lo confirman independientemente Discord, OBS y Steam sobre sus propios overlays). La única vía real, la que usa iTero, es el motor de overlay de **Overwolf** (`ow-electron`), que hookea `Present`/`EndScene` dentro del proceso del juego y solo se integra en una app Electron. Por eso la app se reescribió desde Tauri/Rust a Electron.
 
-**Estado (2026-09-02)**: los paquetes `@overwolf/ow-electron*` resultaron ser públicos en npm (ya instalados como devDependencies) — lo que de verdad exige aprobación previa de Riot Games es que la inyección real en League llegue a funcionar, no poder instalar nada. Eso significa que la integración ya está escrita y compila: `electron/overlayEngine.ts` (registro del juego, inyección, creación de la ventana overlay real vía el paquete de Overwolf) más los cambios de soporte en `electron/windows.ts`/`main.ts` para que el resto de la app (gameConnection.ts, ipc.ts) no tenga que saber cuál de los dos caminos está activo. `isOverwolfRuntime()` decide en el arranque; bajo el binario `electron` normal (la única distribución real hoy) el comportamiento es idéntico al de antes de este cambio. Ver `docs/overwolf-registration.md` para el detalle completo y qué falta probar en real (`npm run dev:overwolf`) en cuanto llegue la aprobación.
+**Estado (2026-09-10: whitelisting concedido, falta probar la inyección en real)**: los paquetes `@overwolf/ow-electron*` resultaron ser públicos en npm (ya instalados como devDependencies) — lo que de verdad exige aprobación previa de Riot Games es que la inyección real en League llegue a funcionar, no poder instalar nada. Eso significa que la integración ya está escrita y compila: `electron/overlayEngine.ts` (registro del juego, inyección, creación de la ventana overlay real vía el paquete de Overwolf) más los cambios de soporte en `electron/windows.ts`/`main.ts` para que el resto de la app (gameConnection.ts, ipc.ts) no tenga que saber cuál de los dos caminos está activo. `isOverwolfRuntime()` decide en el arranque; bajo el binario `electron` normal (la única distribución real hoy) el comportamiento es idéntico al de antes de este cambio. Ver `docs/overwolf-registration.md` para el detalle completo y qué falta probar en real (`npm run dev:overwolf`) en cuanto llegue la aprobación.
 
 ## Arquitectura
 
@@ -57,6 +57,10 @@ El overlay in-game de una ventana normal no puede pintarse sobre League en modo 
 - `electron/updater.ts`: `electron-updater` contra GitHub Releases (`publish` en `electron-builder.yml`, repo público `RiftCompass/RiftCompass-Electron`). Descarga silenciosa, instala al cerrar, comprueba al arrancar y cada 4h. Solo en build empaquetada.
 - Releases publicados: `v0.1.0`, `v0.2.0`, `v0.2.1`. `app.asar` solo contiene `dist/`, `dist-electron/`, `package.json` y deps de producción.
 - `artifactName` ya es fijo (`RiftCompass-Setup.exe`, sin versión) y el botón de descarga de la web (`DownloadAppButton`) apunta a `.../releases/latest/download/RiftCompass-Setup.exe`: publicar una release nueva no obliga a tocar la web.
+- **`npm run release` crea DOS borradores para el mismo tag** (lanza dos publicaciones en paralelo y ambas se encuentran sin release y la crean): uno se queda con `RiftCompass-Setup.exe` + `latest.yml` y el otro solo con el `.blockmap`. Antes de publicar hay que subir el `.blockmap` al borrador bueno y borrar el otro, o el sitio se queda con dos releases del mismo tag. Pasó en la v0.2.1.
+- Publicar es un `PATCH` a `/releases/<id>` con `draft:false`. El token vale el que Git tiene guardado en el Administrador de credenciales de Windows (scope `repo`): `"protocol=https
+host=github.com
+" | git credential fill` y usar el campo `password` como `GH_TOKEN`.
 - EULA en el instalador (`build/eula.txt` vía `nsis.license`).
 - **Firma de código pospuesta** hasta que la app sea rentable (cert OV/EV ~100-300 €/año); mientras, SmartScreen avisa de "Editor desconocido".
 - Cuando llegue Overwolf, esa build se distribuye como una actualización más por este mecanismo.
@@ -80,7 +84,7 @@ El overlay in-game de una ventana normal no puede pintarse sobre League en modo 
 
 ## Pendiente
 
-- Aprobación de Riot/Overwolf (`docs/overwolf-registration.md`) — la integración real ya está escrita (`electron/overlayEngine.ts`), solo falta poder probarla contra League de verdad y, tras eso, pasar `scripts/build-win.mjs` de `electron-builder` a `@overwolf/ow-electron-builder`.
+- **Overlay real, ya desbloqueado** (Riot aprobó y Overwolf whitelisteó la cuenta el 2026-09-10, `docs/overwolf-registration.md`): activar Dev Mode en el cliente de Overwolf, probar `npm run dev:overwolf` con League abierto (registro del juego, inyección y ventana overlay sobre pantalla completa exclusiva — primera prueba real de `electron/overlayEngine.ts`), y solo después pasar `scripts/build-win.mjs` de `electron-builder` a `@overwolf/ow-electron-builder` comprobando que el auto-update sigue vivo. Queda además leer su Game Compliance de apps de Riot y repasar interactividad/atajos/`game-exit` con el motor real.
 - Confirmar visualmente los splash accents por herramienta (`TOOL_SPLASH_ACCENTS` en `MainView.tsx`) con la app abierta.
 - `artifactName` sin versión en el próximo release (ver Distribución).
 - Con bots en el equipo rival, champ select nunca reporta `championId` para `theirTeam`; comprobar en una partida emparejada con humanos si el oro por carril rival resuelve, y solo entonces investigar como bug.
