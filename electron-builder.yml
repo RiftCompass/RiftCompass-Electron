@@ -29,3 +29,14 @@ publish:
   provider: github
   owner: RiftCompass
   repo: RiftCompass-Electron
+  # Upload as a draft, never straight to players. A draft is invisible to
+  # everyone and electron-updater ignores it, so the exact installer users
+  # will get can be downloaded and tested first. This is electron-builder's
+  # default today — it's written down so a future default can't start
+  # shipping to players the moment a build finishes.
+  #
+  # Going public is a SEPARATE, MANUAL step today: press Publish on the
+  # GitHub release. The server can do it in the nightly release window
+  # (`publicar app` on mac-mini), but only once it has a fine-grained
+  # GitHub token; without one it just pings the phone as a reminder.
+  releaseType: draft
