@@ -182,7 +182,12 @@ function sigmoid(x: number): number {
 const MASTERY_MAX_LOGIT = 0.35;
 
 export function masteryLogit(points: number, topPoints: number): number {
-  if (topPoints <= 0 || points <= 0) return 0;
+  // Sin maestría de ningún campeón no hay con qué comparar: neutro. Pero si
+  // la hay y este campeón tiene cero puntos, es que no se ha jugado nunca, y
+  // eso es justo el caso más arriesgado: va al suelo, no a la mitad. Dejarlo
+  // en neutro lo colocaba por encima de uno jugado un poco, que es absurdo.
+  if (topPoints <= 0) return 0;
+  if (points <= 0) return -MASTERY_MAX_LOGIT;
   // Raíz cuadrada y no lineal: la diferencia entre 0 y 20.000 puntos importa
   // mucho más que entre 300.000 y 320.000. Sin esto, un solo campeón muy
   // jugado aplasta a todos los demás a cero.
