@@ -52,9 +52,18 @@ const credenciales = Object.fromEntries(
     }),
 );
 
-const faltan = ["OW_CLI_EMAIL", "OW_CLI_API_KEY"].filter((clave) => !credenciales[clave]);
+// "Sin rellenar" cuenta como ausente: si el fichero se dejo con los huecos de
+// plantilla, Overwolf responde con el mismo "invalid verification" cripitico que
+// si no hubiera credenciales, y se pierde el tiempo buscando en el sitio
+// equivocado. Mejor decirlo aqui.
+const sinRellenar = (valor) => !valor || valor.startsWith("<") || valor.includes("PEGA");
+const faltan = ["OW_CLI_EMAIL", "OW_CLI_API_KEY"].filter((clave) => sinRellenar(credenciales[clave]));
 if (faltan.length > 0) {
-  console.error(`.env.overwolf.local existe pero le faltan: ${faltan.join(", ")}`);
+  console.error(
+    `.env.overwolf.local existe pero ${faltan.join(" y ")} sigue(n) sin rellenar.
+` +
+      "La clave se saca en https://console.overwolf.com > Profile > API Keys.",
+  );
   process.exit(1);
 }
 
