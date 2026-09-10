@@ -2,6 +2,7 @@ import {
   Brain,
   Coins,
   Crown,
+  Scroll,
   Stack,
   ListNumbers,
   MapTrifold as MapIcon,
@@ -29,7 +30,8 @@ export type ToolId =
   | "personalityTest"
   | "jungleXp"
   | "championPool"
-  | "metaTierList";
+  | "metaTierList"
+  | "championBuilds";
 
 export interface ToolMeta {
   id: ToolId;
@@ -58,6 +60,8 @@ export const TOOLS: ToolMeta[] = [
   { id: "jungleXp", icon: Tree, accent: "#2f9d68", native: true, introKey: "JungleXpCalculator.intro" },
   { id: "championPool", icon: Stack, accent: "#6366d4", native: true },
   { id: "metaTierList", icon: Crown, accent: "#9aa5b1", native: true },
+  // Same hue as the web's --gem-cyan, the twelfth tool's own color.
+  { id: "championBuilds", icon: Scroll, accent: "#2f8fd0", native: true, introKey: "ChampionBuilds.intro" },
 ];
 
 // The Tools grid's "Compare Profiles" card isn't a ToolId (it opens the
