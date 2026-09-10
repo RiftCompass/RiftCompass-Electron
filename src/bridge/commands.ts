@@ -21,6 +21,8 @@ export const CMD = {
   ApplyRecommendedBuild: "apply_recommended_build",
   /** invoke, no args — borra los item sets que haya dejado RiftCompass, respetando los del jugador */
   ClearItemSets: "clear_item_sets",
+  /** invoke, no args — maestria del jugador con cada campeon, leida del cliente (no gasta cuota de Riot) */
+  GetChampionMastery: "get_champion_mastery",
   /** invoke, no args. returns AppSettings */
   SettingsGet: "settings_get",
   /** invoke. args: { enabled } */

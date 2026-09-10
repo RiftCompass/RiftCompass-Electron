@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchChampionMap, type ChampionMaps } from "../ddragon";
 import { suggestMatchupPicks, type ChampionWinrateEntry, type LaneMatchupEntry, type MatchupSuggestion } from "../draft-help";
+import type { ChampionMasteryEntry } from "../riftcompass";
 import { computeChampionOverview, type ChampionOverviewStats } from "../lib/profile-analysis";
 import { fetchProfile } from "../profile/ProfileShared";
 import { API_BASE_URL } from "../shared/api";
@@ -52,6 +53,7 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
   const [roleWinrates, setRoleWinrates] = useState<ChampionWinrateEntry[] | null>(null);
   const [matchups, setMatchups] = useState<LaneMatchupEntry[]>([]);
   const [personalOverview, setPersonalOverview] = useState<ChampionOverviewStats[]>([]);
+  const [mastery, setMastery] = useState<ChampionMasteryEntry[]>([]);
 
   useEffect(() => {
     window.riftcompass.onPhase((p) => setPhase(p));
@@ -140,13 +142,39 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
     };
   }, [phase, identity]);
 
+  // Maestría del propio cliente de League: gratis, sin cuota de Riot y siempre
+  // al día. Se pide una vez por champ select, no por pulsación: no cambia
+  // durante un draft. Si el cliente no está, la lista viene vacía y la
+  // recomendación sigue funcionando con las otras dos señales.
+  useEffect(() => {
+    if (phase !== "ChampSelect") return;
+    let cancelled = false;
+    window.riftcompass
+      .getChampionMastery()
+      .then((r) => {
+        if (!cancelled) setMastery(r.mastery);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [phase]);
+
   const suggestions = useMemo(() => {
     if (!localPlayer?.assignedPosition || Object.keys(champions.byId).length === 0) return [];
     // Both teams, not just mine — a champion already locked by anyone
     // (either side) can't be picked again this game.
     const pickedIds = [...myTeam, ...theirTeam].filter((p) => p.championId).map((p) => p.championId);
-    return suggestMatchupPicks(Object.values(champions.byId), pickedIds, localPlayer.assignedPosition, matchups, roleWinrates ?? [], personalOverview);
-  }, [champions, myTeam, theirTeam, localPlayer?.assignedPosition, matchups, roleWinrates, personalOverview]);
+    return suggestMatchupPicks(
+      Object.values(champions.byId),
+      pickedIds,
+      localPlayer.assignedPosition,
+      matchups,
+      roleWinrates ?? [],
+      personalOverview,
+      mastery,
+    );
+  }, [champions, myTeam, theirTeam, localPlayer?.assignedPosition, matchups, roleWinrates, personalOverview, mastery]);
 
   // "Vacío" solo es honesto cuando ya ha llegado todo lo necesario para
   // decidir: el mapa de campeones y los winrates del rol.
