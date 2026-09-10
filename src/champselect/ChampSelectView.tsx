@@ -103,6 +103,15 @@ export function ChampSelectView() {
   useEffect(() => {
     window.riftcompass.onLcuIdentity(setIdentity);
     window.riftcompass.onChampSelectSession((s) => setSesion((s as SesionSeleccion | null) ?? null));
+    // Esta ventana nace a mitad de partida, cuando la sesión de champ select ya
+    // se emitió: suscribirse no basta, hay que pedir el estado que ya hay o la
+    // ventana se queda en blanco hasta el siguiente cambio del draft.
+    window.riftcompass
+      .getChampSelectState()
+      .then(({ session }) => {
+        if (session) setSesion(session as SesionSeleccion);
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {

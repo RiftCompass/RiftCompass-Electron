@@ -23,6 +23,8 @@ export const CMD = {
   ClearItemSets: "clear_item_sets",
   /** invoke, no args — maestria del jugador con cada campeon, leida del cliente (no gasta cuota de Riot) */
   GetChampionMastery: "get_champion_mastery",
+  /** invoke, no args — fase actual y ultima sesion de champ select, para que una ventana recien abierta no espere al siguiente evento */
+  GetChampSelectState: "get_champ_select_state",
   /** invoke, no args. returns AppSettings */
   SettingsGet: "settings_get",
   /** invoke. args: { enabled } */

@@ -28,6 +28,15 @@ let lastIdentity: unknown = null;
 // Current connection state, for the lcu_get_state IPC command: events are
 // one-shot pushes, so a renderer that finishes loading after the main
 // process already connected needs something to pull.
+// El estado que una ventana recien abierta necesita para pintarse sin esperar
+// al siguiente evento. Hace falta porque la ventana de champ select nace a
+// mitad de partida: cuando se le reemitia el estado desde el proceso principal
+// llegaba ANTES de que React hubiera montado sus suscripciones, y se perdia
+// igual. Que lo pida ella al montarse quita esa carrera de raiz.
+export function champSelectSnapshot(): { phase: string | null; session: unknown } {
+  return { phase: ultimaFase, session: ultimaSesionChampSelect };
+}
+
 export function connectionSnapshot(): { connected: boolean; identity: unknown } {
   return { connected: creds !== null, identity: lastIdentity };
 }
