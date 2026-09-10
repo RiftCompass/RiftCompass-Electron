@@ -67,7 +67,13 @@ export function isOverwolfRuntime(): boolean {
 export function initOverwolfOverlay(): void {
   const packages = getOverwolfPackages();
   if (!packages) return;
+  // Los cuatro console.log de este fichero son deliberados, como los de
+  // updater.ts: la inyeccion en el juego no se puede depurar desde DevTools
+  // (viven en el proceso principal) y esta secuencia (paquete listo ->
+  // juego detectado -> inyectado) es justo lo que hay que mirar cuando el
+  // overlay no aparece.
   packages.on("ready", (_event: unknown, name: string) => {
+    console.log(`[overlay] paquete de Overwolf listo: ${name}`);
     if (name !== "overlay") return;
     registerAndListen(packages.overlay);
   });
@@ -87,6 +93,7 @@ function registerAndListen(overlayApi: IOverwolfOverlayApi): void {
       // gameInfo.type distinguishes the real game process from its own
       // launcher (LoL's launcher is a separate, lower classId in Overwolf's
       // gameslist) — only the actual game process can host our overlay.
+      console.log(`[overlay] juego detectado: ${gameInfo?.name} (tipo ${gameInfo?.type})`);
       if (gameInfo.type !== "Game") {
         event.dismiss();
         return;
@@ -100,6 +107,7 @@ function registerAndListen(overlayApi: IOverwolfOverlayApi): void {
   });
 
   overlayApi.on("game-injected", async (gameInfo: GameInfo) => {
+    console.log(`[overlay] inyectado en ${gameInfo?.name}`);
     if (gameInfo.type !== "Game") return;
     try {
       await createInGameOverlayWindow(overlayApi);
