@@ -327,12 +327,17 @@ export function showOverlay(show: boolean): void {
   else win.hide();
 }
 
-// Both the main window and the overlay load the same renderer bundle and
-// subscribe to the same bridge events (App.tsx picks which view to render
-// off a `?view=` query param), so gameConnection.ts's events go to every
-// window, not a single webContents.send.
+// Las tres ventanas cargan el mismo bundle del renderer y se suscriben a los
+// mismos eventos del puente (App.tsx elige que vista pintar segun el `?view=`
+// de la URL), asi que los eventos de gameConnection.ts van a TODAS, no a un
+// webContents.send concreto.
+//
+// Olvidar una aqui no da error, solo silencio: la ventana de champ select se
+// anadio sin meterla en esta lista y se quedaba diciendo "solo disponible
+// durante la seleccion de campeon" estando dentro de ella, sin recibir jamas
+// la sesion. Al anadir una ventana nueva, anadirla tambien aqui.
 export function broadcast(channel: string, payload?: unknown): void {
-  for (const win of [mainWindow, getOverlayWindow()]) {
+  for (const win of [mainWindow, getOverlayWindow(), champSelectWindow]) {
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
   }
 }
