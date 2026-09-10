@@ -55,6 +55,8 @@ export const de: Messages = {
     emptyFolder: "Noch keine Profile in diesem Ordner.",
   },
   ProfileSearch: {
+    skillRadarSubtitle: "Jede Achse im Vergleich zu einem generischen Benchmark, 100 % = auf Benchmark-Niveau",
+    cannotCompare: "Vergleich noch nicht möglich. Eines der Profile oben konnte nicht geladen werden.",
     navLabel: "Suche",
     title: "Riot ID suchen",
     intro: "Echte Statistiken jedes Spielers ansehen: Rang, Roadmap und letzte Spiele.",
@@ -153,9 +155,9 @@ export const de: Messages = {
       items: "Items",
     },
     headToHead: "Im direkten Vergleich",
-    headToHeadIntro: "Durchschnittswerte der letzten 14 Partien pro Spieler",
+    headToHeadIntro: "Durchschnittswerte der letzten {count} Partien pro Spieler",
     sharedFocusTitle: "Worauf ihr euch konzentrieren solltet",
-    sharedFocusNone: "Keine klar überlappende Schwäche in den letzten 14 Partien pro Spieler. Ihr deckt euch gegenseitig gut ab.",
+    sharedFocusNone: "Keine klar überlappende Schwäche in den letzten {count} Partien pro Spieler. Ihr deckt euch gegenseitig gut ab.",
     sharedTips: {
       csPerMin: "Ihr verliert alle Farm. Übt Last-Hits gemeinsam in einer Bot-Lobby oder callt Resets, damit jemand von euch zuerst einen Power-Spike erreicht.",
       visionPerMin: "Keiner von euch wardet genug. Teilt die Kontrollwards auf, um Fluss und Jungle-Eingänge abzudecken, bevor Objectives spawnen.",
@@ -340,6 +342,7 @@ export const de: Messages = {
     realTierTooltip: "Echte Tier: {tier} (RiftCompass-Crawler-Daten)",
   },
   Cooldowns: {
+    intro: "Wähle zwei Champions und vergleiche ihre Fähigkeiten-Cooldowns nebeneinander, angepasst an Ability Haste.",
     championLabel: "Champion {slot}",
     selectPlaceholder: "Champion suchen…",
     noResults: "Keine Champions gefunden.",
@@ -440,6 +443,7 @@ export const de: Messages = {
     export: "Exportieren",
   },
   GoldCalculator: {
+    intro: "Stell deine Build aus sechs Gegenständen im Shop zusammen und sieh ihre Gesamtkosten.",
     patch: "Patch {version}",
     search: "Gegenstände suchen…",
     itemPlaceholder: "Wähle einen Gegenstand, um Komponenten und Kosten zu sehen.",
@@ -465,7 +469,8 @@ export const de: Messages = {
     myBuildsEmpty: "Noch keine gespeicherten Builds.",
     load: "Laden",
     delete: "Löschen",
-    loginToSave: "Melde dich über das Kontopanel an, um Builds zu speichern.",
+    loginToSave: "Willst du diese Build speichern?",
+    loginToSaveLink: "Melde dich an",
     build: "Dein Build",
     buildTotal: "Build gesamt",
     supportRole: "Support-Rolle",
@@ -509,6 +514,7 @@ export const de: Messages = {
     },
   },
   WaveTimer: {
+    intro: "Die ganze Wellen-Ökonomie auf einen Blick: welche Vasallen kommen, wie oft und wie viel Gold sie je nach Spielzeit geben.",
     melee: "Nahkampf",
     caster: "Magier",
     cannon: "Kanone",
@@ -676,6 +682,10 @@ export const de: Messages = {
     applyBuildError: "Anwenden fehlgeschlagen",
   },
   DraftAdvisor: {
+    loading: "Suche die besten Picks für deine Rolle…",
+    error: "Daten konnten nicht geladen werden. Prüfe deine Verbindung.",
+    title: "Draft-Beratung",
+    description: "Deine stärksten Picks für diese Lane, aus echten Matchup- und persönlichen Siegraten.",
     notInChampSelect: "Nur während der Champion-Auswahl verfügbar.",
     waitingForRole: "Warte auf die Zuweisung deiner Rolle…",
     roleLabel: "Draft-Berater · {role}",
@@ -690,6 +700,8 @@ export const de: Messages = {
     tier: { good: "Gute Wahl", solid: "Solide", risky: "Riskant" },
   },
   PostGameReport: {
+    title: "Spielbericht",
+    description: "Wie die gerade beendete Partie lief, Achse für Achse.",
     loading: "Deine Partie wird analysiert…",
     timeout: "Deine Partie ist noch nicht verfügbar: Riot braucht manchmal etwas Zeit zur Verarbeitung.",
     openProfile: "Vollständiges Profil öffnen",

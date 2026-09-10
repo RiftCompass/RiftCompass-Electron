@@ -2,6 +2,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowsDownUp,
+  FlagCheckered,
+  Sword,
   Check,
   CaretDown,
   CaretRight,
@@ -38,6 +40,7 @@ import { COLORS, FONT_HEADING, TYPE, inputStyle, pillStyle } from "./theme";
 import { WindowControls } from "./WindowControls";
 import { useI18n, SUPPORTED_LOCALES, LOCALE_LABEL, type Locale } from "./i18n";
 import { ChampionSplashAccent } from "./ChampionSplashAccent";
+import { OpenAccountPanelProvider } from "./account-panel";
 import { formatTierRank, rankToLpValue, PLATFORM_LABELS } from "./lib/rank-lp";
 import { fetchLatestVersion, profileIconUrl } from "./ddragon";
 import type { AccountUser, FlashSide, LcuIdentity, OverlayModules, SavedProfileFolder, SavedProfileWithRank } from "./riftcompass";
@@ -396,6 +399,13 @@ export function MainView() {
               >
                 <ArrowLeft size={15} /> {t("Common.backToTools")}
               </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Sword size={22} color={COLORS.rose} />
+                <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
+                  {t("DraftAdvisor.title")}
+                </h1>
+              </div>
+              <p style={{ color: COLORS.muted, fontSize: 14, margin: 0, maxWidth: 560 }}>{t("DraftAdvisor.description")}</p>
               <DraftAdvisor identity={localIdentity} />
             </div>
           ) : panel === "postgame" && postGameContext ? (
@@ -419,6 +429,13 @@ export function MainView() {
               >
                 <ArrowLeft size={15} /> {t("Common.backToTools")}
               </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <FlagCheckered size={22} color={COLORS.rose} />
+                <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
+                  {t("PostGameReport.title")}
+                </h1>
+              </div>
+              <p style={{ color: COLORS.muted, fontSize: 14, margin: 0, maxWidth: 560 }}>{t("PostGameReport.description")}</p>
               <PostGameReport
                 identity={postGameContext.identity}
                 gameStartedAt={postGameContext.startedAt}
@@ -476,11 +493,18 @@ export function MainView() {
                 </h1>
               </div>
               <p style={{ color: COLORS.muted, fontSize: 14, margin: 0, maxWidth: 560 }}>
-                {t(`ToolsIndex.${openTool.id}.description`)}
+                {/* The tool's own intro, the same sentence the web prints
+                    here. Falls back to the grid card's short blurb for the
+                    tools not yet checked against the web. */}
+                {t(openTool.introKey ?? `ToolsIndex.${openTool.id}.description`)}
               </p>
               {(() => {
                 const NativeView = NATIVE_VIEWS[openTool.id];
-                return <NativeView />;
+                return (
+                  <OpenAccountPanelProvider value={() => setPanel("settings")}>
+                    <NativeView />
+                  </OpenAccountPanelProvider>
+                );
               })()}
             </div>
           ) : (

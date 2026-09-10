@@ -57,7 +57,9 @@ export function JungleXpCalculator() {
             gap: 16,
             borderRadius: 14,
             border: `1px solid ${COLORS.cardBorder}`,
-            background: `${COLORS.card}66`,
+            // 0xd9 = 85%, the web's bg-card/85 for this same box. It was at
+            // 40% here, which is the Wave Timer value, not this one.
+            background: `${COLORS.card}d9`,
             padding: 18,
             marginTop: 4,
           }}
@@ -286,7 +288,10 @@ export function JungleXpCalculator() {
         <span style={sectionTitleStyle}>{t("JungleXpCalculator.tableTitle")}</span>
 
         <div
-          style={{ overflowX: "auto", borderRadius: 12, border: `1px solid ${COLORS.cardBorder}` }}
+          // Same 85% surface as the simulator box above and as the web's own
+          // reference table: with no background at all this read as a frame
+          // floating on the page instead of a panel.
+          style={{ overflowX: "auto", borderRadius: 12, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}d9` }}
           onMouseLeave={() => setHover(null)}
         >
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>

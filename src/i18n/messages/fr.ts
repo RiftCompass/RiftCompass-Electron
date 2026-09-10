@@ -55,6 +55,8 @@ export const fr: Messages = {
     emptyFolder: "Aucun profil dans ce dossier pour l'instant.",
   },
   ProfileSearch: {
+    skillRadarSubtitle: "Chaque axe comparé à une référence générique, 100 % = au niveau de la référence",
+    cannotCompare: "Comparaison impossible pour l'instant. L'un des profils ci-dessus n'a pas pu être chargé.",
     navLabel: "Rechercher",
     title: "Rechercher un Riot ID",
     intro: "Consultez les vraies statistiques de n'importe quel joueur: rang, feuille de route et parties récentes.",
@@ -153,9 +155,9 @@ export const fr: Messages = {
       items: "Objets",
     },
     headToHead: "Face à face",
-    headToHeadIntro: "Moyennes sur les 14 dernières parties de chacun",
+    headToHeadIntro: "Moyennes sur les {count} dernières parties de chacun",
     sharedFocusTitle: "Ce sur quoi vous devez vous concentrer",
-    sharedFocusNone: "Aucune faiblesse commune claire sur les 14 dernières parties de chacun. Vous vous couvrez bien mutuellement.",
+    sharedFocusNone: "Aucune faiblesse commune claire sur les {count} dernières parties de chacun. Vous vous couvrez bien mutuellement.",
     sharedTips: {
       csPerMin: "Vous perdez tous du farm. Entraînez-vous au last-hit ensemble dans un lobby bot, ou organisez des retours en base pour qu'un d'entre vous atteigne un pic de puissance en premier.",
       visionPerMin: "Aucun d'entre vous ne place assez de balises. Répartissez les balises de contrôle pour couvrir la rivière et les entrées de jungle avant l'apparition des objectifs.",
@@ -340,6 +342,7 @@ export const fr: Messages = {
     realTierTooltip: "Tier réel : {tier} (données du crawler RiftCompass)",
   },
   Cooldowns: {
+    intro: "Choisissez deux champions pour comparer leurs temps de recharge de sorts côte à côte, ajustés selon l'accélération de compétence.",
     championLabel: "Champion {slot}",
     selectPlaceholder: "Rechercher un champion…",
     noResults: "Aucun champion trouvé.",
@@ -440,6 +443,7 @@ export const fr: Messages = {
     export: "Exporter",
   },
   GoldCalculator: {
+    intro: "Monte ta build de six objets dans la boutique et consulte son coût total en or.",
     patch: "Patch {version}",
     search: "Rechercher un objet…",
     itemPlaceholder: "Sélectionne un objet pour voir ses composants et son coût.",
@@ -465,7 +469,8 @@ export const fr: Messages = {
     myBuildsEmpty: "Aucune build enregistrée pour l'instant.",
     load: "Charger",
     delete: "Supprimer",
-    loginToSave: "Connecte-toi depuis le panneau de compte pour enregistrer des builds.",
+    loginToSave: "Tu veux enregistrer cette build ?",
+    loginToSaveLink: "Connecte-toi",
     build: "Ta build",
     buildTotal: "Total de la build",
     supportRole: "Rôle support",
@@ -509,6 +514,7 @@ export const fr: Messages = {
     },
   },
   WaveTimer: {
+    intro: "Toute l'économie des vagues en un coup d'œil : quels sbires arrivent, à quelle fréquence et combien d'or ils donnent selon le chrono.",
     melee: "Corps à corps",
     caster: "Mage",
     cannon: "Canon",
@@ -676,6 +682,10 @@ export const fr: Messages = {
     applyBuildError: "Échec de l'application",
   },
   DraftAdvisor: {
+    loading: "Recherche des meilleurs picks pour ton rôle…",
+    error: "Impossible de charger les données. Vérifie ta connexion.",
+    title: "Conseil de draft",
+    description: "Tes meilleurs picks pour cette voie, d'après les taux de victoire réels du matchup et les tiens.",
     notInChampSelect: "Disponible uniquement pendant la sélection des champions.",
     waitingForRole: "En attente de l'attribution de votre rôle…",
     roleLabel: "Conseil de draft · {role}",
@@ -690,6 +700,8 @@ export const fr: Messages = {
     tier: { good: "Bon choix", solid: "Solide", risky: "Risqué" },
   },
   PostGameReport: {
+    title: "Bilan de la partie",
+    description: "Comment s'est passée la partie que tu viens de jouer, axe par axe.",
     loading: "Analyse de votre partie…",
     timeout: "Votre partie n'apparaît pas encore : Riot peut mettre un moment à la traiter.",
     openProfile: "Voir le profil complet",

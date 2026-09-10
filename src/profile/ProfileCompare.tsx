@@ -3,7 +3,7 @@ import { CaretRight, ArrowCounterClockwise, Path, ShieldWarning, Sword, X, type 
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
 import { COLORS, FONT_HEADING, inputStyle } from "../theme";
 import { useI18n } from "../i18n";
-import { formatTierRank } from "../lib/rank-lp";
+import { formatTierRank, PLATFORM_LABELS } from "../lib/rank-lp";
 import {
   computeHeadToHead,
   computeRoadmap,
@@ -240,7 +240,32 @@ function CompareSlot({
 
 // One accent color per compared player, reused for the card border and
 // the name so a player keeps one identity across the whole comparison.
-const COMPARE_ACCENTS = [COLORS.rose, "#4d9fe8", COLORS.gold, "#3ecf8e", "#9d6bf5"];
+// Los hex reales de PLAYER_ACCENT en la web (rose / gem-blue / gold /
+// emerald-400 / violet-400): el mismo jugador salia de un color distinto en
+// cada producto. No se usa COLORS.gold aqui porque ese token lo comparten
+// otras tres herramientas.
+const COMPARE_ACCENTS = [COLORS.rose, "#4d7fe8", "#ffc857", "#34d399", "#a78bfa"];
+
+// La region de cada jugador, visible junto a su nombre. La web la ensena
+// aunque alli sea unica para toda la comparacion; aqui cada hueco tiene su
+// propio selector, asi que dos Riot ID iguales de regiones distintas eran
+// indistinguibles.
+function PlatformBadge({ platform }: { platform: string }) {
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        color: COLORS.muted,
+        border: `1px solid ${COLORS.cardBorder}`,
+        borderRadius: 999,
+        padding: "2px 8px",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {PLATFORM_LABELS[platform] ?? platform.toUpperCase()}
+    </span>
+  );
+}
 
 type CompareSlot = { kind: "loading" } | ({ kind: "error" } & FetchProfileError) | { kind: "ok"; data: ProfileApiResponse };
 
@@ -385,7 +410,14 @@ function ProfileCompareResult({ targets, onReset }: { targets: ProfileTarget[]; 
               {successful.length === 2 && (
                 <div style={cardStyle}>
                   <span style={{ fontSize: 16, fontWeight: 600 }}>{t("ProfileSearch.headToHead")}</span>
-                  <p style={{ fontSize: 13, color: COLORS.muted, margin: "4px 0 12px" }}>{t("ProfileSearch.headToHeadIntro")}</p>
+                  <p style={{ fontSize: 13, color: COLORS.muted, margin: "4px 0 12px" }}>
+                    {t("ProfileSearch.headToHeadIntro", {
+                      count: Math.min(
+                        successfulProfiles[0].profile.recentMatches.length,
+                        successfulProfiles[1].profile.recentMatches.length,
+                      ),
+                    })}
+                  </p>
                   <HeadToHeadTable
                     nameA={`${successfulProfiles[0].profile.gameName}#${successfulProfiles[0].profile.tagLine}`}
                     nameB={`${successfulProfiles[1].profile.gameName}#${successfulProfiles[1].profile.tagLine}`}
@@ -398,7 +430,11 @@ function ProfileCompareResult({ targets, onReset }: { targets: ProfileTarget[]; 
             </div>
             <CompareSharedFocus profiles={successfulProfiles} />
           </>
-        ) : null}
+        ) : (
+          // Antes desaparecia todo sin una palabra y la pantalla se quedaba
+          // en dos columnas y vacio. La web si explica el hueco.
+          <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.cannotCompare")}</p>
+        )}
       </div>
     </div>
   );
@@ -424,14 +460,17 @@ function ComparePlayerSlot({
 }) {
   const { t } = useI18n();
   if (slot.kind === "ok") {
-    return <ComparePlayerColumn data={slot.data} accent={accent} withBackground={withBackground} />;
+    return <ComparePlayerColumn data={slot.data} platform={target.platform} accent={accent} withBackground={withBackground} />;
   }
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <span style={{ fontSize: 16, fontWeight: 600, borderLeft: `2px solid ${accent}`, paddingLeft: 8, color: accent }}>
-        {target.gameName}
-        <span style={{ color: COLORS.muted, fontWeight: 400 }}>#{target.tagLine}</span>
-      </span>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+        <span style={{ fontSize: 16, fontWeight: 600, borderLeft: `2px solid ${accent}`, paddingLeft: 8, color: accent }}>
+          {target.gameName}
+          <span style={{ color: COLORS.muted, fontWeight: 400 }}>#{target.tagLine}</span>
+        </span>
+        <PlatformBadge platform={target.platform} />
+      </div>
       {slot.kind === "loading" ? (
         <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
       ) : (
@@ -492,6 +531,8 @@ function CompareSkillCard({ profiles, accents }: { profiles: ProfileApiResponse[
   return (
     <div style={cardStyle}>
       <span style={{ fontSize: 16, fontWeight: 700 }}>{t("ProfileSearch.skillOverview")}</span>
+      {/* Sin esta linea, un "62 %" por eje se lee como un valor absoluto. */}
+      <p style={{ fontSize: 13, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.skillRadarSubtitle")}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 12 }}>
         {axes.map((axisPoint, ai) => (
           <div key={axisPoint.axis} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -534,10 +575,14 @@ function CompareSharedFocus({ profiles }: { profiles: ProfileApiResponse[] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 6 }}>
       <h2 style={{ fontFamily: FONT_HEADING, fontSize: 17, fontWeight: 400, margin: 0 }}>{t("ProfileSearch.sharedFocusTitle")}</h2>
       {shared.length === 0 ? (
-        <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.sharedFocusNone")}</p>
+        <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>
+          {t("ProfileSearch.sharedFocusNone", {
+            count: Math.min(...profiles.map((p) => p.profile.recentMatches.length)),
+          })}
+        </p>
       ) : (
         shared.map((node) => (
-          <p key={node.metric} style={{ fontSize: 13, margin: 0, borderLeft: `2px solid ${COLORS.rose}`, paddingLeft: 10, lineHeight: 1.5 }}>
+          <p key={node.metric} style={{ fontSize: 13, margin: 0, borderLeft: `2px solid ${COLORS.badMild}`, paddingLeft: 10, lineHeight: 1.5 }}>
             {t(`ProfileSearch.sharedTips.${node.metric}`)}
           </p>
         ))
@@ -591,10 +636,12 @@ function CompareRankLine({
 // web's multi-player columns.
 function ComparePlayerColumn({
   data,
+  platform,
   accent,
   withBackground,
 }: {
   data: ProfileApiResponse;
+  platform: string;
   accent: string;
   withBackground: boolean;
 }) {
@@ -609,10 +656,13 @@ function ComparePlayerColumn({
           style={{ left: 0, top: -24, width: "100%", height: 260 }}
         />
       ) : null}
-      <span style={{ fontSize: 16, fontWeight: 600, borderLeft: `2px solid ${accent}`, paddingLeft: 8, color: accent }}>
-        {profile.gameName}
-        <span style={{ color: COLORS.muted, fontWeight: 400 }}>#{profile.tagLine}</span>
-      </span>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+        <span style={{ fontSize: 16, fontWeight: 600, borderLeft: `2px solid ${accent}`, paddingLeft: 8, color: accent }}>
+          {profile.gameName}
+          <span style={{ color: COLORS.muted, fontWeight: 400 }}>#{profile.tagLine}</span>
+        </span>
+        <PlatformBadge platform={platform} />
+      </div>
       <CompareRankLine
         label={t("ProfileSearch.soloQueue")}
         entry={profile.soloQueue}
@@ -944,7 +994,10 @@ function HeadToHeadTable({
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
         {stats.map((s, i) => {
-          const aBetter = s.higherIsBetter ? s.valueA >= s.valueB : s.valueA <= s.valueB;
+          // Dos comparaciones estrictas, como la web: con ">=" un empate
+          // resaltaba a A y dejaba a B en gris, como si hubiera perdido.
+          const aWins = s.higherIsBetter ? s.valueA > s.valueB : s.valueA < s.valueB;
+          const bWins = s.higherIsBetter ? s.valueB > s.valueA : s.valueB < s.valueA;
           return (
             <div
               key={s.key}
@@ -957,9 +1010,9 @@ function HeadToHeadTable({
                 borderTop: i > 0 ? `1px solid ${COLORS.cardBorder}66` : "none",
               }}
             >
-              <span style={{ width: 64, flexShrink: 0, fontWeight: aBetter ? 700 : 400, color: aBetter ? colorA : COLORS.text }}>{s.valueA}</span>
+              <span style={{ width: 64, flexShrink: 0, fontWeight: aWins ? 700 : 400, color: aWins ? colorA : COLORS.text }}>{s.valueA}</span>
               <span style={{ flex: 1, textAlign: "center", color: COLORS.muted, fontSize: 12 }}>{t(`ProfileSearch.h2h.${s.key}`)}</span>
-              <span style={{ width: 64, flexShrink: 0, textAlign: "right", fontWeight: !aBetter ? 700 : 400, color: !aBetter ? colorB : COLORS.text }}>{s.valueB}</span>
+              <span style={{ width: 64, flexShrink: 0, textAlign: "right", fontWeight: bWins ? 700 : 400, color: bWins ? colorB : COLORS.text }}>{s.valueB}</span>
             </div>
           );
         })}

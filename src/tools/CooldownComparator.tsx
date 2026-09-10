@@ -10,7 +10,7 @@ import {
   type ChampionInfo,
 } from "../ddragon";
 import { useI18n } from "../i18n";
-import { COLORS } from "../theme";
+import { COLORS, FONT_HEADING, TYPE } from "../theme";
 
 // Ported from the web app's src/lib/riot/ddragon.ts's effectiveCooldown —
 // same formula and the same [0,200] ability-haste clamp fixed there after
@@ -42,9 +42,16 @@ export function CooldownComparator() {
     // in its own bordered card (same `sm:divide-x` as the web version — a
     // plain gap alone left the two panels looking unrelated instead of one
     // A/B comparison).
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(280px, 1fr))", gap: 32 }}>
+    // auto-fit, not a fixed 2: a hard 280px floor per column kept the grid
+    // from ever going below 592px, and the window allows 640px with the
+    // container clipping horizontal overflow, so the B panel got cut off
+    // with no way to scroll to it. The web stacks below `sm`; this does the
+    // same, and it is the pattern Wave Timer and Jungle XP already use.
+    <div className="rc-ab-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 32 }}>
       <ChampionCooldownPanel slot="A" champions={champions} version={version} />
-      <div style={{ borderLeft: `1px solid ${COLORS.cardBorder}`, paddingLeft: 32, marginLeft: -32 }}>
+      {/* The divider itself lives in global.css: it has to disappear when
+          the grid stacks, which an inline style can't express. */}
+      <div className="rc-ab-divider">
         <ChampionCooldownPanel slot="B" champions={champions} version={version} />
       </div>
     </div>
@@ -103,7 +110,12 @@ function ChampionCooldownPanel({
     // above does), so the same gap value read visibly tighter there than
     // everywhere else in this column.
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Cooldowns.championLabel", { slot })}</span>
+      {/* A section title, the same as on the web: it is what separates the
+          two halves of the comparison, so it can't be smaller and dimmer
+          than the ability names underneath it. */}
+      <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading, color: COLORS.text }}>
+        {t("Cooldowns.championLabel", { slot })}
+      </span>
       <ChampionCombobox
         champions={champions}
         value={champion}

@@ -68,6 +68,11 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
     });
   }, []);
 
+  // Sin esto, un fallo de red y una descarga en curso se comunicaban los dos
+  // con el mismo "aun no hay datos suficientes", que es una afirmacion sobre
+  // la muestra del crawler, no sobre la red.
+  const [loadFailed, setLoadFailed] = useState(false);
+
   // Same lazy champion-map fetch OverlayView.tsx uses — no point spending
   // the ~500KB champion.json fetch outside champ select.
   useEffect(() => {
@@ -75,7 +80,8 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
     fetchChampionMap()
       .then(setChampions)
       .catch(() => {
-        // Offline or Data Dragon hiccup — the advisor just stays empty.
+        // Offline or Data Dragon hiccup: say so instead of looking empty.
+        setLoadFailed(true);
       });
   }, [phase, champions]);
 
@@ -83,13 +89,17 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
   useEffect(() => {
     if (phase !== "ChampSelect") {
       setRoleWinrates(null);
+      setLoadFailed(false);
       return;
     }
     if (roleWinrates !== null) return;
     fetch(`${API_BASE_URL}/api/v1/champion-winrates`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data) => setRoleWinrates(data.winrates ?? []))
-      .catch(() => setRoleWinrates([]));
+      .catch(() => {
+        setRoleWinrates([]);
+        setLoadFailed(true);
+      });
   }, [phase, roleWinrates]);
 
   const localPlayer = myTeam.find((p) => p.cellId === localCellId);
@@ -138,6 +148,10 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
     return suggestMatchupPicks(Object.values(champions.byId), pickedIds, localPlayer.assignedPosition, matchups, roleWinrates ?? [], personalOverview);
   }, [champions, myTeam, theirTeam, localPlayer?.assignedPosition, matchups, roleWinrates, personalOverview]);
 
+  // "Vacío" solo es honesto cuando ya ha llegado todo lo necesario para
+  // decidir: el mapa de campeones y los winrates del rol.
+  const stillLoading = Object.keys(champions.byId).length === 0 || roleWinrates === null;
+
   if (phase !== "ChampSelect") {
     return <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>{t("DraftAdvisor.notInChampSelect")}</p>;
   }
@@ -163,7 +177,13 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
 
       {suggestions.length === 0 ? (
         <div style={cardStyle}>
-          <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>{t("DraftAdvisor.empty")}</p>
+          <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>
+            {loadFailed
+              ? t("DraftAdvisor.error")
+              : stillLoading
+                ? t("DraftAdvisor.loading")
+                : t("DraftAdvisor.empty")}
+          </p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

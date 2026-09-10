@@ -55,6 +55,8 @@ export const es: Messages = {
     emptyFolder: "Todavía no hay perfiles en esta carpeta.",
   },
   ProfileSearch: {
+    skillRadarSubtitle: "Cada eje frente a un benchmark genérico, 100% = en el benchmark",
+    cannotCompare: "Aún no se puede comparar. Uno de los perfiles de arriba no se ha podido cargar.",
     navLabel: "Buscar",
     title: "Buscar un Riot ID",
     intro: "Consulta las estadísticas reales de cualquier jugador: rango, roadmap y partidas recientes.",
@@ -153,9 +155,9 @@ export const es: Messages = {
       items: "Objetos",
     },
     headToHead: "Cara a cara",
-    headToHeadIntro: "Medias de las últimas 14 partidas de cada uno",
+    headToHeadIntro: "Medias de las últimas {count} partidas de cada uno",
     sharedFocusTitle: "Dónde necesitáis centraros",
-    sharedFocusNone: "No hay una debilidad compartida clara en las últimas 14 partidas de cada uno. Os cubrís bien.",
+    sharedFocusNone: "No hay una debilidad compartida clara en las últimas {count} partidas de cada uno. Os cubrís bien.",
     sharedTips: {
       csPerMin: "Estáis perdiendo farmeo. Practicad last hits juntos en una partida personalizada, o avisad de vuestras vueltas a base para que alguien llegue antes a un power spike.",
       visionPerMin: "No estáis poniendo suficiente visión entre todos. Repartíos las control wards para cubrir el río y las entradas de la jungla antes de que aparezcan los objetivos.",
@@ -340,6 +342,7 @@ export const es: Messages = {
     realTierTooltip: "Tier real: {tier} (datos del crawler de RiftCompass)",
   },
   Cooldowns: {
+    intro: "Elige dos campeones y compara sus tiempos de reutilización lado a lado, ajustados por celeridad de habilidad.",
     championLabel: "Campeón {slot}",
     selectPlaceholder: "Buscar campeón…",
     noResults: "No se han encontrado campeones.",
@@ -440,6 +443,7 @@ export const es: Messages = {
     export: "Exportar",
   },
   GoldCalculator: {
+    intro: "Monta tu build de 6 objetos en la tienda y consulta su coste total de oro.",
     patch: "Parche {version}",
     search: "Buscar objetos…",
     itemPlaceholder: "Selecciona un objeto para ver sus componentes y su coste.",
@@ -465,7 +469,8 @@ export const es: Messages = {
     myBuildsEmpty: "Aún no tienes builds guardadas.",
     load: "Cargar",
     delete: "Eliminar",
-    loginToSave: "Inicia sesión desde el panel de cuenta para guardar builds.",
+    loginToSave: "¿Quieres guardar esta build?",
+    loginToSaveLink: "Inicia sesión",
     build: "Tu build",
     buildTotal: "Total de la build",
     supportRole: "Rol support",
@@ -509,6 +514,7 @@ export const es: Messages = {
     },
   },
   WaveTimer: {
+    intro: "Toda la economía de las oleadas de un vistazo: qué súbditos llegan, cada cuánto y cuánto oro dan según el minuto de partida.",
     melee: "Cuerpo a cuerpo",
     caster: "Mago",
     cannon: "Cañón",
@@ -676,6 +682,10 @@ export const es: Messages = {
     applyBuildError: "No se pudo aplicar",
   },
   DraftAdvisor: {
+    loading: "Buscando los mejores picks para tu rol…",
+    error: "No se han podido cargar los datos. Comprueba tu conexión.",
+    title: "Consejo de draft",
+    description: "Tus mejores picks para esta línea, con winrates reales de matchup y personales.",
     notInChampSelect: "Solo disponible durante la selección de campeón.",
     waitingForRole: "Esperando a que se asigne tu rol…",
     roleLabel: "Consejo de draft · {role}",
@@ -690,6 +700,8 @@ export const es: Messages = {
     tier: { good: "Buena opción", solid: "Sólida", risky: "Arriesgada" },
   },
   PostGameReport: {
+    title: "Resumen de la partida",
+    description: "Cómo ha ido la partida que acabas de jugar, eje por eje.",
     loading: "Analizando tu partida…",
     timeout: "Tu partida todavía no aparece: Riot puede tardar un poco en procesarla.",
     openProfile: "Ver perfil completo",

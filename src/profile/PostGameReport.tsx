@@ -162,6 +162,9 @@ export function PostGameReport({
 
       <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 10 }}>
         <span style={{ fontSize: 12, color: COLORS.muted }}>{t("PostGameReport.breakdownTitle")}</span>
+        {/* Cada eje es un porcentaje del objetivo del rango, no un valor
+            absoluto: sin decirlo, un "62 %" se lee como otra cosa. */}
+        <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.skillRadarSubtitle")}</p>
         {AXIS_ORDER.map((axis) => {
           const value = pointByAxis.get(axis) ?? 0;
           const sentiment = axisSentiment(value);
