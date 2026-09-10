@@ -14,6 +14,7 @@
 // /tools/tier-list/saved page.
 export const en = {
   Common: {
+    loadingSaved: "Loading your saved items…",
     tools: "Tools",
     settings: "Settings",
     backToTools: "Back to Tools",
@@ -68,6 +69,11 @@ export const en = {
     emptyFolder: "No profiles in this folder yet.",
   },
   ProfileSearch: {
+    matchNoteWellRounded: "Solid game",
+    matchNoteBad: "Weak {axis}",
+    matchNoteGood: "Strong {axis}",
+    gamesShort: "{count} games",
+    championPoolStats: "{games} games · {winRate}% WR",
     skillRadarSubtitle: "Each axis vs. a generic benchmark, 100% = at benchmark",
     cannotCompare: "Can't compare yet. One of the profiles above failed to load.",
     navLabel: "Search",
@@ -326,6 +332,7 @@ export const en = {
     },
   },
   TierList: {
+    loginToSaveLink: "Log in",
     intro: "Drag champions into a tier to build your own ranking. Saved automatically on this device.",
     reset: "Reset",
     unrankedLabel: "Unranked",
@@ -351,7 +358,7 @@ export const en = {
     myTierListsEmpty: "No saved tier lists yet.",
     load: "Load",
     delete: "Delete",
-    loginToSave: "Log in from the account panel to save tier lists.",
+    loginToSave: "Want to save this tier list?",
     realTierTooltip: "Real tier: {tier} (RiftCompass crawler data)",
   },
   Cooldowns: {
@@ -368,14 +375,16 @@ export const en = {
     emptyState: "Pick a champion to see their ability cooldowns.",
   },
   Draft: {
+    resetConfirm: "Clear the whole draft? This can't be undone.",
+    loginToSaveLink: "Log in",
     intro: "Run a standard competitive draft: 6 bans, then picks, alternating blue and red side.",
     blueTeam: "Blue Team",
     redTeam: "Red Team",
     bans: "Bans",
     picks: "Picks",
-    turnBan: "{team} team to ban",
-    turnPick: "{team} team to pick",
-    complete: "Draft complete.",
+    turnBan: "{team}: Ban",
+    turnPick: "{team}: Pick",
+    complete: "Draft complete",
     undo: "Undo",
     reset: "Reset",
     searchPlaceholder: "Search a champion…",
@@ -397,10 +406,11 @@ export const en = {
     myDraftsEmpty: "No saved drafts yet.",
     load: "Load",
     delete: "Delete",
-    loginToSave: "Log in from the account panel to save drafts.",
+    loginToSave: "Want to save this draft?",
     filterAll: "All",
   },
   MapEditor: {
+    loginToSaveLink: "Log in",
     intro: "Sketch rotations, ganks, and plays directly on Summoner's Rift.",
     championSearchNoResults: "No champions found.",
     tools: {
@@ -445,7 +455,7 @@ export const en = {
     myMapsEmpty: "No saved maps yet.",
     load: "Load",
     delete: "Delete",
-    loginToSave: "Log in from the account panel to save maps.",
+    loginToSave: "Want to save this map?",
     textPlaceholder: "Type here…",
     textColor: "Text color",
     customColor: "Custom color",
@@ -732,6 +742,7 @@ export const en = {
     },
   },
   Overlay: {
+    voidGrubsWindow: "Window {time}",
     champSelect: "Champ select",
     suggestedFor: "Suggested for {position}",
     laneOpponent: "Lane opponent: {champion}",

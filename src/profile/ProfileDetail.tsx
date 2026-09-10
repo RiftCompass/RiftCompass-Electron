@@ -612,10 +612,10 @@ function PerformanceBadgesRow({ points }: { points: SkillRadarPoint[] }) {
             : t(`ProfileSearch.badges.${badge.key}.label`);
         const colors =
           badge.sentiment === "good"
-            ? { border: `${COLORS.goodMild}4d`, bg: `${COLORS.goodMild}1a`, text: COLORS.goodMild }
+            ? { border: `${COLORS.good}4d`, bg: `${COLORS.good}1a`, text: COLORS.goodMild }
             : badge.sentiment === "bad"
-              ? { border: `${COLORS.badMild}4d`, bg: `${COLORS.badMild}1a`, text: COLORS.badMild }
-              : { border: COLORS.cardBorder, bg: "transparent", text: COLORS.muted };
+              ? { border: `${COLORS.bad}4d`, bg: `${COLORS.bad}1a`, text: COLORS.badMild }
+              : { border: `${COLORS.neutral}66`, bg: `${COLORS.neutral}1a`, text: COLORS.muted };
         return (
           <span
             key={`${badge.key}-${badge.axis ?? ""}`}
@@ -687,7 +687,7 @@ function RankCard({ title, entry, roleStats }: { title: string; entry: RiotLeagu
                     {t(`Profile.positions.${r.position.toLowerCase()}`)}
                   </span>
                   <span style={{ width: 28, flexShrink: 0, fontWeight: 600 }}>{rate}</span>
-                  <span style={{ color: COLORS.muted }}>({r.games})</span>
+                  <span style={{ color: COLORS.muted }}>({t("ProfileSearch.gamesShort", { count: r.games })})</span>
                 </div>
               );
             })}
@@ -761,16 +761,19 @@ function SkillRadarSvg({ points }: { points: SkillRadarPoint[] }) {
 function SkillRadarCard({ matches, tier }: { matches: RecentMatchSummary[]; tier: string | null }) {
   const { t } = useI18n();
   const points = computeSkillRadar(matches, tier);
+  // Sin partidas la tarjeta desaparece, como ya hacen Champion Pool y el
+  // resumen de campeones aqui mismo y las cuatro equivalentes de la web. Antes
+  // eran tres cajas con borde repitiendo la misma frase.
+  if (points.length === 0) return null;
   return (
     <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
       <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.skillOverview")}</span>
-      {points.length === 0 ? (
-        <p style={{ fontSize: 12, color: COLORS.muted, margin: "10px 0 0" }}>{t("ProfileSearch.noMatches")}</p>
-      ) : (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", marginTop: 6 }}>
-          <SkillRadarSvg points={points} />
-        </div>
-      )}
+      {/* Cada eje va de 0 a 150 con 100 = objetivo del rango: sin decirlo, un
+          "62 %" se lee como un valor absoluto. */}
+      <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.skillRadarSubtitle")}</p>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", marginTop: 6 }}>
+        <SkillRadarSvg points={points} />
+      </div>
     </div>
   );
 }
@@ -1015,14 +1018,22 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
         {grid.map((day) => {
           const dayNum = Number(day.date.slice(-2));
           const isFuture = day.date > todayKey;
+          // Cinco niveles por winrate del dia, la escala que documenta la
+          // paleta del proyecto y que la web ya implementa. Con tres, un dia
+          // de 4V-1D y otro de 3V-2D se pintaban identicos.
+          const winRate = day.games === 0 ? 0 : day.wins / day.games;
           const bg =
             day.games === 0
               ? `${COLORS.background}99`
-              : day.wins > day.losses
-                ? `${COLORS.goodMild}66`
-                : day.wins < day.losses
-                  ? `${COLORS.badMild}66`
-                  : `${COLORS.muted}66`;
+              : winRate >= 0.8
+                ? COLORS.good
+                : winRate > 0.5
+                  ? COLORS.goodMild
+                  : winRate === 0.5
+                    ? COLORS.neutral
+                    : winRate > 0.2
+                      ? COLORS.badMild
+                      : COLORS.bad;
           return (
             <div
               key={day.date}
@@ -1057,9 +1068,11 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
         // structure as the web version's legend).
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11, color: COLORS.muted }}>
           <span>{t("ProfileSearch.activityLegendLoss")}</span>
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.bad }} />
           <span style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.badMild }} />
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: `${COLORS.muted}66` }} />
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.neutral }} />
           <span style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.goodMild }} />
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.good }} />
           <span>{t("ProfileSearch.activityLegendWin")}</span>
         </div>
       ) : null}
@@ -1144,7 +1157,7 @@ function ChampionPoolCard({
                           {c.championName}
                         </span>
                         <span style={{ fontSize: 11, color: COLORS.muted }}>
-                          {c.games}G · {winPct}%
+                          {t("ProfileSearch.championPoolStats", { games: c.games, winRate: winPct })}
                         </span>
                       </div>
                     </div>
@@ -1163,9 +1176,13 @@ function RoadmapCard({ matches, tier }: { matches: RecentMatchSummary[]; tier: s
   const { t } = useI18n();
   const nodes = computeRoadmap(matches, tier);
   const topPriority = nodes.find((n) => n.status === "below");
+  if (nodes.length === 0) return null;
   return (
     <div style={cardStyle}>
       <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.roadmap")}</span>
+      <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>
+        {t("Roadmap.subtitle", { count: matches.length })}
+      </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
         {topPriority ? (
           <p style={{ margin: 0, padding: "8px 10px", borderRadius: 6, border: `1px solid ${COLORS.rose}4d`, background: `${COLORS.rose}0d`, fontSize: 12 }}>
@@ -1190,6 +1207,9 @@ function RoadmapRow({ node }: { node: RoadmapNode }) {
   const { t } = useI18n();
   const above = node.status === "above";
   const color = above ? COLORS.goodMild : COLORS.badMild;
+  // El relleno de la barra va en el tono pleno, como `bg-soft-good`/`bg-soft-bad`
+  // de la web; el texto se queda en el paso suave.
+  const fillColor = above ? COLORS.good : COLORS.bad;
   const unit = node.metric === "laningAdvantage" ? "%" : "";
   const fillPct = Math.min(100, Math.round((node.value / node.target) * 100));
   // Same lookup as the web's ImprovementRoadmap (improvement-roadmap.tsx) —
@@ -1209,7 +1229,7 @@ function RoadmapRow({ node }: { node: RoadmapNode }) {
         </span>
       </div>
       <div style={{ height: 6, width: "100%", borderRadius: 999, background: `${COLORS.goodMild}1a`, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${fillPct}%`, borderRadius: 999, background: color }} />
+        <div style={{ height: "100%", width: `${fillPct}%`, borderRadius: 999, background: fillColor }} />
       </div>
       <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, lineHeight: 1.5 }}>{t(tipKey)}</p>
     </div>
@@ -1303,6 +1323,16 @@ function MatchHistoryCard({
         {matches.map((m) => {
           const isOpen = expandedId === m.matchId;
           const note = summarizeMatchPerformance(m, tier);
+          // "wellRounded" significa que ningun eje destaca, no el eje de
+          // farmeo: el tooltip lo traducia como "Farmeo" y era el caso mas
+          // frecuente. Ademas la etiqueta ahora se lee, como en la web, en vez
+          // de vivir solo en un tooltip.
+          const noteLabel =
+            note.axis === "wellRounded"
+              ? t("ProfileSearch.matchNoteWellRounded")
+              : t(note.sentiment === "good" ? "ProfileSearch.matchNoteGood" : "ProfileSearch.matchNoteBad", {
+                  axis: t(`ProfileSearch.axis.${note.axis}`),
+                });
           return (
             <div key={m.matchId} style={{ borderRadius: 8, overflow: "hidden", background: `${COLORS.background}66` }}>
               <button
@@ -1317,7 +1347,7 @@ function MatchHistoryCard({
                   border: "none",
                   borderLeftWidth: 3,
                   borderLeftStyle: "solid",
-                  borderLeftColor: m.win ? COLORS.goodMild : COLORS.badMild,
+                  borderLeftColor: m.win ? COLORS.good : COLORS.bad,
                   cursor: "pointer",
                   color: COLORS.text,
                   fontFamily: "inherit",
@@ -1345,7 +1375,7 @@ function MatchHistoryCard({
                   {m.queueName}
                 </span>
                 <span
-                  title={t(`ProfileSearch.axis.${note.axis === "wellRounded" ? "farm" : note.axis}`)}
+                  title={noteLabel}
                   style={{
                     width: 34,
                     flexShrink: 0,
@@ -1357,7 +1387,10 @@ function MatchHistoryCard({
                 >
                   {note.score.toFixed(1)}
                 </span>
-                <span style={{ flex: 1, fontSize: 11, color: COLORS.muted, textAlign: "right" }}>{Math.round(m.durationSeconds / 60)}m</span>
+                <span style={{ width: 108, flexShrink: 0, fontSize: 11, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {noteLabel}
+                </span>
+                <span style={{ flex: 1, fontSize: 11, color: COLORS.muted, textAlign: "right" }}>{formatDuration(m.durationSeconds)}</span>
                 {/* Same circular chevron badge as the web's
                     match-history.tsx (h-7 w-7 rounded-full border, rose
                     border/bg/text + 180° rotation when open), not a bare
@@ -1408,6 +1441,14 @@ function MatchHistoryCard({
 // header (result/KDA/gold/objectives), column headers, and per player:
 // level badge, summoner spells, kill participation, gold, a damage bar
 // (not just the raw number), and the real 7-slot item build.
+// Puerto de formatDuration de la web (match-history.tsx): "28:34", no "28m".
+// Redondear a minutos enteros perdia el detalle que si da la web.
+function formatDuration(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 function MatchScoreboard({
   match,
   puuid,
@@ -1425,7 +1466,7 @@ function MatchScoreboard({
   platform: string;
   onOpenProfile: (target: ProfileTarget) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const teamA = match.participants.filter((p) => p.teamId === 100);
   const teamB = match.participants.filter((p) => p.teamId === 200);
   const teamASummary = match.teams.find((tm) => tm.teamId === 100);
@@ -1460,7 +1501,7 @@ function MatchScoreboard({
                 {summary.win ? t("ProfileSearch.win") : t("ProfileSearch.loss")}
               </span>
               <span style={{ color: COLORS.muted }}>
-                {summary.kills}/{summary.deaths}/{summary.assists} · {summary.goldEarned.toLocaleString()}g ·{" "}
+                {summary.kills}/{summary.deaths}/{summary.assists} · {summary.goldEarned.toLocaleString(locale)}g ·{" "}
                 {t("ProfileSearch.objectives", {
                   dragons: summary.dragonKills,
                   barons: summary.baronKills,
@@ -1555,11 +1596,11 @@ function MatchScoreboard({
                     {Math.round(p.killParticipation * 100)}%
                   </span>
                   <span style={{ width: 56, flexShrink: 0, fontSize: 11, textAlign: "right", color: COLORS.muted }}>
-                    {p.goldEarned.toLocaleString()}g
+                    {p.goldEarned.toLocaleString(locale)}g
                   </span>
                   <div style={{ minWidth: 90, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ width: 46, flexShrink: 0, textAlign: "right", fontSize: 11, color: COLORS.muted }}>
-                      {p.damageDealt.toLocaleString()}
+                      {p.damageDealt.toLocaleString(locale)}
                     </span>
                     <div style={{ flex: 1, height: 5, borderRadius: 999, background: `${COLORS.background}99`, overflow: "hidden" }}>
                       <div
