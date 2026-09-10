@@ -96,6 +96,11 @@ export function ChampSelectView() {
   const [aplicando, setAplicando] = useState<string | null>(null);
   const [aplicada, setAplicada] = useState<string | null>(null);
   const [fallo, setFallo] = useState(false);
+  // Rango real del jugador, del cliente. Sin él la API cae a Challenger, que es
+  // el primero de su lista, y le recomienda a todo el mundo lo que construyen
+  // los mejores del servidor. Peor aún: el orden de compra ni siquiera tiene
+  // datos en Challenger todavía, así que sin esto no hay item set que dar.
+  const [rangoJugador, setRangoJugador] = useState<string | null>(null);
   // Si el auto-aplicado falla, NO se reintenta solo: se marca aquí y el jugador
   // decide con el botón. Sin esto el efecto volvería a dispararse en cuanto
   // `aplicando` vuelve a null y quedaría martilleando el cliente de League.
@@ -127,6 +132,15 @@ export function ChampSelectView() {
       .getSavedChampionBuilds()
       .then(setGuardadas)
       .catch(() => undefined);
+    window.riftcompass
+      .lcuGet<{ queueMap?: Record<string, { tier?: string }> }>("/lol-ranked-stats/v1/current-ranked-stats")
+      .then((stats) => {
+        const tier = stats.queueMap?.RANKED_SOLO_5x5?.tier;
+        // Sin clasificar no se manda nada: es mejor que la web decida su
+        // criterio a mandarle un rango inventado.
+        if (tier) setRangoJugador(tier.toUpperCase());
+      })
+      .catch(() => undefined);
   }, []);
 
   const yo = sesion?.myTeam?.find((p) => p.cellId === sesion.localPlayerCellId);
@@ -151,6 +165,7 @@ export function ChampSelectView() {
       return;
     }
     const params = new URLSearchParams({ champion: campeon.internalId, role: rol });
+    if (rangoJugador) params.set("rank", rangoJugador);
     let cancelado = false;
     fetch(`${API_BASE_URL}/api/v1/champion-build?${params}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
@@ -164,7 +179,7 @@ export function ChampSelectView() {
     return () => {
       cancelado = true;
     };
-  }, [campeon, rol]);
+  }, [campeon, rol, rangoJugador]);
 
   // Al cambiar de campeón se olvida lo aplicado: si no, el tick verde de la
   // build anterior se quedaría puesto sobre las opciones del campeón nuevo.
