@@ -11,11 +11,15 @@
 //   node scripts/build-win.mjs --dir --win        build sin empaquetar
 //   node scripts/build-win.mjs --win              instalador NSIS
 //   node scripts/build-win.mjs --win --publish always   instalador + release
+//
+// Al publicar, `github-release.mjs` crea el borrador antes de arrancar y
+// comprueba al terminar que la release se quedo completa; el porque esta ahi.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { ensureDraftRelease, verifyReleaseAssets } from "./github-release.mjs";
 
 const require = createRequire(import.meta.url);
 const electronVersion = require("electron/package.json").version;
@@ -51,8 +55,13 @@ for (const stale of ["win-unpacked", "win-unpacked.tmp"]) rmSync(path.join(relea
 const args = process.argv.slice(2);
 if (args.length === 0) args.push("--win");
 
+const publishing = args.some((arg) => arg === "--publish" || arg.startsWith("--publish="));
+const draft = publishing ? await ensureDraftRelease() : null;
+
 try {
   execFileSync("npx", ["electron-builder", ...args, `-c.electronDist=${dist}`], { stdio: "inherit", shell: true });
 } finally {
   rmSync(dist, { recursive: true, force: true });
 }
+
+if (draft) await verifyReleaseAssets(draft);
