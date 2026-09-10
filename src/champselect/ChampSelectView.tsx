@@ -4,6 +4,7 @@ import { DraftAdvisor } from "./DraftAdvisor";
 import { useI18n } from "../i18n";
 import { COLORS, FONT_HEADING, cardStyle } from "../theme";
 import { fetchChampionMap, type ChampionMaps } from "../ddragon";
+import { rolesOf } from "../lib/champion-roles";
 import type { LcuIdentity, RecommendedItemSet, SavedChampionBuild } from "../riftcompass";
 
 // La ventana del acompañante de draft: aparece sola al entrar en champ select
@@ -131,7 +132,16 @@ export function ChampSelectView() {
   const yo = sesion?.myTeam?.find((p) => p.cellId === sesion.localPlayerCellId);
   const campeonId = yo?.championId ?? 0;
   const campeon = campeonId ? champions.byId[campeonId] : undefined;
-  const rol = yo?.assignedPosition ? yo.assignedPosition.toUpperCase() : "";
+  // El cliente no siempre asigna posición: la Herramienta de Práctica, las
+  // personalizadas a ciegas y ARAM la dejan vacía. Sin rol no se puede pedir
+  // build, así que se cae al carril habitual del campeón, que la app ya conoce
+  // (`champion-roles.ts`, el mismo dato que usa el consejero). Es mejor
+  // recomendar la build de Ahri media que no recomendar nada; y cuando el
+  // cliente SÍ dice el rol, manda el cliente.
+  const rolAsignado = yo?.assignedPosition ? yo.assignedPosition.toUpperCase() : "";
+  const rolHabitual = campeon ? (rolesOf(campeon.internalId)?.[0] ?? "") : "";
+  const rol = rolAsignado || rolHabitual;
+  const rolEsSupuesto = !rolAsignado && rol !== "";
 
   // La build recomendada se pide al elegir campeón, no antes: hasta entonces no
   // hay nada que pedir.
@@ -287,6 +297,7 @@ export function ChampSelectView() {
           <span style={{ fontSize: 12, color: COLORS.muted }}>
             {campeon.name}
             {rol ? ` · ${t(`Profile.positions.${rol.toLowerCase()}`)}` : ""}
+            {rolEsSupuesto ? ` (${t("ChampSelect.roleGuessed")})` : ""}
           </span>
         ) : null}
       </div>

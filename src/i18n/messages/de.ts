@@ -758,6 +758,7 @@ export const de: Messages = {
     applyBuildError: "Anwenden fehlgeschlagen",
   },
   ChampSelect: {
+    roleGuessed: "übliche Lane",
     title: "Draft-Begleiter",
     buildTitle: "Build zum Importieren",
     recommended: "Empfohlene Build",
