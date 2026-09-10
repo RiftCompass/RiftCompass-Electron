@@ -3,6 +3,7 @@
 // creation.
 
 import { app, globalShortcut, session } from "electron";
+import { BACKEND_ORIGIN } from "./backend";
 import * as gameConnection from "./gameConnection";
 import * as settings from "./settings";
 import { createTray } from "./tray";
@@ -30,13 +31,18 @@ function applyContentSecurityPolicy(): void {
     `script-src 'self'${isDev ? " 'unsafe-eval' 'unsafe-inline'" : ""}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src https://fonts.gstatic.com",
-    "img-src 'self' data: https://ddragon.leagueoflegends.com https://raw.communitydragon.org https://cdn.communitydragon.org https://*.public.blob.vercel-storage.com",
+    // BACKEND_ORIGIN belongs here as well as in connect-src: /api/v1/me
+    // returns the account's avatar as an absolute URL on that same host
+    // (/avatars/<file>), so an origin the app fetches JSON from is also
+    // an origin it loads images from. Both directives read the constant
+    // so they can never name different hosts again.
+    `img-src 'self' data: https://ddragon.leagueoflegends.com https://raw.communitydragon.org https://cdn.communitydragon.org ${BACKEND_ORIGIN}`,
     // localhost:1421 is Vite's own dev server (HMR websocket + module
     // fetches) — only ever reachable in dev, never bundled into what ships.
     // *.sentry.io: renderer-side error reporting (telemetry.ts) — the DSN
     // host varies by org/region, so this stays a wildcard on the one
     // vendor domain rather than a single hardcoded ingest subdomain.
-    `connect-src 'self' https://ddragon.leagueoflegends.com https://raw.communitydragon.org https://riftcompass.com https://*.sentry.io${
+    `connect-src 'self' https://ddragon.leagueoflegends.com https://raw.communitydragon.org ${BACKEND_ORIGIN} https://*.sentry.io${
       isDev ? " ws://localhost:1421 http://localhost:1421" : ""
     }`,
   ].join("; ");

@@ -685,12 +685,22 @@ const navProfileRowStyle: React.CSSProperties = {
 // otherwise a plain initial-letter placeholder (never a generic person
 // icon; matches this project's own "no fabricated/placeholder-as-if-real"
 // instinct even for a UI-only fallback).
+//
+// An avatar that fails to load falls back to that same placeholder rather
+// than leaving the browser's broken-image icon, which reads as a corrupt
+// photo and blames the user's own file for what is always something else:
+// the app offline, the file gone from the server, or (the real case, once)
+// its host missing from the CSP. `failedUrl` holds the exact URL that
+// failed, so a later upload is attempted normally instead of inheriting
+// the previous one's failure.
 function Avatar({ user, size = 34 }: { user: AccountUser; size?: number }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const initial = (user.username ?? user.email).charAt(0).toUpperCase();
-  return user.avatarUrl ? (
+  return user.avatarUrl && user.avatarUrl !== failedUrl ? (
     <img
       src={user.avatarUrl}
       alt=""
+      onError={() => setFailedUrl(user.avatarUrl)}
       style={{ width: size, height: size, borderRadius: 999, objectFit: "cover", flexShrink: 0 }}
     />
   ) : (
