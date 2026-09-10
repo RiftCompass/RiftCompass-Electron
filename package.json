@@ -1,7 +1,7 @@
 {
   "name": "riftcompass-electron",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "RiftCompass desktop companion: champ-select scouting and live in-game coaching, reading the League client locally.",
   "author": "RiftCompass",
   "main": "dist-electron/electron/main.js",
@@ -20,9 +20,9 @@
     "build:electron": "tsc -p tsconfig.electron.json && node scripts/bundle-preload.mjs",
     "build": "node scripts/check-sensitive.mjs && npm run build:renderer && npm run build:electron",
     "typecheck": "node scripts/check-sensitive.mjs && tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
-    "dist": "npm run build && electron-builder",
-    "pack:dir": "npm run build && node scripts/pack-unpacked.mjs",
-    "release": "npm run build && electron-builder --publish always",
+    "dist": "npm run build && node scripts/build-win.mjs --win",
+    "pack:dir": "npm run build && node scripts/build-win.mjs --dir --win",
+    "release": "npm run build && node scripts/build-win.mjs --win --publish always",
     "preview": "vite preview",
     "check:sensitive": "node scripts/check-sensitive.mjs"
   },
