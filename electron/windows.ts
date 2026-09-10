@@ -235,15 +235,30 @@ export function getChampSelectWindow(): BrowserWindow | null {
 // La ventana se crea perezosamente, la primera vez que hace falta: la mayoría
 // de los arranques de la app no ven un champ select, y cargar el renderer
 // entero por si acaso son 30 MB de nada.
-export function showChampSelect(show: boolean): void {
+// `alCargar` se llama cuando la ventana termina de cargar su renderer, y solo
+// la primera vez (cuando de verdad hubo que crearla). Hace falta porque esta
+// ventana nace a mitad de partida: los eventos de fase y de sesión de champ
+// select ya se emitieron antes de que existiera, así que nadie los recibió y la
+// vista se quedaba diciendo "solo disponible durante la selección de campeón"
+// estando dentro de ella. Quien llama vuelve a emitir el estado actual.
+export function showChampSelect(show: boolean, alCargar?: () => void): void {
   if (!show) {
     champSelectWindow?.hide();
     return;
   }
-  const win = champSelectWindow ?? createChampSelectWindow();
-  // showInactive y no show: ver `focusable: false` arriba.
-  win.showInactive();
-  win.setAlwaysOnTop(true);
+  if (champSelectWindow) {
+    champSelectWindow.showInactive();
+    champSelectWindow.setAlwaysOnTop(true);
+    alCargar?.();
+    return;
+  }
+  const win = createChampSelectWindow();
+  win.webContents.once("did-finish-load", () => {
+    // showInactive y no show: ver `focusable: false` arriba.
+    win.showInactive();
+    win.setAlwaysOnTop(true);
+    alCargar?.();
+  });
 }
 
 export function createOverlayWindow(): BrowserWindow {

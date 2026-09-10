@@ -80,10 +80,32 @@ console.log(`[overwolf] credenciales de desarrollador: ${hayDevKey ? "OW_DEV_KEY
 // Solo se pasan las que estan de verdad: mandar un OW_CLI_EMAIL vacio junto a
 // una OW_DEV_KEY buena haria que Overwolf usara la pareja (tiene prioridad) y
 // fallara la verificacion teniendo una credencial valida delante.
-const entorno = { ...process.env, ELECTRON_RENDERER_URL: "http://localhost:1421" };
+// El puerto es configurable porque en este proyecto es normal tener varias
+// sesiones a la vez, y matarle el servidor de desarrollo a otra para quedarse
+// con el 1421 es peor que usar otro.
+const PUERTO = process.env.VITE_PORT ?? "1421";
+const entorno = { ...process.env, ELECTRON_RENDERER_URL: `http://localhost:${PUERTO}` };
 for (const clave of ["OW_DEV_KEY", "OW_CLI_EMAIL", "OW_CLI_API_KEY"]) {
   if (puesta(clave)) entorno[clave] = credenciales[clave];
 }
+
+// Esperar al servidor de Vite aqui y no con `wait-on tcp:` en el script de npm:
+// el puerto es configurable y la expansion de shell no funciona en cmd, asi que
+// la espera tiene que resolverse en JavaScript como el resto.
+async function esperarAVite() {
+  const limite = Date.now() + 60_000;
+  while (Date.now() < limite) {
+    try {
+      await fetch(`http://localhost:${PUERTO}/`);
+      return;
+    } catch {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+  console.error(`El servidor de Vite no respondio en el puerto ${PUERTO} tras 60 s.`);
+  process.exit(1);
+}
+await esperarAVite();
 
 const hijo = spawn("ow-electron", ["."], { cwd: raiz, stdio: "inherit", shell: true, env: entorno });
 hijo.on("exit", (codigo) => process.exit(codigo ?? 0));

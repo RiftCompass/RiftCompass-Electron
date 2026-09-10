@@ -95,6 +95,10 @@ export function ChampSelectView() {
   const [aplicando, setAplicando] = useState<string | null>(null);
   const [aplicada, setAplicada] = useState<string | null>(null);
   const [fallo, setFallo] = useState(false);
+  // Si el auto-aplicado falla, NO se reintenta solo: se marca aquí y el jugador
+  // decide con el botón. Sin esto el efecto volvería a dispararse en cuanto
+  // `aplicando` vuelve a null y quedaría martilleando el cliente de League.
+  const [autoIntentado, setAutoIntentado] = useState(false);
 
   useEffect(() => {
     window.riftcompass.onLcuIdentity(setIdentity);
@@ -148,6 +152,7 @@ export function ChampSelectView() {
   useEffect(() => {
     setAplicada(null);
     setFallo(false);
+    setAutoIntentado(false);
   }, [campeonId]);
 
   const opciones = useMemo<OpcionBuild[]>(() => {
@@ -233,6 +238,26 @@ export function ChampSelectView() {
       setAplicando(null);
     }
   }
+
+  // Auto-aplicar la recomendada en cuanto la hay, sin esperar un clic: es lo
+  // que pidió Julio ("la app importará automáticamente la build con más
+  // winrate") y lo que hace iTero. El overlay ya lo hacía, pero bajo
+  // `ow-electron` el overlay no existe durante champ select (nace al inyectarse
+  // en la partida), así que en la práctica no se aplicaba nada: probado en una
+  // partida real el 2026-09-10, ni item set ni página de runas.
+  //
+  // `aplicando/aplicada` hacen de guarda: `aplicar` pone `aplicando` de forma
+  // síncrona, así que esto no puede dispararse dos veces para el mismo pick, y
+  // el efecto que limpia al cambiar de campeón lo re-arma para el siguiente.
+  // Los botones siguen ahí para cambiar de build o reintentar.
+  useEffect(() => {
+    if (autoIntentado || aplicando !== null || aplicada !== null) return;
+    const recomendadaLista = opciones.find((o) => o.origen === "recomendada");
+    if (!recomendadaLista) return;
+    setAutoIntentado(true);
+    void aplicar(recomendadaLista);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opciones, aplicando, aplicada, autoIntentado]);
 
   return (
     <div
