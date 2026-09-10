@@ -160,6 +160,24 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
     };
   }, [phase]);
 
+  // Mismo motivo que en ChampSelectView: el consejero también puede montarse
+  // con el draft ya empezado, y sin esto se queda diciendo "solo disponible
+  // durante la selección de campeón" estando dentro de ella.
+  useEffect(() => {
+    window.riftcompass
+      .getChampSelectState()
+      .then(({ phase: fase, session }) => {
+        if (fase) setPhase(fase);
+        const s = session as { myTeam?: ChampSelectPlayer[]; theirTeam?: ChampSelectPlayer[]; localPlayerCellId?: number } | null;
+        if (s?.myTeam?.length) {
+          setMyTeam(s.myTeam);
+          setTheirTeam(s.theirTeam ?? []);
+          if (typeof s.localPlayerCellId === "number") setLocalCellId(s.localPlayerCellId);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
+
   const suggestions = useMemo(() => {
     if (!localPlayer?.assignedPosition || Object.keys(champions.byId).length === 0) return [];
     // Both teams, not just mine — a champion already locked by anyone

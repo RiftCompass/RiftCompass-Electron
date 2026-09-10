@@ -6,7 +6,7 @@ import { CMD, EVT } from "../src/bridge/commands";
 import * as account from "./account";
 import { applyRunePage, applySummonerSpells, fetchLastBuild } from "./buildImport";
 import { aplicarItemSet, borrarNuestrosItemSets, type BuildParaSet } from "./itemSet";
-import { connectionSnapshot, currentCreds, getLocalPuuid } from "./gameConnection";
+import { champSelectSnapshot, connectionSnapshot, currentCreds, getLocalPuuid } from "./gameConnection";
 import { lcuRequest } from "./lcu";
 import * as settings from "./settings";
 import { broadcast, getMainWindow, setOverlayInteractive, showOverlay, WINDOW_CHANNELS } from "./windows";
@@ -22,6 +22,7 @@ const RENDERER_READABLE_LCU_PATHS = ["/lol-summoner/v1/summoners/puuid/", "/lol-
 
 export function registerIpcHandlers(): void {
   ipcMain.handle(CMD.LcuGetState, () => connectionSnapshot());
+  ipcMain.handle(CMD.GetChampSelectState, () => champSelectSnapshot());
   ipcMain.handle(CMD.LcuGet, (_e, { path }: { path: string }) => {
     if (typeof path !== "string" || !RENDERER_READABLE_LCU_PATHS.some((prefix) => path.startsWith(prefix))) {
       throw new Error(`LCU path not readable from the renderer: ${path}`);
