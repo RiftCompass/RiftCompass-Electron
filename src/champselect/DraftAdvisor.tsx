@@ -39,7 +39,21 @@ function tierColor(tier: MatchupSuggestion["tier"]): string {
   return COLORS.muted;
 }
 
-export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
+// Posiciones tal y como las nombra el cliente en `assignedPosition`.
+const POSICIONES = ["top", "jungle", "middle", "bottom", "utility"] as const;
+
+interface DraftAdvisorProps {
+  identity: LcuIdentity | null;
+  // El cliente solo asigna posición en las colas con roles (draft normal,
+  // clasificatoria). En la Herramienta de Práctica, las personalizadas a
+  // ciegas y ARAM la deja vacía, y sin posición no hay nada que aconsejar: se
+  // le pregunta al jugador. La decide quien nos monta porque la build de
+  // ChampSelectView necesita la misma respuesta.
+  posicionManual: string | null;
+  onElegirPosicion: (posicion: string) => void;
+}
+
+export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: DraftAdvisorProps) {
   const { t } = useI18n();
   const [phase, setPhase] = useState<string>("None");
   const [myTeam, setMyTeam] = useState<ChampSelectPlayer[]>([]);
@@ -105,7 +119,10 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
   }, [phase, roleWinrates]);
 
   const localPlayer = myTeam.find((p) => p.cellId === localCellId);
-  const enemyLaner = theirTeam.find((p) => p.assignedPosition === localPlayer?.assignedPosition);
+  // Cuando el cliente asigna posición, manda el cliente.
+  const posicionAsignada = localPlayer?.assignedPosition || "";
+  const posicion = posicionAsignada || posicionManual || "";
+  const enemyLaner = posicion ? theirTeam.find((p) => p.assignedPosition === posicion) : undefined;
   const enemyChampionName = enemyLaner?.championId ? champions.byId[enemyLaner.championId]?.internalId : undefined;
   const enemyChampion = enemyLaner?.championId ? champions.byId[enemyLaner.championId] : undefined;
 
@@ -115,16 +132,16 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
   // suggestMatchupPicks below falls back to the role-wide winrate for
   // every candidate on its own.
   useEffect(() => {
-    if (phase !== "ChampSelect" || !localPlayer?.assignedPosition || !enemyChampionName) {
+    if (phase !== "ChampSelect" || !posicion || !enemyChampionName) {
       setMatchups([]);
       return;
     }
-    const params = new URLSearchParams({ role: localPlayer.assignedPosition.toUpperCase(), enemy: enemyChampionName });
+    const params = new URLSearchParams({ role: posicion.toUpperCase(), enemy: enemyChampionName });
     fetch(`${API_BASE_URL}/api/v1/champion-matchup?${params}`)
       .then((r) => r.json())
       .then((data) => setMatchups(data.matchups ?? []))
       .catch(() => setMatchups([]));
-  }, [phase, localPlayer?.assignedPosition, enemyChampionName]);
+  }, [phase, posicion, enemyChampionName]);
 
   // The player's own real winrate per champion, from their own recent
   // match history — Infinity instead of the profile summary's default
@@ -179,20 +196,20 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
   }, []);
 
   const suggestions = useMemo(() => {
-    if (!localPlayer?.assignedPosition || Object.keys(champions.byId).length === 0) return [];
+    if (!posicion || Object.keys(champions.byId).length === 0) return [];
     // Both teams, not just mine — a champion already locked by anyone
     // (either side) can't be picked again this game.
     const pickedIds = [...myTeam, ...theirTeam].filter((p) => p.championId).map((p) => p.championId);
     return suggestMatchupPicks(
       Object.values(champions.byId),
       pickedIds,
-      localPlayer.assignedPosition,
+      posicion,
       matchups,
       roleWinrates ?? [],
       personalOverview,
       mastery,
     );
-  }, [champions, myTeam, theirTeam, localPlayer?.assignedPosition, matchups, roleWinrates, personalOverview, mastery]);
+  }, [champions, myTeam, theirTeam, posicion, matchups, roleWinrates, personalOverview, mastery]);
 
   // "Vacío" solo es honesto cuando ya ha llegado todo lo necesario para
   // decidir: el mapa de campeones y los winrates del rol.
@@ -202,7 +219,9 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
     return <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>{t("DraftAdvisor.notInChampSelect")}</p>;
   }
 
-  if (!localPlayer?.assignedPosition) {
+  // Hasta que llega la primera sesión no se sabe si el cliente va a asignar
+  // posición o no; solo entonces tiene sentido preguntar.
+  if (!localPlayer) {
     return (
       <div style={cardStyle}>
         <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>{t("DraftAdvisor.waitingForRole")}</p>
@@ -210,13 +229,47 @@ export function DraftAdvisor({ identity }: { identity: LcuIdentity | null }) {
     );
   }
 
+  const selectorDePosicion = posicionAsignada ? null : (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <span style={{ fontSize: TYPE.body, color: posicion ? COLORS.muted : COLORS.text }}>{t("DraftAdvisor.askRole")}</span>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {POSICIONES.map((p) => {
+          const activa = p === posicion;
+          return (
+            <button
+              key={p}
+              onClick={() => onElegirPosicion(p)}
+              style={{
+                padding: "5px 10px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: activa ? 700 : 500,
+                cursor: "pointer",
+                color: activa ? COLORS.text : COLORS.muted,
+                background: activa ? "rgba(120,57,172,0.28)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${activa ? COLORS.good : COLORS.cardBorder}`,
+              }}
+            >
+              {t(`Profile.positions.${p}`)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  if (!posicion) {
+    return <div style={cardStyle}>{selectorDePosicion}</div>;
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={cardStyle}>
+      <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 8 }}>
+        {selectorDePosicion}
         <span style={{ fontSize: 12, color: COLORS.muted }}>
-          {t("DraftAdvisor.roleLabel", { role: t(`Profile.positions.${localPlayer.assignedPosition.toLowerCase()}`) })}
+          {t("DraftAdvisor.roleLabel", { role: t(`Profile.positions.${posicion.toLowerCase()}`) })}
         </span>
-        <p style={{ margin: "6px 0 0", fontSize: TYPE.body, color: COLORS.text }}>
+        <p style={{ margin: 0, fontSize: TYPE.body, color: COLORS.text }}>
           {enemyChampion ? t("DraftAdvisor.enemyKnown", { champion: enemyChampion.name }) : t("DraftAdvisor.enemyUnknown")}
         </p>
       </div>

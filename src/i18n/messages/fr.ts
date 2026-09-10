@@ -778,6 +778,7 @@ export const fr: Messages = {
     description: "Tes meilleurs picks pour cette voie, d'après les taux de victoire réels du matchup et les tiens.",
     notInChampSelect: "Disponible uniquement pendant la sélection des champions.",
     waitingForRole: "En attente de l'attribution de votre rôle…",
+    askRole: "Le client n'attribue pas de position dans ce mode. Laquelle allez-vous jouer ?",
     roleLabel: "Conseil de draft · {role}",
     enemyKnown: "Adversaire de ligne : {champion}",
     enemyUnknown: "Adversaire de ligne pas encore révélé : affichage des meilleurs picks généraux de votre rôle.",

@@ -159,6 +159,7 @@ export function MainView() {
   // once for the auto-navigate below) so the tools-home header can show a
   // "back to your profile" chip after the user has navigated away from it.
   const [localIdentity, setLocalIdentity] = useState<LcuIdentity | null>(null);
+  const [draftPosition, setDraftPosition] = useState<string | null>(null);
   // Set once when the post-game report panel opens (identity + the real
   // moment the just-finished game started) — see the phase effect below.
   const [postGameContext, setPostGameContext] = useState<{ identity: LcuIdentity; startedAt: number } | null>(null);
@@ -430,7 +431,7 @@ export function MainView() {
                 </h1>
               </div>
               <p style={{ color: COLORS.muted, fontSize: 14, margin: 0, maxWidth: 560 }}>{t("DraftAdvisor.description")}</p>
-              <DraftAdvisor identity={localIdentity} />
+              <DraftAdvisor identity={localIdentity} posicionManual={draftPosition} onElegirPosicion={setDraftPosition} />
             </div>
           ) : panel === "postgame" && postGameContext ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

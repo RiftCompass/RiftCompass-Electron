@@ -778,6 +778,7 @@ export const es: Messages = {
     description: "Tus mejores picks para esta línea, con winrates reales de matchup y personales.",
     notInChampSelect: "Solo disponible durante la selección de campeón.",
     waitingForRole: "Esperando a que se asigne tu rol…",
+    askRole: "El cliente no asigna posición en este modo. ¿Cuál vas a jugar?",
     roleLabel: "Consejo de draft · {role}",
     enemyKnown: "Rival de línea: {champion}",
     enemyUnknown: "Aún no se conoce el rival de línea: mostrando los mejores picks generales de tu rol.",
