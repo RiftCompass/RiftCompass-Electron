@@ -15,7 +15,7 @@
     "dev:renderer": "vite",
     "dev:electron": "wait-on tcp:1421 && npm run build:electron && cross-env ELECTRON_RENDERER_URL=http://localhost:1421 electron .",
     "dev:overwolf": "concurrently -k -n VITE,OW-ELECTRON \"npm:dev:renderer\" \"npm:dev:electron:overwolf\"",
-    "dev:electron:overwolf": "wait-on tcp:1421 && npm run build:electron && cross-env ELECTRON_RENDERER_URL=http://localhost:1421 ow-electron .",
+    "dev:electron:overwolf": "wait-on tcp:1421 && npm run build:electron && node scripts/dev-overwolf.mjs",
     "build:renderer": "tsc --noEmit && vite build",
     "build:electron": "tsc -p tsconfig.electron.json && node scripts/bundle-preload.mjs",
     "build": "node scripts/check-sensitive.mjs && npm run build:renderer && npm run build:electron",
