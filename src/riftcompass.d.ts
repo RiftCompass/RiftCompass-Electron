@@ -290,6 +290,9 @@ export interface RiftCompassApi {
   // cliente devuelve lista vacia, no error: la recomendacion sigue funcionando
   // con los otros dos senales, solo pierde este.
   getChampionMastery: () => Promise<{ ok: true; mastery: ChampionMasteryEntry[] }>;
+  // Estado actual, para que una ventana recien abierta se pinte sin esperar al
+  // siguiente evento del cliente. Ver champSelectSnapshot en gameConnection.ts.
+  getChampSelectState: () => Promise<{ phase: string | null; session: unknown }>;
   getSettings: () => Promise<AppSettings>;
   setAutoLaunch: (enabled: boolean) => Promise<AppSettings>;
   setOverlayModules: (modules: Partial<OverlayModules>) => Promise<AppSettings>;
