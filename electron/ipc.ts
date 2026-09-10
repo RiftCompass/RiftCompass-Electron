@@ -117,6 +117,25 @@ export function registerIpcHandlers(): void {
     },
   );
 
+  // La maestria sale del propio cliente de League, no de la API de Riot: es
+  // gratis, no gasta cuota compartida y esta siempre al dia. Se devuelve
+  // cruda (championId + puntos + nivel) y quien la use decide como pesarla.
+  ipcMain.handle(CMD.GetChampionMastery, async () => {
+    const creds = currentCreds();
+    const filas = (await lcuRequest(
+      creds,
+      "GET",
+      "/lol-champion-mastery/v1/local-player/champion-mastery",
+    )) as Array<{ championId?: number; championPoints?: number; championLevel?: number }> | null;
+    if (!Array.isArray(filas)) return { ok: true, mastery: [] };
+    return {
+      ok: true,
+      mastery: filas
+        .filter((f) => typeof f.championId === "number" && typeof f.championPoints === "number")
+        .map((f) => ({ championId: f.championId!, points: f.championPoints!, level: f.championLevel ?? 0 })),
+    };
+  });
+
   ipcMain.handle(CMD.ClearItemSets, async () => {
     const creds = currentCreds();
     return { ok: true, borrados: await borrarNuestrosItemSets(creds) };
