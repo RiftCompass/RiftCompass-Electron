@@ -653,6 +653,7 @@ export const en = {
     noDataForRole: "Not enough tracked matches for this role yet. Check back as more games get sampled.",
     dataFromPatch: "Data from patch {patch}; the current patch ({current}) doesn't have enough samples yet.",
     chipTooltip: "{rate}% win rate over {games} tracked games",
+    noMatches: "No champion with that name is on this board.",
     rankTiers: {
       CHALLENGER: "Challenger",
       GRANDMASTER: "Grandmaster",
