@@ -86,10 +86,21 @@ interface RecommendedRunes {
   matchupSpecific: boolean;
 }
 
+interface ItemOrderEntry {
+  slot: number;
+  itemId: number;
+  games: number;
+}
+
 interface RecommendedBuild {
   runes: RecommendedRunes | null;
   spells: RecommendedSpells | null;
   items: RecommendedItems | null;
+  // El orden REAL de compra, que `items` no puede dar (agrupa la build
+  // ordenando por identificador para contar partidas juntas). Es lo que se
+  // deja puesto como item set en la tienda del cliente. Vacío mientras el
+  // rastreador no tenga muestra de este campeón en este rol.
+  itemOrder: ItemOrderEntry[];
 }
 
 interface SkillOrderEntry {
@@ -634,7 +645,14 @@ export function OverlayView() {
 
     fetch(`${API_BASE_URL}/api/v1/champion-build?${params}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((data) => setRecommendedBuild({ runes: data.runes ?? null, spells: data.spells ?? null, items: data.items ?? null }))
+      .then((data) =>
+        setRecommendedBuild({
+          runes: data.runes ?? null,
+          spells: data.spells ?? null,
+          items: data.items ?? null,
+          itemOrder: data.itemOrder ?? [],
+        }),
+      )
       .catch(() => setRecommendedBuild(null));
   }, [phase, overlayModules.autoBuild, localPick.role, localPick.championName, localPick.enemyChampionName]);
 
@@ -737,13 +755,32 @@ export function OverlayView() {
     if (!recommendedBuild?.runes || !recommendedBuild.spells) return;
     setApplyBuildState("working");
     try {
-      const { runes, spells } = recommendedBuild;
+      const { runes, spells, itemOrder } = recommendedBuild;
+
+      // El item set solo se manda si hay orden de compra Y sabemos de qué
+      // campeón y rol es: sin eso el cliente guardaría un set sin dueño, que
+      // aparecería en la tienda de todos los campeones.
+      const championId = localPlayer?.championId;
+      const itemSet =
+        itemOrder.length > 0 && championId && localPick.championName && localPick.role
+          ? {
+              championId,
+              championName: localPick.championName,
+              role: localPick.role.toUpperCase(),
+              itemIds: itemOrder.map((e) => e.itemId),
+              // La muestra del objeto peor respaldado: es la que honestamente
+              // sostiene la build entera, no la del primero.
+              games: Math.min(...itemOrder.map((e) => e.games)),
+            }
+          : undefined;
+
       const result = await window.riftcompass.applyRecommendedBuild(
         [runes.perk0, runes.perk1, runes.perk2, runes.perk3, runes.perk4, runes.perk5, runes.statPerk0, runes.statPerk1, runes.statPerk2],
         runes.primaryStyleId,
         runes.subStyleId,
         spells.spellLow,
         spells.spellHigh,
+        itemSet,
       );
       setApplyBuildState(result.ok ? "done" : "error");
     } catch {

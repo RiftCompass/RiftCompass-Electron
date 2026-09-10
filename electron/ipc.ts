@@ -5,6 +5,7 @@ import { ipcMain, shell } from "electron";
 import { CMD, EVT } from "../src/bridge/commands";
 import * as account from "./account";
 import { applyRunePage, applySummonerSpells, fetchLastBuild } from "./buildImport";
+import { aplicarItemSet, borrarNuestrosItemSets, type BuildParaSet } from "./itemSet";
 import { connectionSnapshot, currentCreds, getLocalPuuid } from "./gameConnection";
 import { lcuRequest } from "./lcu";
 import * as settings from "./settings";
@@ -61,11 +62,14 @@ export function registerIpcHandlers(): void {
     return { ok: true, items: build.items };
   });
 
-  // Applies a crawler-recommended build (runes + summoner spells only —
-  // items have no LCU purchase endpoint, so they only ever show as a
-  // reference in the overlay). Flash's slot follows the user's own
-  // flashSide setting rather than whatever order the aggregated data
-  // happened to store.
+  // Applies a crawler-recommended build: runes, summoner spells and the item
+  // build. Los objetos no se pueden COMPRAR por la LCU, pero sí dejarse puestos
+  // como item set, que es lo que el jugador ve en la tienda — de ahí que
+  // `itemSet` sea opcional aquí: sin orden de compra no se escribe ninguno, en
+  // vez de dejar uno con los objetos en orden arbitrario.
+  //
+  // Flash's slot follows the user's own flashSide setting rather than whatever
+  // order the aggregated data happened to store.
   ipcMain.handle(
     CMD.ApplyRecommendedBuild,
     async (
@@ -76,7 +80,15 @@ export function registerIpcHandlers(): void {
         subStyleId,
         spellLow,
         spellHigh,
-      }: { perkIds: number[]; primaryStyleId: number; subStyleId: number; spellLow: number; spellHigh: number },
+        itemSet,
+      }: {
+        perkIds: number[];
+        primaryStyleId: number;
+        subStyleId: number;
+        spellLow: number;
+        spellHigh: number;
+        itemSet?: BuildParaSet;
+      },
     ) => {
       const creds = currentCreds();
       await applyRunePage(creds, perkIds, primaryStyleId, subStyleId);
@@ -89,9 +101,26 @@ export function registerIpcHandlers(): void {
         [spell1, spell2] = side === "left" ? [FLASH_ID, other] : [other, FLASH_ID];
       }
       await applySummonerSpells(creds, spell1, spell2);
-      return { ok: true };
+
+      // Que falle el item set no puede tumbar la importación: las runas y los
+      // hechizos, que es lo que de verdad no se puede poner a mano en champ
+      // select con el reloj corriendo, ya están aplicados a estas alturas.
+      let itemSetAplicado = false;
+      if (itemSet) {
+        try {
+          itemSetAplicado = await aplicarItemSet(creds, itemSet);
+        } catch (error) {
+          console.error("[itemSet] no se pudo aplicar", error);
+        }
+      }
+      return { ok: true, itemSetAplicado };
     },
   );
+
+  ipcMain.handle(CMD.ClearItemSets, async () => {
+    const creds = currentCreds();
+    return { ok: true, borrados: await borrarNuestrosItemSets(creds) };
+  });
 
   ipcMain.handle(CMD.SettingsGet, () => settings.settingsGet());
   ipcMain.handle(CMD.SettingsSetAutoLaunch, (_e, { enabled }: { enabled: boolean }) => settings.settingsSetAutoLaunch(enabled));

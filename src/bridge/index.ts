@@ -180,12 +180,14 @@ const api: RiftCompassApi = {
   importBuild: (championId) =>
     tryInvoke(CMD.BuildImport, { championId }, () => ({ ok: false as const, reason: "unavailable" })),
 
-  applyRecommendedBuild: (perkIds, primaryStyleId, subStyleId, spellLow, spellHigh) =>
+  applyRecommendedBuild: (perkIds, primaryStyleId, subStyleId, spellLow, spellHigh, itemSet) =>
     tryInvoke(
       CMD.ApplyRecommendedBuild,
-      { perkIds, primaryStyleId, subStyleId, spellLow, spellHigh },
+      { perkIds, primaryStyleId, subStyleId, spellLow, spellHigh, itemSet },
       () => ({ ok: false as const, reason: "unavailable" }),
     ),
+
+  clearItemSets: () => tryInvoke(CMD.ClearItemSets, undefined, () => ({ ok: false as const, reason: "unavailable" })),
 
   getSettings: (): Promise<AppSettings> => tryInvoke(CMD.SettingsGet, undefined, loadLocalSettings),
   setAutoLaunch: (enabled: boolean): Promise<AppSettings> =>

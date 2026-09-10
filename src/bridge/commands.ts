@@ -17,8 +17,10 @@ export const CMD = {
   OverlayExitCalibration: "overlay_exit_calibration",
   /** invoke. args: { championId } */
   BuildImport: "build_import",
-  /** invoke. args: { perkIds, primaryStyleId, subStyleId, spellLow, spellHigh } — recommended runes+spells, Flash slotted per flashSide */
+  /** invoke. args: { perkIds, primaryStyleId, subStyleId, spellLow, spellHigh, itemSet? } — runas, hechizos (Flash segun flashSide) y, si hay orden de compra, el item set */
   ApplyRecommendedBuild: "apply_recommended_build",
+  /** invoke, no args — borra los item sets que haya dejado RiftCompass, respetando los del jugador */
+  ClearItemSets: "clear_item_sets",
   /** invoke, no args. returns AppSettings */
   SettingsGet: "settings_get",
   /** invoke. args: { enabled } */
