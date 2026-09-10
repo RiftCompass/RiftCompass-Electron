@@ -36,6 +36,12 @@ export interface ToolMeta {
   icon: Icon;
   accent: string;
   native: boolean;
+  // Translation key for the sentence under the tool's own title. The web
+  // puts its `<Tool>.intro` there while this app was printing the short
+  // card blurb from the tools grid, so the same tool introduced itself with
+  // two different sentences. Set per tool as each one is checked against the
+  // web; without it the blurb is still used.
+  introKey?: string;
 }
 
 // Tool order must match the web's: this follows TOOL_ROUTES's own key
@@ -43,13 +49,13 @@ export interface ToolMeta {
 // site's /tools grid actually iterates over.
 export const TOOLS: ToolMeta[] = [
   { id: "tierList", icon: ListNumbers, accent: "#ffc857", native: true },
-  { id: "cooldowns", icon: Timer, accent: "#4d7fe8", native: true },
+  { id: "cooldowns", icon: Timer, accent: "#4d7fe8", native: true, introKey: "Cooldowns.intro" },
   { id: "draft", icon: Sword, accent: "#d6394a", native: true },
   { id: "map", icon: MapIcon, accent: "#e63977", native: true },
-  { id: "goldCalculator", icon: Coins, accent: "#e0873f", native: true },
-  { id: "waveTimer", icon: Waves, accent: "#2bb8ad", native: true },
+  { id: "goldCalculator", icon: Coins, accent: "#e0873f", native: true, introKey: "GoldCalculator.intro" },
+  { id: "waveTimer", icon: Waves, accent: "#2bb8ad", native: true, introKey: "WaveTimer.intro" },
   { id: "personalityTest", icon: Brain, accent: "#7839ac", native: true },
-  { id: "jungleXp", icon: Tree, accent: "#2f9d68", native: true },
+  { id: "jungleXp", icon: Tree, accent: "#2f9d68", native: true, introKey: "JungleXpCalculator.intro" },
   { id: "championPool", icon: Stack, accent: "#6366d4", native: true },
   { id: "metaTierList", icon: Crown, accent: "#9aa5b1", native: true },
 ];

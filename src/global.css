@@ -333,3 +333,21 @@ details[open] > summary svg {
     animation: none;
   }
 }
+
+/* Cooldown Compare's A/B divider. The grid it lives in stacks to one column
+   on its own when the panel gets narrow, and a left border on a stacked
+   panel reads as a stray vertical line, so the divider only exists while the
+   two panels really sit side by side. 552px is exactly where the grid flips:
+   two 260px columns plus the 32px gap. A container query, not a media query,
+   because what matters is the width of this panel, not of the window. */
+.rc-ab-grid {
+  container-type: inline-size;
+}
+
+@container (min-width: 552px) {
+  .rc-ab-divider {
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    padding-left: 32px;
+    margin-left: -32px;
+  }
+}

@@ -26,6 +26,7 @@ import {
 } from "@phosphor-icons/react";
 import { fetchItemCatalog, fetchLatestVersion, itemIconUrl, type ItemCatalog, type ItemSummary } from "../ddragon";
 import { useI18n } from "../i18n";
+import { useOpenAccountPanel } from "../account-panel";
 import type { AccountUser, SavedBuild } from "../riftcompass";
 import { COLORS, FONT_HEADING } from "../theme";
 import {
@@ -108,6 +109,7 @@ function normalize(text: string): string {
 
 export function GoldCalculator() {
   const { t, locale } = useI18n();
+  const openAccountPanel = useOpenAccountPanel();
   const [version, setVersion] = useState("");
   const [catalog, setCatalog] = useState<ItemCatalog | null>(null);
   const [selected, setSelected] = useState<ItemSummary | null>(null);
@@ -497,7 +499,13 @@ export function GoldCalculator() {
             })}
           </div>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-            <span style={{ fontSize: 13, color: COLORS.muted }}>{t("GoldCalculator.buildTotal")}</span>
+            {/* The same coin the web puts here. It is the headline figure of
+                the whole tool, and without the icon it leaned entirely on
+                being the big gold number. */}
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.muted }}>
+              <Coins size={15} color={COLORS.gold} />
+              {t("GoldCalculator.buildTotal")}
+            </span>
             <span style={{ fontFamily: FONT_HEADING, fontSize: 20, color: COLORS.gold, fontWeight: 400 }}>{buildTotal}</span>
           </div>
           {build.length === 0 && (
@@ -608,9 +616,16 @@ export function GoldCalculator() {
               )}
             </div>
           ) : user === null ? (
-            <span style={{ fontSize: 12, color: COLORS.muted, borderTop: `1px solid ${COLORS.cardBorder}`, paddingTop: 10 }}>
-              {t("GoldCalculator.loginToSave")}
-            </span>
+            // Describing where the account button lives was a dead end; the
+            // web offers the link itself right here, so this does too.
+            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, borderTop: `1px solid ${COLORS.cardBorder}`, paddingTop: 10 }}>
+              <span style={{ fontSize: 12, color: COLORS.muted }}>{t("GoldCalculator.loginToSave")}</span>
+              {openAccountPanel ? (
+                <button onClick={openAccountPanel} style={saveButtonStyle(false)}>
+                  {t("GoldCalculator.loginToSaveLink")}
+                </button>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
