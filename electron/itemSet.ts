@@ -47,8 +47,8 @@ export interface BuildParaSet {
   role: string;
   /** En orden de compra: el primero es el primer objeto principal. */
   itemIds: number[];
-  /** Partidas que respaldan el objeto con menos muestra de la build. */
-  games: number;
+  /** De dónde sale la build, tal como debe leerse en la tienda. */
+  origen: string;
 }
 
 // Un solo bloque con los objetos en orden. Se probó partirlo en un bloque por
@@ -57,7 +57,7 @@ export interface BuildParaSet {
 // que es justo lo que hace falta.
 function construirSet(build: BuildParaSet): ItemSet {
   return {
-    title: `${PREFIJO} · ${build.championName} ${build.role} (${build.games} partidas)`,
+    title: `${PREFIJO} · ${build.championName} ${build.role} · ${build.origen}`,
     type: "custom",
     map: "any",
     mode: "any",

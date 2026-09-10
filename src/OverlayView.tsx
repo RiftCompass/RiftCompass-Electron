@@ -770,7 +770,7 @@ export function OverlayView() {
               itemIds: itemOrder.map((e) => e.itemId),
               // La muestra del objeto peor respaldado: es la que honestamente
               // sostiene la build entera, no la del primero.
-              games: Math.min(...itemOrder.map((e) => e.games)),
+              origen: t("ChampSelect.fromSample", { games: String(Math.min(...itemOrder.map((e) => e.games))) }),
             }
           : undefined;
 

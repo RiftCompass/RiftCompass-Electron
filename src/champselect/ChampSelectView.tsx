@@ -73,6 +73,8 @@ interface OpcionBuild {
   spellHigh: number;
   /** En orden de compra. Vacío cuando no se conoce, y entonces no se escribe item set. */
   itemIds: number[];
+  /** Lo que dirá el título del set en la tienda: la muestra de los objetos, o el nombre de la build guardada. */
+  origenSet: string;
 }
 
 const tarjeta = cardStyle;
@@ -211,6 +213,10 @@ export function ChampSelectView() {
         spellLow: recomendada.spells.spellLow,
         spellHigh: recomendada.spells.spellHigh,
         itemIds: recomendada.itemOrder.map((e) => e.itemId),
+        // La del objeto peor respaldado, que es la que sostiene el orden entero.
+        origenSet: t("ChampSelect.fromSample", {
+          games: String(recomendada.itemOrder.reduce((min, e) => Math.min(min, e.games), Infinity)),
+        }),
       });
     }
 
@@ -240,6 +246,7 @@ export function ChampSelectView() {
         spellLow: b.spells.spellLow,
         spellHigh: b.spells.spellHigh,
         itemIds: b.items.map((i) => Number(i)).filter((n) => Number.isFinite(n) && n > 0),
+        origenSet: b.name,
       });
     }
 
@@ -258,7 +265,7 @@ export function ChampSelectView() {
               championName: campeon.internalId,
               role: rol,
               itemIds: opcion.itemIds,
-              games: opcion.muestra ?? 0,
+              origen: opcion.origenSet,
             }
           : undefined;
       const r = await window.riftcompass.applyRecommendedBuild(

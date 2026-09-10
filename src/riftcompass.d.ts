@@ -245,7 +245,8 @@ export interface RecommendedItemSet {
   championName: string;
   role: string;
   itemIds: number[];
-  games: number;
+  /** De dónde sale la build, para el título del set en la tienda ("9 partidas", o el nombre de la build guardada). */
+  origen: string;
 }
 
 
