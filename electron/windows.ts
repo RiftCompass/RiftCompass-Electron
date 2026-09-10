@@ -19,6 +19,10 @@ let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
 let owOverlayWindow: OverlayBrowserWindow | null = null;
 
+// Ventana de champ select (draft y build). Aparte del overlay a proposito:
+// ver createChampSelectWindow.
+let champSelectWindow: BrowserWindow | null = null;
+
 // Re-exported so ipc.ts keeps one import for everything window-related;
 // the definition lives in its own module for the preload bundle's sake.
 import { WINDOW_CHANNELS } from "./window-channels";
@@ -172,6 +176,76 @@ export function markMainWindowQuitting(): void {
 // fullscreen — a normal top-level window like this one never does,
 // see the root CLAUDE.md's "Por qué Electron" for why). main.ts only
 // calls this one when overlayEngine.isOverwolfRuntime() is false.
+// Ventana propia para champ select: el acompañante de draft y build.
+//
+// Es una ventana normal, NO el overlay. Dos razones, y las dos son de peso:
+//
+//   1. Champ select ocurre en el CLIENTE de League, no dentro de la partida.
+//      El overlay inyectado de Overwolf no existe todavía en ese momento, así
+//      que bajo ese motor la app se quedaba sin ninguna ventana donde pintar
+//      el draft: `createOverlayWindow()` no llega a llamarse y el inyectado
+//      solo nace al entrar en juego.
+//   2. Aquí hace falta poder pulsar de verdad (elegir campeón, elegir qué
+//      build importar), y el overlay es click-through por diseño.
+//
+// Se coloca pegada al borde derecho porque el cliente de League deja ahí el
+// hueco más limpio en champ select, y el jugador necesita ver su propia
+// selección mientras decide.
+export function createChampSelectWindow(): BrowserWindow {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const ancho = 460;
+  const alto = Math.min(760, height - 80);
+  champSelectWindow = new BrowserWindow({
+    title: "RiftCompass · Draft",
+    width: ancho,
+    height: alto,
+    x: Math.max(0, width - ancho - 24),
+    y: Math.max(0, Math.round((height - alto) / 2)),
+    resizable: true,
+    minWidth: 380,
+    frame: false,
+    transparent: false,
+    backgroundColor: "#0d0a12",
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    // Nunca roba el foco: aparece a mitad de un draft con el reloj corriendo,
+    // y robarle el teclado al jugador mientras elige campeón seria un fallo
+    // peor que no aparecer.
+    focusable: false,
+    show: false,
+    icon: APP_ICON,
+    webPreferences: {
+      preload: PRELOAD,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true, // see createMainWindow's identical option
+    },
+  });
+  loadRenderer(champSelectWindow, "view=champselect");
+  champSelectWindow.on("closed", () => {
+    champSelectWindow = null;
+  });
+  return champSelectWindow;
+}
+
+export function getChampSelectWindow(): BrowserWindow | null {
+  return champSelectWindow;
+}
+
+// La ventana se crea perezosamente, la primera vez que hace falta: la mayoría
+// de los arranques de la app no ven un champ select, y cargar el renderer
+// entero por si acaso son 30 MB de nada.
+export function showChampSelect(show: boolean): void {
+  if (!show) {
+    champSelectWindow?.hide();
+    return;
+  }
+  const win = champSelectWindow ?? createChampSelectWindow();
+  // showInactive y no show: ver `focusable: false` arriba.
+  win.showInactive();
+  win.setAlwaysOnTop(true);
+}
+
 export function createOverlayWindow(): BrowserWindow {
   const { width, height } = screen.getPrimaryDisplay().size;
   overlayWindow = new BrowserWindow({
