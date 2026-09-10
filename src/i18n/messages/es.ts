@@ -2,6 +2,7 @@ import type { Messages } from "../index";
 
 export const es: Messages = {
   Common: {
+    loadingSaved: "Cargando tus guardados…",
     tools: "Herramientas",
     settings: "Ajustes",
     backToTools: "Volver a Herramientas",
@@ -56,6 +57,11 @@ export const es: Messages = {
     emptyFolder: "Todavía no hay perfiles en esta carpeta.",
   },
   ProfileSearch: {
+    matchNoteWellRounded: "Partida sólida",
+    matchNoteBad: "Débil en {axis}",
+    matchNoteGood: "Fuerte en {axis}",
+    gamesShort: "{count} partidas",
+    championPoolStats: "{games} partidas · {winRate}% WR",
     skillRadarSubtitle: "Cada eje frente a un benchmark genérico, 100% = en el benchmark",
     cannotCompare: "Aún no se puede comparar. Uno de los perfiles de arriba no se ha podido cargar.",
     navLabel: "Buscar",
@@ -314,6 +320,7 @@ export const es: Messages = {
     },
   },
   TierList: {
+    loginToSaveLink: "Inicia sesión",
     intro: "Arrastra campeones a un tier para crear tu propia clasificación. Se guarda automáticamente en este dispositivo.",
     reset: "Restablecer",
     unrankedLabel: "Sin clasificar",
@@ -339,7 +346,7 @@ export const es: Messages = {
     myTierListsEmpty: "Aún no tienes tier lists guardadas.",
     load: "Cargar",
     delete: "Eliminar",
-    loginToSave: "Inicia sesión desde el panel de cuenta para guardar tier lists.",
+    loginToSave: "¿Quieres guardar esta tier list?",
     realTierTooltip: "Tier real: {tier} (datos del crawler de RiftCompass)",
   },
   Cooldowns: {
@@ -356,14 +363,16 @@ export const es: Messages = {
     emptyState: "Elige un campeón para ver sus tiempos de reutilización.",
   },
   Draft: {
+    resetConfirm: "¿Vaciar el draft entero? Esta acción no se puede deshacer.",
+    loginToSaveLink: "Inicia sesión",
     intro: "Ejecuta un draft competitivo estándar: 6 bans, luego picks, alternando lado azul y rojo.",
     blueTeam: "Equipo Azul",
     redTeam: "Equipo Rojo",
     bans: "Bans",
     picks: "Picks",
-    turnBan: "Turno de ban del equipo {team}",
-    turnPick: "Turno de pick del equipo {team}",
-    complete: "Draft completado.",
+    turnBan: "{team}: Baneo",
+    turnPick: "{team}: Pick",
+    complete: "Draft completado",
     undo: "Deshacer",
     reset: "Reiniciar",
     searchPlaceholder: "Buscar campeón…",
@@ -385,10 +394,11 @@ export const es: Messages = {
     myDraftsEmpty: "Aún no tienes drafts guardados.",
     load: "Cargar",
     delete: "Eliminar",
-    loginToSave: "Inicia sesión desde el panel de cuenta para guardar drafts.",
+    loginToSave: "¿Quieres guardar este draft?",
     filterAll: "Todos",
   },
   MapEditor: {
+    loginToSaveLink: "Inicia sesión",
     intro: "Dibuja rotaciones, ganks y jugadas directamente sobre la Grieta del Invocador.",
     championSearchNoResults: "No se encontraron campeones.",
     tools: {
@@ -433,7 +443,7 @@ export const es: Messages = {
     myMapsEmpty: "Aún no tienes mapas guardados.",
     load: "Cargar",
     delete: "Eliminar",
-    loginToSave: "Inicia sesión desde el panel de cuenta para guardar mapas.",
+    loginToSave: "¿Quieres guardar este mapa?",
     textPlaceholder: "Escribe aquí…",
     textColor: "Color del texto",
     customColor: "Color personalizado",
@@ -720,6 +730,7 @@ export const es: Messages = {
     },
   },
   Overlay: {
+    voidGrubsWindow: "Ventana {time}",
     champSelect: "Selección de campeón",
     suggestedFor: "Sugerido para {position}",
     laneOpponent: "Rival de carril: {champion}",

@@ -5,6 +5,7 @@ import { DRAFT_STEPS, type DraftTeam } from "../lib/draft-order";
 import { ALL_ROLES, rolesOf, type ChampionRole } from "../lib/champion-roles";
 import { positionIconUrl } from "../lib/profile-analysis";
 import { useI18n } from "../i18n";
+import { useOpenAccountPanel } from "../account-panel";
 import { COLORS } from "../theme";
 import type { AccountUser, SavedDraft } from "../riftcompass";
 
@@ -27,6 +28,7 @@ const DRAFT_KEY = "riftcompass-overlay:draft-simulator:draft:v1";
 
 export function DraftSimulator() {
   const { t, locale } = useI18n();
+  const openAccountPanel = useOpenAccountPanel();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
   const [selections, setSelections] = useState<string[]>([]);
   const [search, setSearch] = useState("");
@@ -172,6 +174,10 @@ export function DraftSimulator() {
           </button>
           <button
             onClick={() => {
+              // Mismo criterio que el Map Editor desde la ronda 10: borra los
+              // 20 picks y bans y deja Deshacer inservible, asi que no hay
+              // vuelta atras. Solo pregunta si hay algo que perder.
+              if (selections.length > 0 && !window.confirm(t("Draft.resetConfirm"))) return;
               setSelections([]);
               setSearch("");
             }}
@@ -244,15 +250,46 @@ export function DraftSimulator() {
           {listOpen ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, borderRadius: 8, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}66`, padding: 10 }}>
               {savedDrafts === null ? (
-                <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Cooldowns.loading")}</span>
+                <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
               ) : savedDrafts.length === 0 ? (
                 <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Draft.myDraftsEmpty")}</span>
               ) : (
                 savedDrafts.map((draft) => (
                   <div key={draft.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {draft.name}
-                    </span>
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {draft.name}
+                      </span>
+                      {/* Sin esto, la lista era solo nombre y fecha y no daba
+                          ninguna pista de que draft es. El codigo visual es el
+                          mismo del tablero: baneado en gris, y el anillo dice
+                          de que equipo era cada eleccion. */}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                        {draft.selections.map((championId, i) => {
+                          const step = DRAFT_STEPS[i];
+                          const champ = championById.get(championId);
+                          if (!champ) return null;
+                          const isBan = step?.action === "ban";
+                          return (
+                            <img
+                              key={`${draft.id}-${i}`}
+                              src={champ.iconUrl}
+                              alt={champ.name}
+                              title={`${champ.name}${isBan ? ` (${t("Draft.bans")})` : ""}`}
+                              style={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: 4,
+                                objectFit: "cover",
+                                filter: isBan ? "grayscale(1)" : "none",
+                                opacity: isBan ? 0.7 : 1,
+                                boxShadow: `0 0 0 1px ${step?.team === "blue" ? "#0ea5e9" : "#f43f5e"}66`,
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
                     <span style={{ fontSize: 12, color: COLORS.muted }}>{new Date(draft.createdAt).toLocaleDateString(locale)}</span>
                     <button
                       onClick={() => {
@@ -273,7 +310,14 @@ export function DraftSimulator() {
           ) : null}
         </div>
       ) : (
-        <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Draft.loginToSave")}</span>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Draft.loginToSave")}</span>
+          {openAccountPanel ? (
+            <button onClick={openAccountPanel} style={buttonStyle(false)}>
+              {t("Draft.loginToSaveLink")}
+            </button>
+          ) : null}
+        </div>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

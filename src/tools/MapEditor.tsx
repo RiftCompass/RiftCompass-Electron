@@ -15,6 +15,7 @@ import {
 import { ChampionCombobox } from "../ChampionCombobox";
 import { championSquareUrl, fetchChampionMap, fetchLatestVersion, type ChampionInfo } from "../ddragon";
 import { useI18n } from "../i18n";
+import { useOpenAccountPanel } from "../account-panel";
 import { COLORS as THEME } from "../theme";
 import type { AccountUser, SavedMapSummary } from "../riftcompass";
 // The map image is imported as a module, not referenced by absolute path:
@@ -396,6 +397,7 @@ const DRAFT_KEY = "riftcompass-overlay:map-editor:draft:v1";
 
 export function MapEditor() {
   const { t, locale } = useI18n();
+  const openAccountPanel = useOpenAccountPanel();
   const [version, setVersion] = useState("");
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1233,7 +1235,7 @@ export function MapEditor() {
           {mapListOpen ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, borderRadius: 8, border: `1px solid ${THEME.cardBorder}`, background: `${THEME.card}66`, padding: 10 }}>
               {savedMaps === null ? (
-                <span style={{ fontSize: 13, color: THEME.muted }}>{t("Cooldowns.loading")}</span>
+                <span style={{ fontSize: 13, color: THEME.muted }}>{t("Common.loadingSaved")}</span>
               ) : savedMaps.length === 0 ? (
                 <span style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.myMapsEmpty")}</span>
               ) : (
@@ -1256,7 +1258,14 @@ export function MapEditor() {
           ) : null}
         </div>
       ) : (
-        <span style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.loginToSave")}</span>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <span style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.loginToSave")}</span>
+          {openAccountPanel ? (
+            <button onClick={openAccountPanel} style={pillButtonStyle(false)}>
+              {t("MapEditor.loginToSaveLink")}
+            </button>
+          ) : null}
+        </div>
       )}
 
       <div style={{ display: "flex", gap: 20, width: "100%", alignItems: "flex-start", flexWrap: "wrap" }}>

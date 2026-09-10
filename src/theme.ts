@@ -15,6 +15,13 @@ export const COLORS = {
   // by side across Gold Calculator, Wave Timer and Jungle XP and read as two
   // different brands.
   gold: "#ffc857",
+  // La paleta de la web son los tonos plenos CON sus pasos suaves, y aqui solo
+  // estaban los suaves: el borde de cada partida, la barra del roadmap y las
+  // insignias usaban el paso suave donde la web usa el pleno. Los suaves quedan
+  // para texto e indicadores finos, igual que reparte globals.css.
+  good: "#7839ac",
+  bad: "#832139",
+  neutral: "#67626a",
   goodMild: "#b093c8",
   badMild: "#bd6b80",
   // Same real red as the web's shadcn --destructive token (dark theme) —

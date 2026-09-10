@@ -2,6 +2,7 @@ import type { Messages } from "../index";
 
 export const fr: Messages = {
   Common: {
+    loadingSaved: "Chargement de vos enregistrements…",
     tools: "Outils",
     settings: "Paramètres",
     backToTools: "Retour aux outils",
@@ -56,6 +57,11 @@ export const fr: Messages = {
     emptyFolder: "Aucun profil dans ce dossier pour l'instant.",
   },
   ProfileSearch: {
+    matchNoteWellRounded: "Partie solide",
+    matchNoteBad: "{axis} faible",
+    matchNoteGood: "{axis} solide",
+    gamesShort: "{count} parties",
+    championPoolStats: "{games} parties · {winRate}% WR",
     skillRadarSubtitle: "Chaque axe comparé à une référence générique, 100 % = au niveau de la référence",
     cannotCompare: "Comparaison impossible pour l'instant. L'un des profils ci-dessus n'a pas pu être chargé.",
     navLabel: "Rechercher",
@@ -314,6 +320,7 @@ export const fr: Messages = {
     },
   },
   TierList: {
+    loginToSaveLink: "Connectez-vous",
     intro: "Glissez les champions dans un tier pour créer votre propre classement. Sauvegardé automatiquement sur cet appareil.",
     reset: "Réinitialiser",
     unrankedLabel: "Non classé",
@@ -339,7 +346,7 @@ export const fr: Messages = {
     myTierListsEmpty: "Vous n'avez pas encore de tier lists enregistrées.",
     load: "Charger",
     delete: "Supprimer",
-    loginToSave: "Connectez-vous depuis le panneau de compte pour enregistrer des tier lists.",
+    loginToSave: "Vous voulez enregistrer cette tier list ?",
     realTierTooltip: "Tier réel : {tier} (données du crawler RiftCompass)",
   },
   Cooldowns: {
@@ -356,14 +363,16 @@ export const fr: Messages = {
     emptyState: "Choisissez un champion pour voir ses temps de recharge.",
   },
   Draft: {
+    resetConfirm: "Effacer tout le draft ? Cette action est irréversible.",
+    loginToSaveLink: "Se connecter",
     intro: "Lancez une draft compétitive standard: 6 bans, puis les picks, en alternant côté bleu et côté rouge.",
     blueTeam: "Équipe Bleue",
     redTeam: "Équipe Rouge",
     bans: "Bans",
     picks: "Picks",
-    turnBan: "L'équipe {team} doit bannir",
-    turnPick: "L'équipe {team} doit pick",
-    complete: "Draft terminée.",
+    turnBan: "{team} : Ban",
+    turnPick: "{team} : Pick",
+    complete: "Draft terminée",
     undo: "Annuler",
     reset: "Réinitialiser",
     searchPlaceholder: "Rechercher un champion…",
@@ -385,10 +394,11 @@ export const fr: Messages = {
     myDraftsEmpty: "Aucun draft enregistré pour l'instant.",
     load: "Charger",
     delete: "Supprimer",
-    loginToSave: "Connecte-toi depuis le panneau de compte pour enregistrer des drafts.",
+    loginToSave: "Envie d'enregistrer ce draft ?",
     filterAll: "Tous",
   },
   MapEditor: {
+    loginToSaveLink: "Se connecter",
     intro: "Esquissez rotations, ganks et actions directement sur la Faille de l'invocateur.",
     championSearchNoResults: "Aucun champion trouvé.",
     tools: {
@@ -433,7 +443,7 @@ export const fr: Messages = {
     myMapsEmpty: "Aucune carte enregistrée pour l'instant.",
     load: "Charger",
     delete: "Supprimer",
-    loginToSave: "Connecte-toi depuis le panneau de compte pour enregistrer des cartes.",
+    loginToSave: "Envie d'enregistrer cette carte ?",
     textPlaceholder: "Écris ici…",
     textColor: "Couleur du texte",
     customColor: "Couleur personnalisée",
@@ -720,6 +730,7 @@ export const fr: Messages = {
     },
   },
   Overlay: {
+    voidGrubsWindow: "Fenêtre {time}",
     champSelect: "Sélection des champions",
     suggestedFor: "Suggéré pour {position}",
     laneOpponent: "Adversaire de ligne : {champion}",
