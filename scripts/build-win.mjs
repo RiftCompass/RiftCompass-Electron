@@ -1,12 +1,16 @@
-// Regenerates release/win-unpacked (the build the desktop shortcut runs).
+// Ejecuta electron-builder en esta maquina, donde la ruta normal falla siempre.
 //
-// Plain `electron-builder --dir` extracts Electron into release/
-// win-unpacked.tmp and then renames it; on this machine that rename
-// fails with EPERM every time (something, most likely the antivirus
-// scanning the freshly extracted electron.exe, holds the folder for a
-// moment). Handing electron-builder an already-unpacked Electron via
-// `electronDist` skips the extract-and-rename step entirely: it copies
-// the folder instead. The zip is the one @electron/get already cached.
+// electron-builder extrae Electron en una carpeta `.tmp` y despues la renombra;
+// aqui ese renombrado da EPERM cada vez (lo mas probable, el antivirus
+// reteniendo el electron.exe recien extraido). Pasarle un Electron ya
+// desempaquetado con `electronDist` se salta el extraer-y-renombrar entero:
+// copia la carpeta en vez de moverla. El zip es el que @electron/get ya tiene
+// cacheado.
+//
+// Vale para los dos usos, porque el fallo esta en el paso comun a ambos:
+//   node scripts/build-win.mjs --dir --win        build sin empaquetar
+//   node scripts/build-win.mjs --win              instalador NSIS
+//   node scripts/build-win.mjs --win --publish always   instalador + release
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -34,7 +38,7 @@ function findZip(root) {
 const cacheRoot = path.join(process.env.LOCALAPPDATA ?? "", "electron", "Cache");
 const zip = findZip(cacheRoot);
 if (!zip) {
-  console.error(`${zipName} not found under ${cacheRoot}; run \`npx electron-builder --dir --win\` once so @electron/get downloads it.`);
+  console.error(`${zipName} no esta en ${cacheRoot}; lanza \`npx electron-builder --dir --win\` una vez para que @electron/get lo descargue.`);
   process.exit(1);
 }
 
@@ -44,8 +48,11 @@ execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPa
 const release = path.resolve("release");
 for (const stale of ["win-unpacked", "win-unpacked.tmp"]) rmSync(path.join(release, stale), { recursive: true, force: true });
 
+const args = process.argv.slice(2);
+if (args.length === 0) args.push("--win");
+
 try {
-  execFileSync("npx", ["electron-builder", "--dir", "--win", `-c.electronDist=${dist}`], { stdio: "inherit", shell: true });
+  execFileSync("npx", ["electron-builder", ...args, `-c.electronDist=${dist}`], { stdio: "inherit", shell: true });
 } finally {
   rmSync(dist, { recursive: true, force: true });
 }
