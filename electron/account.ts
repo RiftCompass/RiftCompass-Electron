@@ -9,9 +9,7 @@ import { app } from "electron";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { protect, unprotect } from "./dpapi";
-
-// Must match src/shared/api.ts on the frontend side.
-const API_BASE_URL = "https://riftcompass.com";
+import { BACKEND_ORIGIN as API_BASE_URL } from "./backend";
 
 export interface AccountUser {
   id: string;
