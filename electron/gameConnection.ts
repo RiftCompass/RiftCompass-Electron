@@ -103,6 +103,10 @@ async function getLocalIdentity(c: LcuCredentials): Promise<unknown> {
 // See overlayTopmost.ts for why a one-time alwaysOnTop isn't enough —
 // runs for as long as the overlay is actually shown (both ChampSelect and
 // InProgress), not just InProgress like tabWatch.
+// Solo para no repetir la misma linea en cada sondeo: interesa el cambio.
+let overlayVisible: boolean | null = null;
+let ultimaFase: string | null = null;
+
 function startTopmostReassert(): void {
   if (topmostActive) return;
   topmostActive = true;
@@ -114,7 +118,17 @@ function stopTopmostReassert(): void {
   overlayTopmost.stop();
 }
 
+// El console.log es deliberado, como los de overlayEngine.ts y updater.ts.
+// La primera prueba real con Overwolf (2026-09-10) dejo claro que saber que la
+// inyeccion funciona no basta: el overlay puede estar inyectado y seguir sin
+// verse porque nadie llego a pedir que se mostrara. Sin esta linea no hay forma
+// de distinguir "no se inyecta" de "se inyecta pero nunca se enseña", que son
+// dos fallos completamente distintos y se investigan en sitios distintos.
 function setOverlayVisible(show: boolean): void {
+  if (show !== overlayVisible) {
+    overlayVisible = show;
+    console.log(`[overlay] mostrar=${show}`);
+  }
   showOverlay(show);
   if (show) startTopmostReassert();
   else stopTopmostReassert();
@@ -157,6 +171,10 @@ async function refreshPhase(c: LcuCredentials): Promise<void> {
     phase = (await lcuRequest(c, "GET", "/lol-gameflow/v1/gameflow-phase")) as string;
   } catch {
     return;
+  }
+  if (phase !== ultimaFase) {
+    ultimaFase = phase;
+    console.log(`[overlay] fase del cliente: ${phase}`);
   }
   broadcast(EVT.LcuPhase, phase);
 

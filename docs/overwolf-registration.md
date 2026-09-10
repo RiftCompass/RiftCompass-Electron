@@ -240,10 +240,13 @@ Sin un solo error. El paso 2 de la lista de arriba queda cerrado: `app.overwolf`
 existe, `registerGames` reconoce el juego y `game-launched` -> `inject()`
 funciona contra el proceso real.
 
-**Pero el overlay no se veia.** Estaba ahi: ampliando la captura se adivinaba el
-nombre del invocador por debajo del marcador de la partida. O sea que la ventana
-se creaba y pintaba contenido de verdad, pero **por detras de la interfaz de
-League**.
+**Pero el overlay no se veia, y sigue sin verse.**
+
+> Correccion (misma tarde): la primera lectura de esto fue equivocada. Se penso
+> que el overlay se dibujaba por detras de la interfaz porque en la captura se
+> adivinaba el nombre del invocador. Al repetir la prueba sin el marcador de
+> puntuacion delante quedo claro que ese nombre era **el del propio campeon sobre
+> su barra de vida**, del juego, no nuestro. El overlay no pinta nada visible.
 
 Causa encontrada en el codigo, no adivinada: `overlayTopmost.ts` se salta a
 proposito su re-afirmacion periodica de `setAlwaysOnTop()` bajo este motor,
