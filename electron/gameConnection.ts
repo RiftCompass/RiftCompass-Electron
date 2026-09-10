@@ -106,6 +106,9 @@ async function getLocalIdentity(c: LcuCredentials): Promise<unknown> {
 // Solo para no repetir la misma linea en cada sondeo: interesa el cambio.
 let overlayVisible: boolean | null = null;
 let ultimaFase: string | null = null;
+// Última sesión de champ select recibida, para poder repetírsela a la ventana
+// del acompañante de draft cuando se cree (ver showChampSelect).
+let ultimaSesionChampSelect: unknown = null;
 
 function startTopmostReassert(): void {
   if (topmostActive) return;
@@ -186,11 +189,17 @@ async function refreshPhase(c: LcuCredentials): Promise<void> {
   // El acompañante de draft tiene su propia ventana y solo vive durante champ
   // select: fuera de ahí no tiene nada que decir, y una ventana siempre encima
   // que no aporta es una ventana que el jugador acaba cerrando.
-  showChampSelect(phase === "ChampSelect");
+  showChampSelect(phase === "ChampSelect", () => {
+    // La ventana acaba de nacer o de volver: se le repite el estado que ya
+    // había, porque los eventos que lo trajeron son de antes de que existiera.
+    broadcast(EVT.LcuPhase, phase);
+    if (ultimaSesionChampSelect) broadcast(EVT.ChampSelectSession, ultimaSesionChampSelect);
+  });
 
   if (phase === "ChampSelect") {
     try {
       const session = await lcuRequest(c, "GET", "/lol-champ-select/v1/session");
+      ultimaSesionChampSelect = session;
       broadcast(EVT.ChampSelectSession, session);
     } catch {
       // client mid-transition — the next websocket push recovers
@@ -254,6 +263,7 @@ export async function run(): Promise<void> {
         if (event.uri === "/lol-gameflow/v1/gameflow-phase") {
           void refreshPhase(found);
         } else if (event.uri === "/lol-champ-select/v1/session") {
+          ultimaSesionChampSelect = event.data;
           broadcast(EVT.ChampSelectSession, event.data);
         }
       });
