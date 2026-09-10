@@ -9,6 +9,7 @@ import {
   Sword,
   Timer,
   Tree,
+  Users,
   Waves,
   type Icon,
 } from "@phosphor-icons/react";
@@ -64,13 +65,12 @@ export const TOOLS: ToolMeta[] = [
   { id: "championBuilds", icon: Scroll, accent: "#2f8fd0", native: true, introKey: "ChampionBuilds.intro" },
 ];
 
-// The Tools grid's "Compare Profiles" card isn't a ToolId (it opens the
-// duo-comparison view, not a tools/* route) — its accent lived as a bare
-// string literal in MainView.tsx, invisible to anyone updating the palette
-// above. Kept here as a sibling constant instead of forcing it into
+// Squad Synergy isn't a ToolId (it opens the duo-comparison view, not a
+// tools/* route), so it can't live in TOOLS above. Its identity still has
+// to match the web's, where the same tool is TOOL_ROUTES' `duo` entry: the
+// name comes from the same `ToolsIndex.duo` key, the icon is the same two
+// people, and the accent is the same hex as the web's gem-magenta
+// (globals.css). Kept as a sibling constant rather than forced into
 // ToolMeta/TOOLS, which are specifically the routes that mirror the web's
 // TOOL_ROUTES order.
-// Same hex as the web's gem-magenta (globals.css) — Squad Synergy's own
-// accent there. Was a leftover #34d399 (green) that almost duplicated
-// Jungle XP's own gem-emerald in the same grid.
-export const COMPARE_PROFILES_ACCENT = "#c93a9e";
+export const SQUAD_SYNERGY = { icon: Users, accent: "#c93a9e" } as const;

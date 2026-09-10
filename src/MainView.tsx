@@ -11,7 +11,6 @@ import {
   Funnel,
   Folder,
   FolderPlus,
-  ArrowsLeftRight,
   PencilSimple,
   MagnifyingGlass,
   Gear as SettingsIcon,
@@ -25,7 +24,7 @@ import { ProfileCompareEntry } from "./profile/ProfileCompare";
 import { parseRiotId, PlatformSelect, type ProfileTarget } from "./profile/ProfileShared";
 import { PostGameReport } from "./profile/PostGameReport";
 import { DraftAdvisor } from "./champselect/DraftAdvisor";
-import { COMPARE_PROFILES_ACCENT, TOOLS, type ToolId, type ToolMeta } from "./tool-meta";
+import { SQUAD_SYNERGY, TOOLS, type ToolId, type ToolMeta } from "./tool-meta";
 import { GoldCalculator } from "./tools/GoldCalculator";
 import { WaveTimer } from "./tools/WaveTimer";
 import { JungleXpCalculator } from "./tools/JungleXpCalculator";
@@ -1461,12 +1460,12 @@ function InlineLpSparkline({ values }: { values: number[] }) {
 // MainView's own `panel` state, not the openTool/NATIVE_VIEWS switch), so
 // compare is spliced into the grid as its own entry kind rather than
 // forced into the ToolMeta/TOOLS shape.
-type GridEntry = { kind: "tool"; tool: ToolMeta } | { kind: "compareProfiles" };
+type GridEntry = { kind: "tool"; tool: ToolMeta } | { kind: "duo" };
 
 // Tool order must match the web's grid (TOOL_ROUTES), which ends with
 // "duo" — its equivalent of this card — so "Comparar perfiles" goes last.
 function buildGridEntries(): GridEntry[] {
-  return [...TOOLS.map((tool): GridEntry => ({ kind: "tool", tool })), { kind: "compareProfiles" }];
+  return [...TOOLS.map((tool): GridEntry => ({ kind: "tool", tool })), { kind: "duo" }];
 }
 
 function ToolsIndex({
@@ -1517,8 +1516,8 @@ function ToolsIndex({
         }}
       >
         {entries.map((entry) => {
-          if (entry.kind === "compareProfiles") {
-            return <GridCard key="compareProfiles" icon={ArrowsLeftRight} accent={COMPARE_PROFILES_ACCENT} label={t("ToolsIndex.compareProfiles")} onClick={onOpenCompare} />;
+          if (entry.kind === "duo") {
+            return <GridCard key="duo" icon={SQUAD_SYNERGY.icon} accent={SQUAD_SYNERGY.accent} label={t("ToolsIndex.duo")} onClick={onOpenCompare} />;
           }
           const tool = entry.tool;
           return (
