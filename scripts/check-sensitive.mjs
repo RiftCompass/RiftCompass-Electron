@@ -30,6 +30,21 @@ const SKIP_DIRS = new Set([
   ".git", "node_modules", ".next", "dist", "dist-electron",
   "release", "out", "coverage", ".avatars", ".claude",
 ]);
+
+// Exact names alone weren't enough. A copy of the build output left inside
+// the checkout (`.next.bak`, `.next-old`) got walked, and the compiled legal
+// pages in there carry the owner's real name, so the build failed on its own
+// output instead of on anything anyone had written. Backup copies of any
+// directory get the same treatment.
+function skipDir(name) {
+  return (
+    SKIP_DIRS.has(name) ||
+    name.startsWith(".next") ||
+    name.startsWith("node_modules") ||
+    /\.(bak|old|orig)$/.test(name) ||
+    name.endsWith("~")
+  );
+}
 const NUL = String.fromCharCode(0);
 
 // Production builds run as a service user that does not own the checkout, so
@@ -38,7 +53,7 @@ function walk(dir, found) {
   for (const entry of readdirSync(dir === "" ? "." : dir, { withFileTypes: true })) {
     const rel = dir === "" ? entry.name : `${dir}/${entry.name}`;
     if (entry.isDirectory()) {
-      if (!SKIP_DIRS.has(entry.name)) walk(rel, found);
+      if (!skipDir(entry.name)) walk(rel, found);
     } else if (!/^\.env/.test(entry.name) || entry.name === ".env.example") {
       found.push(rel);
     }
