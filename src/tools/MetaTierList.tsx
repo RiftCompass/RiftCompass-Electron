@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { fetchChampionMap, toDDragonId, type ChampionInfo } from "../ddragon";
 import { POOL_ROLES } from "../lib/champion-pool-builder";
 import { type PersonalityRole } from "../lib/personality-test";
@@ -80,6 +81,37 @@ export function MetaTierList() {
   const championByInternalId = useMemo(() => new Map(champions.map((c) => [c.internalId, c])), [champions]);
   const byRole = useMemo(() => (winrates ? groupByRole(winrates) : {}), [winrates]);
 
+  // The search highlights instead of filtering: hiding the rest would throw
+  // away the answer it exists to give, which is which tier of which role the
+  // champion landed in. Matched against the Data Dragon display name because
+  // that's what the chips show; the crawler's own spelling ("FiddleSticks")
+  // never reaches the screen.
+  const [search, setSearch] = useState("");
+  const trimmedSearch = search.trim().toLowerCase();
+  const displayName = (championName: string) =>
+    championByInternalId.get(toDDragonId(championName))?.name ?? championName;
+  const matchCount = winrates
+    ? new Set(
+        winrates
+          .map((entry) => displayName(entry.championName))
+          .filter((name) => trimmedSearch && name.toLowerCase().includes(trimmedSearch)),
+      ).size
+    : 0;
+
+  // The five role cards run well past one screen, so the first match is
+  // scrolled into view: a chip glowing below the fold is a chip nobody sees.
+  // Centred rather than "nearest" (which lands it flush against the edge,
+  // clipping a chip that's scaled up and glowing) and only when it's actually
+  // off screen, so typing one more letter doesn't yank a chip that was
+  // already in front of the user.
+  useEffect(() => {
+    if (!trimmedSearch) return;
+    const chip = document.querySelector("[data-champion-match]");
+    if (!chip) return;
+    const { top, bottom } = chip.getBoundingClientRect();
+    if (top < 0 || bottom > window.innerHeight) chip.scrollIntoView({ block: "center" });
+  }, [trimmedSearch]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       {/* Only methodologyNote, not intro — the tool header above this
@@ -96,6 +128,33 @@ export function MetaTierList() {
             {t(`MetaTierList.rankTiers.${r}`)}
           </button>
         ))}
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+        <div style={{ position: "relative", width: 200 }}>
+          <MagnifyingGlass
+            size={13}
+            color={COLORS.muted}
+            style={{ position: "absolute", left: 6, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("Common.searchChampion")}
+            style={{
+              width: "100%",
+              background: "none",
+              border: "none",
+              borderBottom: `1px solid ${COLORS.cardBorder}`,
+              color: COLORS.text,
+              fontSize: 13,
+              padding: "4px 4px 4px 22px",
+            }}
+          />
+        </div>
+        {trimmedSearch && matchCount === 0 ? (
+          <span style={{ fontSize: 13, color: COLORS.muted }}>{t("MetaTierList.noMatches")}</span>
+        ) : null}
       </div>
 
       {dataPatch && winrates && winrates.length > 0 && dataPatch.patch !== dataPatch.latestPatch ? (
@@ -164,13 +223,36 @@ export function MetaTierList() {
                             {inTier.map((entry) => {
                               const champ = championByInternalId.get(toDDragonId(entry.championName));
                               const tooltip = t("MetaTierList.chipTooltip", { rate: Math.round(entry.winRate * 100), games: entry.games });
+                              const name = champ?.name ?? entry.championName;
+                              const matched = trimmedSearch !== "" && name.toLowerCase().includes(trimmedSearch);
+                              const dimmed = trimmedSearch !== "" && !matched;
                               return (
                                 <div
                                   key={entry.championName}
                                   title={champ ? `${champ.name}: ${tooltip}` : tooltip}
-                                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}
+                                  data-champion-match={matched ? "" : undefined}
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    gap: 3,
+                                    transform: matched ? "scale(1.15)" : undefined,
+                                    opacity: dimmed ? 0.3 : undefined,
+                                    filter: dimmed ? "grayscale(1)" : undefined,
+                                    transition: "transform 150ms, opacity 150ms, filter 150ms",
+                                  }}
                                 >
-                                  <div style={{ width: 36, height: 36, borderRadius: 7, overflow: "hidden", border: `1px solid ${COLORS.cardBorder}` }}>
+                                  <div
+                                    style={{
+                                      width: 36,
+                                      height: 36,
+                                      borderRadius: 7,
+                                      overflow: "hidden",
+                                      border: `1px solid ${matched ? COLORS.rose : COLORS.cardBorder}`,
+                                      boxShadow: matched ? `0 0 0 1px ${COLORS.rose}, 0 0 18px ${COLORS.rose}` : undefined,
+                                      filter: matched ? "brightness(1.1)" : undefined,
+                                    }}
+                                  >
                                     {champ ? (
                                       <img src={champ.iconUrl} alt={champ.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     ) : null}
