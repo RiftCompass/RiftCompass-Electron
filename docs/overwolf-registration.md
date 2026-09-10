@@ -145,3 +145,42 @@ hoy, AdSense descartado), y la barra lateral explicada con una captura de
 la app con sesión iniciada (usuario arriba, perfiles guardados en carpetas
 en el medio, Ajustes abajo). Overwolf dijo que con eso procedería al
 whitelisting; falta su confirmación.
+
+## Whitelisting concedido — 2026-09-10
+
+Correo de `developers@overwolf.com`, "Welcome to the Overwolf Developers
+community!": *"your Overwolf account has been whitelisted, and you are now
+one step closer to creating an amazing app"*. Con esto termina el trámite
+que empezó el 2026-08-30 y se desbloquea la inyección real en League, que
+era lo único que faltaba (los paquetes npm ya estaban instalados desde el
+2026-09-02).
+
+Lo que el propio correo pide antes de empezar:
+
+- **Dev Mode obligatorio**: por ser una app ow-electron, hay que activar
+  Dev Mode en el cliente de Overwolf para que los paquetes de juego
+  carguen en desarrollo local. Si `dev:overwolf` no inyecta, esto es lo
+  primero que hay que descartar, antes que el código.
+- **Game Compliance**, con una sección **adicional específica para apps de
+  Riot**: leerla y anotar aquí qué obliga y qué prohíbe antes de
+  distribuir el overlay.
+- Recursos: Getting Started Guide, Documentation Homepage, Live Game Data
+  (GEP) Overview y su Developers Roadmap. Ofrecen soporte respondiendo a
+  ese mismo correo, y tienen comunidad de desarrolladores.
+
+Qué queda, por orden (la lista viva está en el `CLAUDE.md` de la carpeta
+raíz del proyecto, sección "Overlay y Overwolf"):
+
+1. Activar Dev Mode.
+2. `npm run dev:overwolf` con League realmente abierto: `app.overwolf`
+   presente, `registerGames` reconociendo el juego, `game-launched` →
+   `inject()`, y la ventana overlay pintándose sobre pantalla completa
+   exclusiva. Primera verificación real de `electron/overlayEngine.ts`.
+3. `scripts/build-win.mjs`: `electron-builder` → `@overwolf/ow-electron-builder`
+   en `dist`/`release`/`pack:dir`, comprobando después que el auto-update
+   por GitHub Releases sigue funcionando.
+4. Repasar interactividad, atajos y ocultado en `game-exit` con el motor
+   real, y decidir si el `sandbox: false` de `overlayEngine.ts` es
+   requisito suyo.
+5. Decisión del propietario: Overwolf Appstore o seguir distribuyendo solo
+   desde riftcompass.com y GitHub Releases.
