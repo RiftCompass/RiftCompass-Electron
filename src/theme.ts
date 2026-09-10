@@ -11,7 +11,10 @@ export const COLORS = {
   roseMild: "#b093c8",
   text: "#f7f3f5",
   muted: "#9a94a0",
-  gold: "#c8aa6e",
+  // The web's --gold, not League's own muted client gold: the two sat side
+  // by side across Gold Calculator, Wave Timer and Jungle XP and read as two
+  // different brands.
+  gold: "#ffc857",
   goodMild: "#b093c8",
   badMild: "#bd6b80",
   // Same real red as the web's shadcn --destructive token (dark theme) —
