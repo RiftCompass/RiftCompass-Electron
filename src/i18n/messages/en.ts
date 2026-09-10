@@ -770,6 +770,7 @@ export const en = {
     applyBuildError: "Couldn't apply",
   },
   ChampSelect: {
+    roleGuessed: "usual lane",
     title: "Draft companion",
     buildTitle: "Build to import",
     recommended: "Recommended build",

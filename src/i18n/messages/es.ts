@@ -758,6 +758,7 @@ export const es: Messages = {
     applyBuildError: "No se pudo aplicar",
   },
   ChampSelect: {
+    roleGuessed: "carril habitual",
     title: "Acompañante de draft",
     buildTitle: "Build a importar",
     recommended: "Build recomendada",
