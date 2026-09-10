@@ -2,14 +2,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchChampionMap, mergeLocalizedChampionNames, normalizeChampionName, type ChampionMaps } from "./ddragon";
 import { suggestPicks, type ChampionWinrateEntry } from "./draft-help";
 import { useI18n } from "./i18n";
+import { COLORS, TYPE } from "./theme";
 import { API_BASE_URL } from "./shared/api";
 import { CS_PER_MIN_TARGETS, positionIconUrl, rankEmblemUrl, tierToBand } from "./lib/profile-analysis";
 import type { AbilityBarCalibration, LcuIdentity, OverlayModules, OverlayPanelPositions } from "./riftcompass";
 
-const ROSE = "#e63977";
+// Este fichero redeclaraba la paleta a mano, con un verde (#7edc96) que no
+// existe en ninguna otra parte de la app ni de la web, y usaba el rosa de marca
+// como senal de "vas mal". La regla del proyecto es al reves: por encima y por
+// debajo del objetivo van con los pasos suaves, y el rosa es marca.
+const ROSE = COLORS.rose;
 const CARD_BG = "rgba(23, 18, 26, 0.78)";
-const BORDER = "1px solid rgba(255,255,255,0.08)";
-const MUTED = "#9a94a0";
+const BORDER = `1px solid ${COLORS.cardBorder}`;
+const MUTED = COLORS.muted;
+const GOOD = COLORS.goodMild;
+const BAD = COLORS.badMild;
 
 const cardStyle: React.CSSProperties = {
   background: CARD_BG,
@@ -192,6 +199,10 @@ function lastEventTime(events: LiveGameEvent[], name: string): number | null {
 interface ObjectiveTimer {
   key: ObjectiveKind;
   remainingSeconds: number;
+  // Solo las larvas: entre su aparicion y su despawn no hay evento que diga si
+  // siguen vivas, asi que se muestra el cierre de ventana en vez de un "Up!"
+  // que la API no permite comprobar.
+  windowClosing?: boolean;
 }
 
 // Void Grubs, Herald and Baron all live in the same jungle pit, one after
@@ -215,6 +226,14 @@ function computePitTimer(events: LiveGameEvent[], gameTime: number): ObjectiveTi
   }
   if (gameTime >= VOID_GRUBS_DESPAWN_SECONDS) {
     return { key: "herald", remainingSeconds: HERALD_SPAWN_SECONDS - gameTime };
+  }
+  // Dragon, heraldo y baron se apoyan en su evento de muerte, asi que su "Up!"
+  // esta verificado. Las larvas no tienen evento propio en la API, asi que
+  // entre su aparicion y su despawn no hay forma de saber si siguen en el foso:
+  // antes se anunciaban disponibles casi siete minutos seguidos, las hubieran
+  // matado o no. Lo unico comprobable es el cierre de la ventana.
+  if (gameTime >= VOID_GRUBS_SPAWN_SECONDS) {
+    return { key: "voidGrubs", remainingSeconds: VOID_GRUBS_DESPAWN_SECONDS - gameTime, windowClosing: true };
   }
   return { key: "voidGrubs", remainingSeconds: VOID_GRUBS_SPAWN_SECONDS - gameTime };
 }
@@ -275,14 +294,15 @@ const SUMMONER_SPELL_INFO: Record<string, { ddragonKey: string; cooldownSeconds:
   Clarity: { ddragonKey: "SummonerMana", cooldownSeconds: 240 },
 };
 
-// Exact for the local player (Riot exposes their real live gold directly);
-// everyone else's real current gold isn't exposed by the API at all — this
-// sums the real per-item cost of what's visibly built instead, which is
-// necessarily an underestimate (doesn't account for gold already spent on
-// wards/potions/sold items) — shown without a "~" marker in the UI, as an
-// understood approximation.
-function goldForPlayer(p: LiveGamePlayer, isLocal: boolean, activeGold: number | undefined): { amount: number } | null {
-  if (isLocal && activeGold !== undefined) return { amount: Math.round(activeGold) };
+// Suma el coste real de lo que cada jugador lleva construido. Es una
+// subestimacion (no cuenta el oro ya gastado en wards, pociones u objetos
+// vendidos), y por eso la diferencia se pinta con "~".
+//
+// Antes, para el jugador local, devolvia `activePlayer.currentGold`, que es el
+// oro SIN GASTAR del HUD. Eso hacia que la unica fila que de verdad se mira
+// restara dos magnitudes distintas: tu dinero en el bolsillo contra el valor
+// construido del rival, asi que justo despues de comprar salia un -11400.
+function goldForPlayer(p: LiveGamePlayer): { amount: number } | null {
   const items = p.items ?? [];
   if (items.length === 0) return null;
   const amount = items.reduce((sum, item) => sum + item.price * item.count, 0);
@@ -848,7 +868,7 @@ export function OverlayView() {
                         fontWeight: 600,
                         cursor: importState === "idle" || importState === "error" ? "pointer" : "default",
                         background: importState === "done" ? "rgba(120,220,150,0.15)" : `${ROSE}26`,
-                        color: importState === "done" ? "#7edc96" : ROSE,
+                        color: importState === "done" ? GOOD : ROSE,
                       }}
                     >
                       {importState === "working"
@@ -902,7 +922,7 @@ export function OverlayView() {
                       fontWeight: 600,
                       cursor: applyBuildState === "idle" || applyBuildState === "error" ? "pointer" : "default",
                       background: applyBuildState === "done" ? "rgba(120,220,150,0.15)" : `${ROSE}26`,
-                      color: applyBuildState === "done" ? "#7edc96" : ROSE,
+                      color: applyBuildState === "done" ? GOOD : ROSE,
                     }}
                   >
                     {applyBuildState === "working"
@@ -971,9 +991,19 @@ export function OverlayView() {
                           >
                             {s.champion.name}
                           </span>
+                          {/* draft-help.ts marca los picks de relleno con
+                              `missingTag` precisamente para que la interfaz
+                              pueda etiquetar los dos grupos con honestidad; el
+                              overlay era el unico consumidor que se lo saltaba,
+                              asi que un pick del heuristico se leia igual que
+                              uno rankeado por winrate real. */}
                           {s.winRate !== undefined ? (
-                            <span style={{ fontSize: 9, fontWeight: 600, color: "#7edc96" }}>
+                            <span style={{ fontSize: TYPE.label, fontWeight: 600, color: GOOD }}>
                               {t("Overlay.winRateBadge", { rate: Math.round(s.winRate * 100), games: s.games ?? 0 })}
+                            </span>
+                          ) : s.missingTag ? (
+                            <span style={{ fontSize: TYPE.label, color: MUTED, textAlign: "center" }}>
+                              {t("ChampionPoolBuilder.recommendationReason", { tag: s.missingTag })}
                             </span>
                           ) : null}
                         </div>
@@ -1005,7 +1035,7 @@ export function OverlayView() {
           }}
         >
           {computeObjectiveTimers(liveGame.events.Events, liveGame.gameData?.gameTime ?? 0).map((obj) => {
-            const up = obj.remainingSeconds <= 0;
+            const up = obj.remainingSeconds <= 0 && !obj.windowClosing;
             return (
               <div
                 key={obj.key}
@@ -1013,8 +1043,12 @@ export function OverlayView() {
                 title={t(`Overlay.${obj.key}Timer`)}
               >
                 <img src={OBJECTIVE_ICON[obj.key]} alt="" style={{ width: 26, height: 26, opacity: up ? 1 : 0.55 }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: up ? "#7edc96" : "#fff" }}>
-                  {up ? t("Overlay.objectiveUp") : formatCountdown(obj.remainingSeconds)}
+                <span style={{ fontSize: 14, fontWeight: 700, color: up ? GOOD : obj.windowClosing ? MUTED : "#fff" }}>
+                  {up
+                    ? t("Overlay.objectiveUp")
+                    : obj.windowClosing
+                      ? t("Overlay.voidGrubsWindow", { time: formatCountdown(obj.remainingSeconds) })
+                      : formatCountdown(obj.remainingSeconds)}
                 </span>
               </div>
             );
@@ -1042,7 +1076,7 @@ export function OverlayView() {
             ) : (
               <span />
             )}
-            <span style={{ fontSize: 12, fontWeight: 600, color: localCsPerMin >= localCsTarget ? "#7edc96" : ROSE }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: localCsPerMin >= localCsTarget ? GOOD : BAD }}>
               <span style={{ fontWeight: 700, marginRight: 3 }}>{localCsPerMin >= localCsTarget ? "▲" : "▼"}</span>
               {localCsPerMin} <span style={{ color: MUTED, fontWeight: 400 }}>/ {localCsTarget}</span>
             </span>
@@ -1053,7 +1087,15 @@ export function OverlayView() {
       {/* Lane gold table: top-left by default, only while Tab is held (see
           tab_watch.rs) — Porofessor/iTero's own timing. Draggable to
           wherever the player wants while it's visible. */}
-      {phase === "InProgress" && liveGame && overlayModules.goldDiff && tabHeld ? (
+      {/* Sin el guardian de modo y sin comprobar que haya carriles resolubles,
+          en ARAM o al reconectar con la partida ya empezada salia una tarjeta
+          con titulo y nada debajo, tapando la esquina del juego. */}
+      {phase === "InProgress" &&
+      liveGame &&
+      overlayModules.goldDiff &&
+      tabHeld &&
+      liveGame.gameData?.gameMode === CLASSIC_GAME_MODE &&
+      laneRows.some((r) => r.mine || r.theirs) ? (
         <div
           onMouseEnter={goldDrag.onMouseEnter}
           onMouseLeave={goldDrag.onMouseLeave}
@@ -1069,9 +1111,8 @@ export function OverlayView() {
           <div style={{ display: "flex", flexDirection: "column", marginTop: 4 }}>
             {laneRows.map((row, index) => {
               if (!row.mine && !row.theirs) return null;
-              const mineIsLocal = row.mine ? isLocalPlayer(row.mine, liveGame.activePlayerName) : false;
-              const mineGold = row.mine ? goldForPlayer(row.mine, mineIsLocal, liveGame.activePlayer?.currentGold) : null;
-              const theirsGold = row.theirs ? goldForPlayer(row.theirs, false, undefined) : null;
+              const mineGold = row.mine ? goldForPlayer(row.mine) : null;
+              const theirsGold = row.theirs ? goldForPlayer(row.theirs) : null;
               const diff = mineGold !== null && theirsGold !== null ? mineGold.amount - theirsGold.amount : null;
               const icon = positionIconUrl(row.position.toUpperCase());
               return (
@@ -1089,8 +1130,8 @@ export function OverlayView() {
                   <LaneChampion champ={row.mine ? championInfoFor(champions, row.mine.championName) : undefined} align="right" />
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 60 }}>
                     {icon ? <img src={icon} alt="" style={{ width: 12, height: 12, opacity: 0.6, marginBottom: 2 }} /> : null}
-                    <span style={{ fontSize: 12, fontWeight: 700, color: diff === null ? MUTED : diff > 0 ? "#7edc96" : diff < 0 ? ROSE : MUTED }}>
-                      {diff === null ? "—" : `${diff > 0 ? "+" : ""}${diff}`}
+                    <span style={{ fontSize: 12, fontWeight: 700, color: diff === null ? MUTED : diff > 0 ? GOOD : diff < 0 ? BAD : MUTED }}>
+                      {diff === null ? "—" : `~${diff > 0 ? "+" : ""}${diff}`}
                     </span>
                   </div>
                   <LaneChampion champ={row.theirs ? championInfoFor(champions, row.theirs.championName) : undefined} align="left" />
@@ -1183,13 +1224,18 @@ export function OverlayView() {
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
-                                  fontSize: 9,
+                                  fontSize: TYPE.label,
                                   fontWeight: 700,
                                   color: "#fff",
                                   textShadow: "0 1px 2px rgba(0,0,0,0.8)",
                                 }}
                               >
-                                {remaining}
+                                {/* Minutos y segundos, no un "300" de tres
+                                    digitos dentro de un icono de 18px. Y con
+                                    "~" porque el calculo ignora celeridad,
+                                    botas de Ionia y perspicacia cosmica: casi
+                                    nunca es exacto. */}
+                                {`~${formatCountdown(remaining)}`}
                               </span>
                             ) : null}
                           </button>

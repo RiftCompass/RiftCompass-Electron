@@ -22,6 +22,7 @@ import { TIERS, TIER_COLORS, type Tier } from "../lib/tier-colors";
 import { ALL_ROLES, rolesOf, primaryRoleOf, type ChampionRole } from "../lib/champion-roles";
 import { positionIconUrl } from "../lib/profile-analysis";
 import { useI18n } from "../i18n";
+import { useOpenAccountPanel } from "../account-panel";
 import { COLORS } from "../theme";
 import { API_BASE_URL } from "../shared/api";
 import type { AccountUser, SavedTierList } from "../riftcompass";
@@ -116,6 +117,7 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
 
 export function TierListBuilder() {
   const { t, locale } = useI18n();
+  const openAccountPanel = useOpenAccountPanel();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
   const championIds = useMemo(() => champions.map((c) => c.internalId), [champions]);
   const championById = useMemo(() => new Map(champions.map((c) => [c.internalId, c])), [champions]);
@@ -375,7 +377,14 @@ export function TierListBuilder() {
               {saved ? <span style={{ fontSize: 13, color: COLORS.rose }}>{t("TierList.saveTierListSuccess")}</span> : null}
             </div>
           ) : (
-            <span style={{ fontSize: 13, color: COLORS.muted }}>{t("TierList.loginToSave")}</span>
+            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+              <span style={{ fontSize: 13, color: COLORS.muted }}>{t("TierList.loginToSave")}</span>
+              {openAccountPanel ? (
+                <button onClick={openAccountPanel} style={ghostButtonStyle(false)}>
+                  {t("TierList.loginToSaveLink")}
+                </button>
+              ) : null}
+            </div>
           )}
           <button onClick={handleReset} style={ghostButtonStyle(false)}>
             {t("TierList.reset")}
@@ -385,7 +394,7 @@ export function TierListBuilder() {
         {listOpen ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 6, borderRadius: 8, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}66`, padding: 10 }}>
             {savedTierLists === null ? (
-              <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Cooldowns.loading")}</span>
+              <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
             ) : savedTierLists.length === 0 ? (
               <span style={{ fontSize: 13, color: COLORS.muted }}>{t("TierList.myTierListsEmpty")}</span>
             ) : (
