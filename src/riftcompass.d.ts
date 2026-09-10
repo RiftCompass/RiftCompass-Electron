@@ -230,6 +230,16 @@ export type SaveChampionBuildResult =
 // principal), que es el dato que hace util al set; `games` es la muestra que lo
 // respalda, para poder ensenarla y no pedirle fe al jugador.
 // Mismo contrato que BuildParaSet en electron/itemSet.ts.
+// Maestria del jugador con un campeon, leida del cliente de League. `points`
+// es el acumulado de siempre y `level` el nivel de maestria; se guardan los dos
+// porque miden cosas distintas: los puntos dicen cuanto lo ha jugado en total y
+// el nivel es como el juego resume esa soltura.
+export interface ChampionMasteryEntry {
+  championId: number;
+  points: number;
+  level: number;
+}
+
 export interface RecommendedItemSet {
   championId: number;
   championName: string;
@@ -276,6 +286,10 @@ export interface RiftCompassApi {
     itemSet?: RecommendedItemSet,
   ) => Promise<{ ok: true; itemSetAplicado?: boolean } | { ok: false; reason: string }>;
   clearItemSets: () => Promise<{ ok: true; borrados: number } | { ok: false; reason: string }>;
+  // Maestria del jugador con cada campeon, del propio cliente de League. Sin
+  // cliente devuelve lista vacia, no error: la recomendacion sigue funcionando
+  // con los otros dos senales, solo pierde este.
+  getChampionMastery: () => Promise<{ ok: true; mastery: ChampionMasteryEntry[] }>;
   getSettings: () => Promise<AppSettings>;
   setAutoLaunch: (enabled: boolean) => Promise<AppSettings>;
   setOverlayModules: (modules: Partial<OverlayModules>) => Promise<AppSettings>;

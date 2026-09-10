@@ -1,6 +1,7 @@
 import { toDDragonId, type ChampionInfo } from "./ddragon";
 import { rolesOf, type ChampionRole } from "./lib/champion-roles";
 import type { ChampionOverviewStats } from "./lib/profile-analysis";
+import type { ChampionMasteryEntry } from "./riftcompass";
 
 // Candidate champions per position come from champion-roles.ts's real,
 // curated per-champion lane data — same source the Tier List, Draft
@@ -125,6 +126,10 @@ export interface MatchupSuggestion {
   matchupSpecific: boolean;
   personalWinRate?: number;
   personalGames?: number;
+  // Se devuelven para poder enseñarlos: si la maestría mueve el orden, el
+  // jugador tiene que poder ver por qué, no fiarse a ciegas.
+  masteryPoints?: number;
+  masteryLevel?: number;
   // Ranking key only (see combine formula below) — never shown to the
   // user as if it were an observed win rate, just used to sort and to
   // pick a 3-tier label.
@@ -161,6 +166,30 @@ function sigmoid(x: number): number {
   return 1 / (1 + Math.exp(-x));
 }
 
+// La maestría NO es un winrate y no se puede meter en la suma de logits como
+// si lo fuera: dice cuánto ha jugado el jugador ese campeón, no cuánto gana
+// con él. Pero es información real y útil, porque un campeón con buen winrate
+// que no has tocado nunca es más arriesgado que uno que dominas.
+//
+// Se usa como lo que es: un empujón acotado, nunca el criterio principal. La
+// escala es relativa al propio jugador (fracción de los puntos de su campeón
+// más jugado), no absoluta, porque 50.000 puntos significan cosas distintas en
+// una cuenta nueva y en una de diez años.
+//
+// El tope son ±0,35 en logits, que a la altura del 50 % mueve el resultado
+// unos ±8 puntos porcentuales: suficiente para desempatar hacia lo que sabes
+// jugar, insuficiente para colocar un campeón malo por encima de uno bueno.
+const MASTERY_MAX_LOGIT = 0.35;
+
+export function masteryLogit(points: number, topPoints: number): number {
+  if (topPoints <= 0 || points <= 0) return 0;
+  // Raíz cuadrada y no lineal: la diferencia entre 0 y 20.000 puntos importa
+  // mucho más que entre 300.000 y 320.000. Sin esto, un solo campeón muy
+  // jugado aplasta a todos los demás a cero.
+  const fraccion = Math.min(1, Math.sqrt(points / topPoints));
+  return MASTERY_MAX_LOGIT * (fraccion * 2 - 1);
+}
+
 // Ranks every real candidate for `position` by a blend of two honest
 // signals: the champion's real winrate against the already-known enemy
 // laner (falling back to its overall winrate for the role when the
@@ -176,6 +205,7 @@ export function suggestMatchupPicks(
   matchups: LaneMatchupEntry[],
   roleWinrates: ChampionWinrateEntry[],
   personalOverview: ChampionOverviewStats[],
+  mastery: ChampionMasteryEntry[] = [],
   limit = 8,
 ): MatchupSuggestion[] {
   const role = POSITION_TO_ROLE[position];
@@ -190,6 +220,8 @@ export function suggestMatchupPicks(
     roleWinrates.filter((w) => w.role === role).map((w) => [toDDragonId(w.championName), w]),
   );
   const personalByInternalId = new Map(personalOverview.map((p) => [toDDragonId(p.championName), p]));
+  const masteryByChampionId = new Map(mastery.map((m) => [m.championId, m]));
+  const topMasteryPoints = mastery.reduce((max, m) => Math.max(max, m.points), 0);
 
   const scored = available
     .map((champion) => {
@@ -204,7 +236,10 @@ export function suggestMatchupPicks(
 
       const matchupRate = smoothedRate(matchupWins ?? 0, matchupGames ?? 0);
       const personalRate = smoothedRate(personal?.wins ?? 0, personal?.games ?? 0);
-      const combinedScore = sigmoid(logit(matchupRate) + logit(personalRate));
+      const masteryEntry = masteryByChampionId.get(champion.id);
+      const combinedScore = sigmoid(
+        logit(matchupRate) + logit(personalRate) + masteryLogit(masteryEntry?.points ?? 0, topMasteryPoints),
+      );
 
       return {
         champion,
@@ -213,6 +248,8 @@ export function suggestMatchupPicks(
         matchupSpecific,
         personalWinRate: personal ? personal.wins / personal.games : undefined,
         personalGames: personal?.games,
+        masteryPoints: masteryEntry?.points,
+        masteryLevel: masteryEntry?.level,
         combinedScore,
         hasSignal: (matchupGames ?? 0) > 0 || (personal?.games ?? 0) > 0,
       };

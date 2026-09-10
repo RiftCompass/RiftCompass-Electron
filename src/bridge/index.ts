@@ -189,6 +189,8 @@ const api: RiftCompassApi = {
 
   clearItemSets: () => tryInvoke(CMD.ClearItemSets, undefined, () => ({ ok: false as const, reason: "unavailable" })),
 
+  getChampionMastery: () => tryInvoke(CMD.GetChampionMastery, undefined, () => ({ ok: true as const, mastery: [] })),
+
   getSettings: (): Promise<AppSettings> => tryInvoke(CMD.SettingsGet, undefined, loadLocalSettings),
   setAutoLaunch: (enabled: boolean): Promise<AppSettings> =>
     tryInvoke(CMD.SettingsSetAutoLaunch, { enabled }, () =>
