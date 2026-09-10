@@ -6,10 +6,14 @@ import { masteryLogit } from "./draft-help";
 // Estas pruebas fijan ese contrato, que es fácil de romper sin darse cuenta al
 // tocar la fórmula.
 describe("masteryLogit", () => {
-  it("es neutro cuando no hay datos de maestría", () => {
+  it("es neutro cuando no hay datos de maestría de ningún campeón", () => {
     expect(masteryLogit(0, 0)).toBe(0);
-    expect(masteryLogit(0, 500_000)).toBe(0);
     expect(masteryLogit(10_000, 0)).toBe(0);
+  });
+
+  it("un campeón nunca jugado va al suelo, por debajo de uno jugado un poco", () => {
+    expect(masteryLogit(0, 500_000)).toBe(-0.35);
+    expect(masteryLogit(100, 500_000)).toBeGreaterThan(masteryLogit(0, 500_000));
   });
 
   it("premia al campeón más jugado del propio jugador", () => {
