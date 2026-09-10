@@ -225,6 +225,20 @@ export type SaveChampionBuildResult =
   | { ok: true; builds: SavedChampionBuild[] }
   | { ok: false; error: string };
 
+// La build de objetos que se deja puesta en la tienda del cliente como item
+// set. `itemIds` va EN ORDEN DE COMPRA (el primero es el primer objeto
+// principal), que es el dato que hace util al set; `games` es la muestra que lo
+// respalda, para poder ensenarla y no pedirle fe al jugador.
+// Mismo contrato que BuildParaSet en electron/itemSet.ts.
+export interface RecommendedItemSet {
+  championId: number;
+  championName: string;
+  role: string;
+  itemIds: number[];
+  games: number;
+}
+
+
 export interface RiftCompassApi {
   onLcuConnection: (cb: (status: "connected" | "disconnected") => void) => void;
   onPhase: (cb: (phase: string) => void) => void;
@@ -249,13 +263,19 @@ export interface RiftCompassApi {
   // convention as ability-bar calibration.
   setOverlayPanelPosition: (panel: OverlayPanelKey, position: ScreenPoint) => Promise<AppSettings>;
   importBuild: (championId: number) => Promise<{ ok: true; items: number[] } | { ok: false; reason: string }>;
+  // `itemSet` es opcional: sin orden de compra conocido no se escribe ningun
+  // item set, en vez de dejarle al jugador uno con los objetos en orden
+  // arbitrario. `itemSetAplicado` dice si llego a escribirse, para que la UI
+  // no prometa algo que no paso.
   applyRecommendedBuild: (
     perkIds: number[],
     primaryStyleId: number,
     subStyleId: number,
     spellLow: number,
     spellHigh: number,
-  ) => Promise<{ ok: true } | { ok: false; reason: string }>;
+    itemSet?: RecommendedItemSet,
+  ) => Promise<{ ok: true; itemSetAplicado?: boolean } | { ok: false; reason: string }>;
+  clearItemSets: () => Promise<{ ok: true; borrados: number } | { ok: false; reason: string }>;
   getSettings: () => Promise<AppSettings>;
   setAutoLaunch: (enabled: boolean) => Promise<AppSettings>;
   setOverlayModules: (modules: Partial<OverlayModules>) => Promise<AppSettings>;
