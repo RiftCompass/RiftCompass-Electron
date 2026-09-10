@@ -35,6 +35,21 @@ async function gh(url, token, init = {}) {
   return res.status === 204 ? null : res.json();
 }
 
+// `GET /releases` es eventualmente consistente: una release recien creada no
+// sale en el listado hasta ~2 s despues (medido contra la API real; el POST ya
+// ha devuelto su id y su tag). Esa ventana es justo lo que hace que los dos
+// publicadores de electron-builder no vean nada y creen cada uno la suya, asi
+// que aqui no se concluye "no existe" a la primera: se reintenta antes de
+// decidir, o este script cae en la misma trampa cuando se relanza seguido.
+async function findByTag(api, token, tag, intentos = 4) {
+  for (let i = 0; i < intentos; i++) {
+    const found = (await gh(`${api}/releases?per_page=100`, token)).filter((r) => r.tag_name === tag);
+    if (found.length > 0) return found;
+    if (i < intentos - 1) await new Promise((r) => setTimeout(r, 1500));
+  }
+  return [];
+}
+
 // electron-builder arranca un publicador por artefacto y cada uno mira por su
 // cuenta si la release del tag existe. Ninguno la encuentra, los dos la crean,
 // y salen DOS borradores del mismo tag: a uno le llegan el instalador y
@@ -53,7 +68,7 @@ export async function ensureDraftRelease({ log = console.log } = {}) {
   const api = `https://api.github.com/repos/${owner}/${repo}`;
   const target = { owner, repo, token, tag };
 
-  const existing = (await gh(`${api}/releases?per_page=100`, token)).filter((r) => r.tag_name === tag);
+  const existing = await findByTag(api, token, tag);
   if (existing.length > 1) {
     // Justo lo que esto evita. Si ya hay dos, cual conservar es una decision
     // de quien publica, no algo que adivinar aqui.
