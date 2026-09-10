@@ -298,3 +298,18 @@ export const accountGetSavedBuilds = () => getList("/api/v1/saved-builds", "buil
 export const accountCreateBuild = (name: string, items: string[], supportRole: boolean) =>
   listResult("POST", "/api/v1/saved-builds", { name, items, supportRole }, "builds");
 export const accountDeleteBuild = (id: string) => listResult("DELETE", `/api/v1/saved-builds/${id}`, undefined, "builds");
+
+// Champion builds (the Champion Builds tool) are their own endpoint and
+// their own table on the web, not an extension of saved-builds above: that
+// one is the Gold Calculator's item list, this one carries the champion,
+// the position, the runes, the summoner spells and the skill order. The
+// whole build travels as one object so this side never has to know the
+// field list, which the web validates in one place
+// (lib/champion-builds/validate.ts).
+export const accountGetSavedChampionBuilds = () => getList("/api/v1/saved-champion-builds", "builds");
+export const accountCreateChampionBuild = (build: unknown) =>
+  listResult("POST", "/api/v1/saved-champion-builds", build, "builds");
+export const accountUpdateChampionBuild = (id: string, build: unknown) =>
+  listResult("PUT", `/api/v1/saved-champion-builds/${id}`, build, "builds");
+export const accountDeleteChampionBuild = (id: string) =>
+  listResult("DELETE", `/api/v1/saved-champion-builds/${id}`, undefined, "builds");

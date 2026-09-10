@@ -175,6 +175,56 @@ export interface SavedBuild {
 
 export type SaveBuildResult = { ok: true; builds: SavedBuild[] } | { ok: false; error: string };
 
+// A champion build (the Champion Builds tool): the web's own
+// saved_champion_builds row, mirrored field for field so the app and the
+// browser show the same build. `runes` is Riot's own perk-id shape, the
+// same one the LCU takes when applying a page in champ select.
+export interface ChampionBuildRunes {
+  primaryStyleId: number;
+  subStyleId: number;
+  perk0: number;
+  perk1: number;
+  perk2: number;
+  perk3: number;
+  perk4: number;
+  perk5: number;
+  statPerk0: number;
+  statPerk1: number;
+  statPerk2: number;
+}
+
+export interface ChampionBuildSpells {
+  spellLow: number;
+  spellHigh: number;
+}
+
+export interface ChampionBuildInput {
+  name: string;
+  championName: string;
+  role: string;
+  items: string[];
+  runes: ChampionBuildRunes | null;
+  spells: ChampionBuildSpells | null;
+  /** Order to max the basic abilities, as Riot skill slots: [1, 3, 2] = Q > E > W. */
+  skillPriority: number[] | null;
+  /** Optional level-by-level path, skill slots in level order. */
+  skillOrder: number[] | null;
+  source: "custom" | "crawler";
+  sourcePatch: string | null;
+  sourceRankTier: string | null;
+  notes: string | null;
+}
+
+export interface SavedChampionBuild extends ChampionBuildInput {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SaveChampionBuildResult =
+  | { ok: true; builds: SavedChampionBuild[] }
+  | { ok: false; error: string };
+
 export interface RiftCompassApi {
   onLcuConnection: (cb: (status: "connected" | "disconnected") => void) => void;
   onPhase: (cb: (phase: string) => void) => void;
@@ -234,6 +284,10 @@ export interface RiftCompassApi {
   getSavedBuilds: () => Promise<SavedBuild[]>;
   createBuild: (name: string, items: string[], supportRole: boolean) => Promise<SaveBuildResult>;
   deleteBuild: (id: string) => Promise<SaveBuildResult>;
+  getSavedChampionBuilds: () => Promise<SavedChampionBuild[]>;
+  createChampionBuild: (build: ChampionBuildInput) => Promise<SaveChampionBuildResult>;
+  updateChampionBuild: (id: string, build: ChampionBuildInput) => Promise<SaveChampionBuildResult>;
+  deleteChampionBuild: (id: string) => Promise<SaveChampionBuildResult>;
   openExternal: (url: string) => Promise<void>;
 }
 

@@ -2,4 +2,7 @@
 // (see the web repo's CLAUDE.md, "API pública v1"). Must match the copy
 // in electron/account.ts, which the main process keeps on its own side
 // of the IPC boundary.
-export const API_BASE_URL = "https://riftcompass.com";
+// `VITE_API_BASE_URL` overrides it for local development only (running
+// `dev:renderer` against a web checkout on localhost); with nothing set,
+// including in every packaged build, this is production.
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://riftcompass.com";

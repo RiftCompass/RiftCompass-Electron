@@ -147,6 +147,14 @@ export function registerIpcHandlers(): void {
     account.accountCreateBuild(name, items, supportRole),
   );
   ipcMain.handle(CMD.AccountDeleteBuild, (_e, { id }: { id: string }) => account.accountDeleteBuild(id));
+  ipcMain.handle(CMD.AccountGetSavedChampionBuilds, () => account.accountGetSavedChampionBuilds());
+  ipcMain.handle(CMD.AccountCreateChampionBuild, (_e, { build }: { build: unknown }) =>
+    account.accountCreateChampionBuild(build),
+  );
+  ipcMain.handle(CMD.AccountUpdateChampionBuild, (_e, { id, build }: { id: string; build: unknown }) =>
+    account.accountUpdateChampionBuild(id, build),
+  );
+  ipcMain.handle(CMD.AccountDeleteChampionBuild, (_e, { id }: { id: string }) => account.accountDeleteChampionBuild(id));
 
   // Defense in depth: the renderer's bridge (src/bridge/index.ts) already
   // enforces this same allowlist before ever calling invoke, but the main

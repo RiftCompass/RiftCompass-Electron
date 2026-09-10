@@ -26,6 +26,9 @@ import type {
   RiftCompassApi,
   SavedBuild,
   SaveBuildResult,
+  SavedChampionBuild,
+  SaveChampionBuildResult,
+  ChampionBuildInput,
   SavedDraft,
   SaveDraftResult,
   SavedMapSummary,
@@ -255,6 +258,14 @@ const api: RiftCompassApi = {
     tryInvoke(CMD.AccountCreateBuild, { name, items, supportRole }, () => ({ ok: false as const, error: NO_BACKEND })),
   deleteBuild: (id: string): Promise<SaveBuildResult> =>
     tryInvoke(CMD.AccountDeleteBuild, { id }, () => ({ ok: false as const, error: NO_BACKEND })),
+  getSavedChampionBuilds: (): Promise<SavedChampionBuild[]> =>
+    tryInvoke(CMD.AccountGetSavedChampionBuilds, undefined, () => []),
+  createChampionBuild: (build: ChampionBuildInput): Promise<SaveChampionBuildResult> =>
+    tryInvoke(CMD.AccountCreateChampionBuild, { build }, () => ({ ok: false as const, error: NO_BACKEND })),
+  updateChampionBuild: (id: string, build: ChampionBuildInput): Promise<SaveChampionBuildResult> =>
+    tryInvoke(CMD.AccountUpdateChampionBuild, { id, build }, () => ({ ok: false as const, error: NO_BACKEND })),
+  deleteChampionBuild: (id: string): Promise<SaveChampionBuildResult> =>
+    tryInvoke(CMD.AccountDeleteChampionBuild, { id }, () => ({ ok: false as const, error: NO_BACKEND })),
 
   openExternal: async (url: string): Promise<void> => {
     // Same allowlist the main process enforces (see electron/ipc.ts): only

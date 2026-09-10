@@ -79,6 +79,14 @@ export const CMD = {
   AccountCreateBuild: "account_create_build",
   /** invoke. args: { id } */
   AccountDeleteBuild: "account_delete_build",
+  /** invoke, no args. returns SavedChampionBuild[] */
+  AccountGetSavedChampionBuilds: "account_get_saved_champion_builds",
+  /** invoke { build }. returns SaveChampionBuildResult */
+  AccountCreateChampionBuild: "account_create_champion_build",
+  /** invoke { id, build }. returns SaveChampionBuildResult */
+  AccountUpdateChampionBuild: "account_update_champion_build",
+  /** invoke { id }. returns SaveChampionBuildResult */
+  AccountDeleteChampionBuild: "account_delete_champion_build",
   /** invoke. args: { url } — opens an https://riftcompass.com URL in the OS browser */
   ShellOpenExternal: "shell_open_external",
 } as const;

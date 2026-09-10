@@ -36,11 +36,13 @@ import { ChampionPoolBuilder } from "./tools/ChampionPoolBuilder";
 import { TierListBuilder } from "./tools/TierListBuilder";
 import { MapEditor } from "./tools/MapEditor";
 import { MetaTierList } from "./tools/MetaTierList";
+import { ChampionBuilds } from "./tools/ChampionBuilds";
 import { COLORS, FONT_HEADING, TYPE, inputStyle, pillStyle } from "./theme";
 import { WindowControls } from "./WindowControls";
 import { useI18n, SUPPORTED_LOCALES, LOCALE_LABEL, type Locale } from "./i18n";
 import { ChampionSplashAccent } from "./ChampionSplashAccent";
 import { OpenAccountPanelProvider } from "./account-panel";
+import { OpenToolProvider, RequestedChampionProvider, type ToolNavigationRequest } from "./tool-navigation";
 import { formatTierRank, rankToLpValue, PLATFORM_LABELS } from "./lib/rank-lp";
 import { fetchLatestVersion, profileIconUrl } from "./ddragon";
 import type { AccountUser, FlashSide, LcuIdentity, OverlayModules, SavedProfileFolder, SavedProfileWithRank } from "./riftcompass";
@@ -56,6 +58,7 @@ const NATIVE_VIEWS: Record<ToolId, React.ComponentType> = {
   tierList: TierListBuilder,
   map: MapEditor,
   metaTierList: MetaTierList,
+  championBuilds: ChampionBuilds,
 };
 
 // The app's real shell — this project's own React UI, not riftcompass.com
@@ -134,12 +137,21 @@ const TOOL_SPLASH_ACCENTS: Record<ToolId, SplashAccent[]> = {
     { championId: "Camille", opacity: 20, style: { bottom: -30, left: -90, width: 480, height: 320, transform: "rotate(2deg)" } },
     { championId: "Aatrox", opacity: 16, style: { top: "50%", right: -70, width: 360, height: 250, transform: "translateY(-50%) rotate(-2deg)" } },
   ],
+  championBuilds: [
+    { championId: "Ahri", opacity: 24, style: { top: -30, right: -60, width: 540, height: 340, transform: "rotate(2deg)" } },
+    { championId: "Jhin", opacity: 18, style: { bottom: -30, right: -90, width: 470, height: 310, transform: "rotate(-1deg)" } },
+    { championId: "Ekko", opacity: 14, style: { top: "50%", left: -60, width: 340, height: 240, transform: "translateY(-50%) rotate(1deg)" } },
+  ],
 };
 
 export function MainView() {
   const { t } = useI18n();
   const [panel, setPanel] = useState<Panel>("tools");
   const [openToolId, setOpenToolId] = useState<ToolId | null>(null);
+  // Set only when one tool opened another on a champion (Meta Tier List ->
+  // Champion Builds); cleared as soon as the tool pane is left, so coming
+  // back to the same tool by hand starts empty.
+  const [requestedChampion, setRequestedChampion] = useState<string | null>(null);
   const [lcuStatus, setLcuStatus] = useState<"connected" | "disconnected">("disconnected");
   const [user, setUser] = useState<AccountUser | null | undefined>(undefined);
   const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
@@ -155,7 +167,20 @@ export function MainView() {
 
   function goHome() {
     setPanel("tools");
+    closeTool();
+  }
+
+  function closeTool() {
     setOpenToolId(null);
+    setRequestedChampion(null);
+  }
+
+  // A tool asking for another tool (see tool-navigation.tsx): the champion,
+  // when there is one, is handed to the tool that opens rather than kept as
+  // shared state, so nothing else in the app has to know about it.
+  function openToolFrom(request: ToolNavigationRequest) {
+    setRequestedChampion(request.championInternalId ?? null);
+    setOpenToolId(request.toolId);
   }
 
   function openProfile(profileT: ProfileTarget | null) {
@@ -470,7 +495,7 @@ export function MainView() {
                 />
               ))}
               <button
-                onClick={() => setOpenToolId(null)}
+                onClick={closeTool}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -502,7 +527,11 @@ export function MainView() {
                 const NativeView = NATIVE_VIEWS[openTool.id];
                 return (
                   <OpenAccountPanelProvider value={() => setPanel("settings")}>
-                    <NativeView />
+                    <OpenToolProvider value={openToolFrom}>
+                      <RequestedChampionProvider value={requestedChampion}>
+                        <NativeView />
+                      </RequestedChampionProvider>
+                    </OpenToolProvider>
                   </OpenAccountPanelProvider>
                 );
               })()}

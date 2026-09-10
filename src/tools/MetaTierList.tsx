@@ -7,6 +7,7 @@ import { positionIconUrl } from "../lib/profile-analysis";
 import { TIERS, TIER_COLORS, type Tier } from "../lib/tier-colors";
 import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
+import { useOpenTool } from "../tool-navigation";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../theme";
 
 // Ported from the web app's /tools/meta-tier-list page and
@@ -54,6 +55,9 @@ const RANK_TIERS = ["CHALLENGER", "GRANDMASTER", "MASTER", "DIAMOND", "EMERALD",
 
 export function MetaTierList() {
   const { t } = useI18n();
+  // The web's chips are links to /champions/<champion>; here the same jump
+  // opens the Champion Builds tool on that champion (see tool-navigation.tsx).
+  const openTool = useOpenTool();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
   const [rank, setRank] = useState<(typeof RANK_TIERS)[number]>("CHALLENGER");
   const [winrates, setWinrates] = useState<ChampionWinrate[] | null>(null);
@@ -226,16 +230,33 @@ export function MetaTierList() {
                               const name = champ?.name ?? entry.championName;
                               const matched = trimmedSearch !== "" && name.toLowerCase().includes(trimmedSearch);
                               const dimmed = trimmedSearch !== "" && !matched;
+                              const openBuilds = openTool
+                                ? () => openTool({ toolId: "championBuilds", championInternalId: entry.championName })
+                                : undefined;
                               return (
                                 <div
                                   key={entry.championName}
                                   title={champ ? `${champ.name}: ${tooltip}` : tooltip}
                                   data-champion-match={matched ? "" : undefined}
+                                  onClick={openBuilds}
+                                  role={openBuilds ? "button" : undefined}
+                                  tabIndex={openBuilds ? 0 : undefined}
+                                  onKeyDown={
+                                    openBuilds
+                                      ? (event) => {
+                                          if (event.key === "Enter" || event.key === " ") {
+                                            event.preventDefault();
+                                            openBuilds();
+                                          }
+                                        }
+                                      : undefined
+                                  }
                                   style={{
                                     display: "flex",
                                     flexDirection: "column",
                                     alignItems: "center",
                                     gap: 3,
+                                    cursor: openBuilds ? "pointer" : undefined,
                                     transform: matched ? "scale(1.15)" : undefined,
                                     opacity: dimmed ? 0.3 : undefined,
                                     filter: dimmed ? "grayscale(1)" : undefined,

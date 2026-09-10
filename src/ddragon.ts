@@ -282,3 +282,119 @@ export async function fetchChampionDetail(version: string, championId: string): 
   const json = await res.json();
   return json.data[championId];
 }
+
+// --- Runes (runesReforged.json) -------------------------------------------
+// Mirrors the web's src/lib/riot/runes.ts: the crawler's build data carries
+// rune pages as bare perk ids, so showing (or editing) one needs this
+// catalog. Duplicated by hand across the two repos, like champion-roles.ts
+// and the other shared modules.
+
+export interface RuneSummary {
+  id: number;
+  name: string;
+  icon: string;
+  shortDesc: string;
+}
+
+export interface RuneStyle {
+  id: number;
+  name: string;
+  icon: string;
+  /** Keystone row first, then the three minor rows. */
+  slots: RuneSummary[][];
+}
+
+function stripRuneMarkup(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/g, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export async function fetchRuneStyles(version: string, locale: string): Promise<RuneStyle[]> {
+  const ddLocale = DDRAGON_LOCALES[locale] ?? "en_US";
+  const json = (await fetch(
+    `https://ddragon.leagueoflegends.com/cdn/${version}/data/${ddLocale}/runesReforged.json`,
+  ).then((r) => r.json())) as Array<{
+    id: number;
+    name: string;
+    icon: string;
+    slots: Array<{ runes: Array<{ id: number; name: string; icon: string; shortDesc: string }> }>;
+  }>;
+
+  return json.map((style) => ({
+    id: style.id,
+    name: style.name,
+    icon: style.icon,
+    slots: style.slots.map((slot) =>
+      slot.runes.map((rune) => ({
+        id: rune.id,
+        name: rune.name,
+        icon: rune.icon,
+        shortDesc: stripRuneMarkup(rune.shortDesc ?? ""),
+      })),
+    ),
+  }));
+}
+
+// Rune icons are versionless on Data Dragon, unlike champion and item ones.
+export function runeIconUrl(icon: string): string {
+  return `https://ddragon.leagueoflegends.com/cdn/img/${icon}`;
+}
+
+export interface StatShard {
+  id: number;
+  /** Translation key under ChampionBuilds.statShards. */
+  key: string;
+  iconFile: string;
+}
+
+// The three stat-shard rows. Data Dragon has no data file for them, only
+// the icons; the ids are the ones the crawler actually records.
+export const STAT_SHARD_ROWS: StatShard[][] = [
+  [
+    { id: 5008, key: "adaptiveForce", iconFile: "StatModsAdaptiveForceIcon.png" },
+    { id: 5005, key: "attackSpeed", iconFile: "StatModsAttackSpeedIcon.png" },
+    { id: 5007, key: "abilityHaste", iconFile: "StatModsCDRScalingIcon.png" },
+  ],
+  [
+    { id: 5008, key: "adaptiveForce", iconFile: "StatModsAdaptiveForceIcon.png" },
+    { id: 5010, key: "moveSpeed", iconFile: "StatModsMovementSpeedIcon.png" },
+    { id: 5001, key: "healthScaling", iconFile: "StatModsHealthScalingIcon.png" },
+  ],
+  [
+    { id: 5011, key: "health", iconFile: "StatModsHealthPlusIcon.png" },
+    { id: 5013, key: "tenacity", iconFile: "StatModsTenacityIcon.png" },
+    { id: 5001, key: "healthScaling", iconFile: "StatModsHealthScalingIcon.png" },
+  ],
+];
+
+export function statShardIconUrl(shard: StatShard): string {
+  return `https://ddragon.leagueoflegends.com/cdn/img/perk-images/StatMods/${shard.iconFile}`;
+}
+
+export function statShardById(row: number, id: number): StatShard | undefined {
+  return STAT_SHARD_ROWS[row]?.find((shard) => shard.id === id);
+}
+
+export interface SummonerSpellPick {
+  id: number;
+  name: string;
+  iconUrl: string;
+}
+
+// Summoner's Rift spells only, keyed by Riot's numeric id: what the build
+// editor's picker offers and what the crawler's own pairs use.
+export async function fetchSummonerSpellPicks(version: string, locale: string): Promise<SummonerSpellPick[]> {
+  const ddLocale = DDRAGON_LOCALES[locale] ?? "en_US";
+  const data = await fetch(
+    `https://ddragon.leagueoflegends.com/cdn/${version}/data/${ddLocale}/summoner.json`,
+  ).then((r) => r.json());
+  return (
+    Object.values(data.data) as Array<{ key: string; name: string; modes: string[]; image: { full: string } }>
+  )
+    .filter((spell) => spell.modes.includes("CLASSIC"))
+    .map((spell) => ({ id: Number(spell.key), name: spell.name, iconUrl: spellIconUrl(version, spell.image.full) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
