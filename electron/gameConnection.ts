@@ -13,7 +13,7 @@ import { connectWs, findLockfile, lcuRequest, parseEventFrame, readLockfile, typ
 import { fetchLiveGameData } from "./liveclient";
 import * as overlayTopmost from "./overlayTopmost";
 import * as tabWatch from "./tabWatch";
-import { broadcast, showMainWindow, showOverlay } from "./windows";
+import { broadcast, showChampSelect, showMainWindow, showOverlay } from "./windows";
 
 const LOCKFILE_POLL_MS = 2500;
 const LIVE_GAME_POLL_MS = 3000;
@@ -183,6 +183,11 @@ async function refreshPhase(c: LcuCredentials): Promise<void> {
   // screen) it stays hidden, matching Porofessor/iTero's behavior.
   setOverlayVisible(phase === "ChampSelect" || phase === "InProgress");
 
+  // El acompañante de draft tiene su propia ventana y solo vive durante champ
+  // select: fuera de ahí no tiene nada que decir, y una ventana siempre encima
+  // que no aporta es una ventana que el jugador acaba cerrando.
+  showChampSelect(phase === "ChampSelect");
+
   if (phase === "ChampSelect") {
     try {
       const session = await lcuRequest(c, "GET", "/lol-champ-select/v1/session");
@@ -265,5 +270,6 @@ export async function run(): Promise<void> {
     broadcast(EVT.LcuConnection, "disconnected");
     broadcast(EVT.LcuIdentity, null);
     setOverlayVisible(false);
+    showChampSelect(false);
   }
 }

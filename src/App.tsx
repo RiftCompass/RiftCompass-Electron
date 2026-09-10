@@ -1,5 +1,6 @@
 import { MainView } from "./MainView";
 import { OverlayView } from "./OverlayView";
+import { ChampSelectView } from "./champselect/ChampSelectView";
 import { I18nProvider } from "./i18n";
 
 // Both windows load the same renderer bundle — main/windows.ts tells them
@@ -8,5 +9,9 @@ import { I18nProvider } from "./i18n";
 // wraps whichever view renders rather than living inside just one of them.
 export function App() {
   const view = new URLSearchParams(window.location.search).get("view");
-  return <I18nProvider>{view === "overlay" ? <OverlayView /> : <MainView />}</I18nProvider>;
+  return (
+    <I18nProvider>
+      {view === "overlay" ? <OverlayView /> : view === "champselect" ? <ChampSelectView /> : <MainView />}
+    </I18nProvider>
+  );
 }
