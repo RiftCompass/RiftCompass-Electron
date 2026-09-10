@@ -790,6 +790,7 @@ export const en = {
     description: "Your strongest picks for this lane, from real matchup and personal win rates.",
     notInChampSelect: "Only available during champion select.",
     waitingForRole: "Waiting for your role to be assigned…",
+    askRole: "The client does not assign positions in this mode. Which one are you playing?",
     roleLabel: "Draft advisor · {role}",
     enemyKnown: "Lane opponent: {champion}",
     enemyUnknown: "Lane opponent not revealed yet: showing your role's overall picks.",
