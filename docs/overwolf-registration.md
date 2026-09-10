@@ -222,3 +222,49 @@ una clave falsa: la detecta y falla).
 **Esto es lo que bloquea el paso 2 de la lista de abajo.** Hasta que la clave
 exista, no se puede probar la inyección en una partida real.
 
+
+## Primera inyeccion real en una partida — 2026-09-10
+
+Con la Developer Key puesta, la cadena completa funciona por primera vez.
+Registro de una partida personalizada real:
+
+```
+[overwolf] credenciales de desarrollador: OW_DEV_KEY
+[overlay] motor de Overwolf presente: se inyectara dentro del juego
+[overlay] paquete de Overwolf listo: overlay
+[overlay] juego detectado: League of Legends (tipo Game)
+[overlay] inyectado en League of Legends
+```
+
+Sin un solo error. El paso 2 de la lista de arriba queda cerrado: `app.overwolf`
+existe, `registerGames` reconoce el juego y `game-launched` -> `inject()`
+funciona contra el proceso real.
+
+**Pero el overlay no se veia.** Estaba ahi: ampliando la captura se adivinaba el
+nombre del invocador por debajo del marcador de la partida. O sea que la ventana
+se creaba y pintaba contenido de verdad, pero **por detras de la interfaz de
+League**.
+
+Causa encontrada en el codigo, no adivinada: `overlayTopmost.ts` se salta a
+proposito su re-afirmacion periodica de `setAlwaysOnTop()` bajo este motor,
+razonando que la profundidad la gobierna `overlayOptions.zOrder` de Overwolf y no
+el concepto de Electron. El razonamiento es correcto, pero **`zOrder` no se
+rellenaba en ningun sitio**, y su valor por defecto segun los tipos de Overwolf
+es `"default"`. Arreglado poniendo `zOrder: "topMost"` en las opciones de la
+ventana (`overlayEngine.ts`).
+
+**Ese arreglo esta SIN VERIFICAR en partida**: la sesion de prueba se cerro antes
+de poder repetirla. Es lo primero que hay que comprobar en la siguiente.
+
+Notas practicas para la proxima prueba:
+
+- La Developer Key **caduca el 24/09/2026**. Se renueva en
+  <https://dev.overwolf.com/profile> con el boton Extend, disponible desde 2 dias
+  antes. Si el overlay deja de inyectarse sin haber tocado nada, mirar esto
+  primero.
+- `console.overwolf.com` **no sirve** para esta cuenta: devuelve "Something went
+  wrong" al entrar. La cuenta aprobada vive en `dev.overwolf.com`.
+- Con la app corriendo a pantalla completa en desarrollo, roba el foco y estorba
+  para manejar el cliente de League. Conviene minimizarla antes de montar la
+  partida.
+

@@ -155,6 +155,16 @@ async function createInGameOverlayWindow(overlayApi: IOverwolfOverlayApi): Promi
     // become interactive itself via setOverlayInteractive() only while the
     // cursor is over a real control.
     passthrough: "passThroughAndNotify",
+    // Sin esto el overlay se dibuja DETRAS de la interfaz de League: se
+    // inyecta y pinta su contenido, pero queda tapado y parece que no
+    // funciona. Visto en la primera prueba real (2026-09-10): el nombre del
+    // invocador se adivinaba por debajo del marcador de la partida.
+    //
+    // El valor por defecto de Overwolf es "default", y overlayTopmost.ts se
+    // salta a proposito su re-afirmacion de setAlwaysOnTop() bajo este motor
+    // dando por hecho que la profundidad la gobierna este campo. Lo gobierna,
+    // pero solo si se rellena, cosa que no se hacia.
+    zOrder: "topMost",
     webPreferences: {
       preload: PRELOAD,
       contextIsolation: true,
