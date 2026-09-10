@@ -758,6 +758,7 @@ export const fr: Messages = {
     applyBuildError: "Échec de l'application",
   },
   ChampSelect: {
+    roleGuessed: "voie habituelle",
     title: "Assistant de draft",
     buildTitle: "Build à importer",
     recommended: "Build recommandée",
