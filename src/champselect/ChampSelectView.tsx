@@ -101,6 +101,10 @@ export function ChampSelectView() {
   // los mejores del servidor. Peor aún: el orden de compra ni siquiera tiene
   // datos en Challenger todavía, así que sin esto no hay item set que dar.
   const [rangoJugador, setRangoJugador] = useState<string | null>(null);
+  // La posición que el jugador dice que va a jugar cuando el cliente no
+  // asigna ninguna (la pregunta DraftAdvisor). Vive aquí porque decide
+  // también qué build se pide.
+  const [posicionManual, setPosicionManual] = useState<string | null>(null);
   // Si el auto-aplicado falla, NO se reintenta solo: se marca aquí y el jugador
   // decide con el botón. Sin esto el efecto volvería a dispararse en cuanto
   // `aplicando` vuelve a null y quedaría martilleando el cliente de League.
@@ -147,15 +151,16 @@ export function ChampSelectView() {
   const campeonId = yo?.championId ?? 0;
   const campeon = campeonId ? champions.byId[campeonId] : undefined;
   // El cliente no siempre asigna posición: la Herramienta de Práctica, las
-  // personalizadas a ciegas y ARAM la dejan vacía. Sin rol no se puede pedir
-  // build, así que se cae al carril habitual del campeón, que la app ya conoce
-  // (`champion-roles.ts`, el mismo dato que usa el consejero). Es mejor
-  // recomendar la build de Ahri media que no recomendar nada; y cuando el
-  // cliente SÍ dice el rol, manda el cliente.
+  // personalizadas a ciegas y ARAM la dejan vacía. Entonces vale la que el
+  // jugador haya elegido en el consejero y, si tampoco la ha dicho, el carril
+  // habitual del campeón, que la app ya conoce (`champion-roles.ts`, el mismo
+  // dato que usa el consejero). Es mejor recomendar la build de Ahri media que
+  // no recomendar nada; y cuando el cliente SÍ dice el rol, manda el cliente.
   const rolAsignado = yo?.assignedPosition ? yo.assignedPosition.toUpperCase() : "";
+  const rolElegido = posicionManual ? posicionManual.toUpperCase() : "";
   const rolHabitual = campeon ? (rolesOf(campeon.internalId)?.[0] ?? "") : "";
-  const rol = rolAsignado || rolHabitual;
-  const rolEsSupuesto = !rolAsignado && rol !== "";
+  const rol = rolAsignado || rolElegido || rolHabitual;
+  const rolEsSupuesto = !rolAsignado && !rolElegido && rol !== "";
 
   // La build recomendada se pide al elegir campeón, no antes: hasta entonces no
   // hay nada que pedir.
@@ -317,9 +322,16 @@ export function ChampSelectView() {
         ) : null}
       </div>
 
-      <DraftAdvisor identity={identity} />
+      {/* Mientras se elige, lo importante es el consejo; con el campeón ya
+          fijado, la build. Con las sugerencias desplegadas la lista de builds
+          quedaba por debajo del borde y había que hacer scroll con el reloj
+          corriendo, así que el orden cambia con el pick. Se hace con `order`
+          y no moviendo el componente para que React no lo reinicie. */}
+      <div style={{ order: campeon ? 2 : 0 }}>
+        <DraftAdvisor identity={identity} posicionManual={posicionManual} onElegirPosicion={setPosicionManual} />
+      </div>
 
-      <div style={{ ...tarjeta, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ ...tarjeta, display: "flex", flexDirection: "column", gap: 8, order: 1 }}>
         <span style={{ fontFamily: FONT_HEADING, fontSize: 15 }}>{t("ChampSelect.buildTitle")}</span>
 
         {!campeon ? (

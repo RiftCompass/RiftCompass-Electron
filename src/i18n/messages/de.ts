@@ -778,6 +778,7 @@ export const de: Messages = {
     description: "Deine stärksten Picks für diese Lane, aus echten Matchup- und persönlichen Siegraten.",
     notInChampSelect: "Nur während der Champion-Auswahl verfügbar.",
     waitingForRole: "Warte auf die Zuweisung deiner Rolle…",
+    askRole: "Der Client weist in diesem Modus keine Position zu. Welche spielst du?",
     roleLabel: "Draft-Berater · {role}",
     enemyKnown: "Lane-Gegner: {champion}",
     enemyUnknown: "Lane-Gegner noch nicht bekannt: zeigt die besten allgemeinen Picks für deine Rolle.",
