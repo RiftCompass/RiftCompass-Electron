@@ -2,6 +2,7 @@ import type { Messages } from "../index";
 
 export const es: Messages = {
   Common: {
+    networkError: "No se pudo conectar con riftcompass.com. Comprueba tu conexión.",
     loadingSaved: "Cargando tus guardados…",
     tools: "Herramientas",
     settings: "Ajustes",
@@ -26,8 +27,8 @@ export const es: Messages = {
     map: { title: "Editor de Mapa", description: "Dibuja rotaciones, ganks y jugadas directamente sobre la Grieta del Invocador." },
     personalityTest: { title: "Test de Personalidad", description: "Responde unas preguntas sobre tu estilo de juego y descubre los campeones que mejor encajan contigo." },
     jungleXp: { title: "Calculadora de XP de Jungla", description: "Consulta cuánta XP da cada campamento de la jungla a tu nivel y suma el total de una ruta de clear." },
-    championPool: { title: "Champion Pool Builder", description: "Construye una pool enfocada por rol. Picks principales, picks flexibles y un pocket pick." },
-    metaTierList: { title: "Meta Tier List", description: "Campeones clasificados por winrate real de las partidas propias que RiftCompass ha rastreado." },
+    championPool: { title: "Champion Pool Builder", description: "Crea una pool enfocada por posición: picks principales, picks flexibles y un pocket pick." },
+    metaTierList: { title: "Meta Tier List", description: "Campeones clasificados por winrate real de las partidas propias que RiftCompass ha rastreado, no de una fuente externa." },
     championBuilds: { title: "Builds de campeón", description: "Las runas, hechizos, objetos y orden de habilidades más jugados de cada campeón, más tus propias builds guardadas." },
   },
   Profile: {
@@ -751,7 +752,6 @@ export const es: Messages = {
     loginToSaveLink: "Iniciar sesión",
     skillOrder: "Orden de habilidades",
     noSkillOrderData: "Todavía no hay orden de habilidades rastreado para este campeón en esta posición y rango.",
-    loadError: "No se pudo conectar con riftcompass.com. Comprueba tu conexión.",
     rank: "Rango",
     winRateIn: "de winrate en {position}, {games} partidas registradas",
     damageTypes: { AD: "Daño de ataque", AP: "Poder de habilidad", mixed: "Daño mixto" },

@@ -2,6 +2,7 @@ import type { Messages } from "../index";
 
 export const fr: Messages = {
   Common: {
+    networkError: "Impossible de joindre riftcompass.com. Vérifiez votre connexion.",
     loadingSaved: "Chargement de vos enregistrements…",
     tools: "Outils",
     settings: "Paramètres",
@@ -26,8 +27,8 @@ export const fr: Messages = {
     map: { title: "Éditeur de carte", description: "Esquissez rotations, ganks et actions directement sur la Faille de l'invocateur." },
     personalityTest: { title: "Test de personnalité", description: "Répondez à quelques questions sur votre style de jeu et découvrez les champions qui vous correspondent le mieux." },
     jungleXp: { title: "Calculateur d'XP de jungle", description: "Découvrez l'XP que donne chaque camp de jungle à votre niveau, et calculez le total d'un clear." },
-    championPool: { title: "Champion Pool Builder", description: "Construisez un pool ciblé par rôle. Picks principaux, picks flex et un pocket pick." },
-    metaTierList: { title: "Meta Tier List", description: "Champions classés selon leur taux de victoire réel issu des parties suivies par RiftCompass." },
+    championPool: { title: "Champion Pool Builder", description: "Constituez une pool ciblée par rôle : picks principaux, picks polyvalents et un pocket pick." },
+    metaTierList: { title: "Meta Tier List", description: "Champions classés selon leur taux de victoire réel issu des parties suivies par RiftCompass, et non d'une source tierce." },
     championBuilds: { title: "Builds de champion", description: "Les runes, sorts, objets et ordre de compétences les plus joués de chaque champion, plus vos propres builds enregistrées." },
   },
   Profile: {
@@ -751,7 +752,6 @@ export const fr: Messages = {
     loginToSaveLink: "Se connecter",
     skillOrder: "Ordre des compétences",
     noSkillOrderData: "Aucun ordre de compétences suivi pour ce champion à ce poste et ce rang pour l'instant.",
-    loadError: "Impossible de joindre riftcompass.com. Vérifiez votre connexion.",
     rank: "Rang",
     winRateIn: "de winrate en {position}, {games} parties analysées",
     damageTypes: { AD: "Dégâts d'attaque", AP: "Puissance", mixed: "Dégâts mixtes" },

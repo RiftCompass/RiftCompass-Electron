@@ -43,7 +43,12 @@ import { WindowControls } from "./WindowControls";
 import { useI18n, SUPPORTED_LOCALES, LOCALE_LABEL, type Locale } from "./i18n";
 import { ChampionSplashAccent } from "./ChampionSplashAccent";
 import { OpenAccountPanelProvider } from "./account-panel";
-import { OpenToolProvider, RequestedChampionProvider, type ToolNavigationRequest } from "./tool-navigation";
+import {
+  OpenToolProvider,
+  RequestedChampionProvider,
+  type RequestedChampion,
+  type ToolNavigationRequest,
+} from "./tool-navigation";
 import { formatTierRank, rankToLpValue, PLATFORM_LABELS } from "./lib/rank-lp";
 import { fetchLatestVersion, profileIconUrl } from "./ddragon";
 import type { AccountUser, FlashSide, LcuIdentity, OverlayModules, SavedProfileFolder, SavedProfileWithRank } from "./riftcompass";
@@ -164,7 +169,7 @@ export function MainView() {
   // Set only when one tool opened another on a champion (Meta Tier List ->
   // Champion Builds); cleared as soon as the tool pane is left, so coming
   // back to the same tool by hand starts empty.
-  const [requestedChampion, setRequestedChampion] = useState<string | null>(null);
+  const [requestedChampion, setRequestedChampion] = useState<RequestedChampion | null>(null);
   // Tools the open one was reached from, oldest first (Meta Tier List ->
   // Champion Builds leaves ["metaTierList"]), so "back" can return to the
   // previous tool instead of always dropping to the menu. Empty whenever a
@@ -201,7 +206,11 @@ export function MainView() {
   function openToolFrom(request: ToolNavigationRequest) {
     const from = openToolIdRef.current;
     if (from) setToolTrail((trail) => [...trail, from]);
-    setRequestedChampion(request.championInternalId ?? null);
+    setRequestedChampion(
+      request.championInternalId
+        ? { championInternalId: request.championInternalId, role: request.role, rank: request.rank }
+        : null,
+    );
     setOpenToolId(request.toolId);
   }
 
