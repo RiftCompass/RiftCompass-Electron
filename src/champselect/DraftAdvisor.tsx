@@ -30,6 +30,10 @@ interface ChampSelectSession {
   theirTeam?: ChampSelectPlayer[];
 }
 
+// Por debajo de esto el winrate personal se enseña como lo que es, poca
+// muestra. Mismo umbral que el resto de la app para fiarse de un porcentaje.
+const PERSONAL_SAMPLE_TRUSTED = 5;
+
 const EMPTY_MAPS: ChampionMaps = { byId: {}, byInternalId: {}, byNormalizedName: {} };
 const cardStyle = makeCardStyle();
 
@@ -195,6 +199,17 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
       .catch(() => undefined);
   }, []);
 
+  // Con pocas partidas el porcentaje engaña ("100 %" con una sola): la
+  // puntuación ya lo descuenta (smoothedRate en draft-help.ts), y el texto
+  // tiene que decirlo igual de claro.
+  function etiquetaPersonal(s: MatchupSuggestion): string {
+    if (s.personalWinRate === undefined || s.personalGames === undefined) return t("DraftAdvisor.personalNone");
+    const percent = Math.round(s.personalWinRate * 100);
+    if (s.personalGames === 1) return t("DraftAdvisor.personalLabelOne", { percent });
+    if (s.personalGames < PERSONAL_SAMPLE_TRUSTED) return t("DraftAdvisor.personalLabelFew", { percent, games: s.personalGames });
+    return t("DraftAdvisor.personalLabel", { percent, games: s.personalGames });
+  }
+
   const suggestions = useMemo(() => {
     if (!posicion || Object.keys(champions.byId).length === 0) return [];
     // Both teams, not just mine — a champion already locked by anyone
@@ -310,11 +325,7 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
                       })
                     : t("DraftAdvisor.matchupNone")}
                 </span>
-                <span style={{ fontSize: 11, color: COLORS.muted }}>
-                  {s.personalWinRate !== undefined && s.personalGames !== undefined
-                    ? t("DraftAdvisor.personalLabel", { percent: Math.round(s.personalWinRate * 100), games: s.personalGames })
-                    : t("DraftAdvisor.personalNone")}
-                </span>
+                <span style={{ fontSize: 11, color: COLORS.muted }}>{etiquetaPersonal(s)}</span>
               </div>
               <span
                 style={{
