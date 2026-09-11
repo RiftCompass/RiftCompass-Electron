@@ -814,6 +814,7 @@ export const en = {
     voidGrubsTimer: "Void Grubs",
     objectiveUp: "Up!",
     laneGold: "Gold by lane",
+    csPerMinLabel: "CS/min",
     enemySpells: "Enemy spells",
     calibrationClick: "Click your {ability} ability icon",
     recommendedBuild: "Recommended build",

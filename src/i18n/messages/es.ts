@@ -802,6 +802,7 @@ export const es: Messages = {
     voidGrubsTimer: "Larvas del vacío",
     objectiveUp: "¡Arriba!",
     laneGold: "Oro por carril",
+    csPerMinLabel: "CS/min",
     enemySpells: "Hechizos rivales",
     calibrationClick: "Haz click en tu icono de {ability}",
     recommendedBuild: "Build recomendada",
