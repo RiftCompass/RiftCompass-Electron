@@ -113,7 +113,7 @@ export const fr: Messages = {
     axis: { farm: "Farm", vision: "Vision", kda: "KDA", killParticipation: "Participation aux kills", damage: "Dégâts" },
     rankTrend: "Tendance de rang",
     notTrackedYet: "Pas encore suivi dans le temps.",
-    momentumSubtitle: "Cumul victoires/défaites en {queue}, pas le LP exact",
+    momentumSubtitle: "Victoires et défaites sur vos parties {queue} récentes",
     rankTrendQueueSolo: "Solo/Duo",
     rankTrendQueueFlex: "Flexible",
     rankTrendQueueLabel: "File classée",

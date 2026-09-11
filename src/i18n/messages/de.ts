@@ -113,7 +113,7 @@ export const de: Messages = {
     axis: { farm: "Farm", vision: "Vision", kda: "KDA", killParticipation: "Kill-Beteiligung", damage: "Schaden" },
     rankTrend: "Rang-Trend",
     notTrackedYet: "Noch kein Verlauf erfasst.",
-    momentumSubtitle: "Laufende Sieg/Niederlage-Bilanz der letzten {queue}-Spiele, nicht die genauen LP",
+    momentumSubtitle: "Siege und Niederlagen in deinen letzten {queue}-Spielen",
     rankTrendQueueSolo: "Solo/Duo",
     rankTrendQueueFlex: "Flex",
     rankTrendQueueLabel: "Ranked-Warteschlange",
