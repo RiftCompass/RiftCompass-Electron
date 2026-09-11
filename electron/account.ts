@@ -107,7 +107,23 @@ export async function accountLogin(email: string, password: string): Promise<unk
   return err(data?.error ?? "unknown");
 }
 
-export function accountLogout(): void {
+// Primero se revoca el token en el servidor y después se borra del disco:
+// si se hiciera al revés y la red fallara, el token seguiría valiendo. Si la
+// revocación no llega (sin red), el jugador queda fuera de la app igual y el
+// token caduca solo a los 90 días.
+export async function accountLogout(): Promise<void> {
+  const stored = loadPersistedSession();
+  if (stored) {
+    try {
+      await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${stored.token}` },
+        signal: AbortSignal.timeout(8000),
+      });
+    } catch {
+      // sin red: el token caduca solo
+    }
+  }
   clearPersistedSession();
 }
 
