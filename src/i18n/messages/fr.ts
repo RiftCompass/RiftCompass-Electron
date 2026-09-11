@@ -821,6 +821,8 @@ export const fr: Messages = {
     pickFirst: "Choisis un champion et les builds apparaîtront ici.",
     noBuilds: "Pas encore de build pour ce champion à ce poste.",
     fromSaved: "Ta build enregistrée",
+    alternative: "Alternative : {runes}",
+    alternativeStats: "{games} parties · {percent} % de victoires",
     fromSample: "{games} parties",
     withItems: "{count} objets dans l'ordre",
     applying: "application",

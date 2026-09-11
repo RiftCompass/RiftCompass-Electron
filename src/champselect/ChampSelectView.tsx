@@ -3,7 +3,7 @@ import { API_BASE_URL } from "../shared/api";
 import { DraftAdvisor } from "./DraftAdvisor";
 import { useI18n } from "../i18n";
 import { COLORS, FONT_HEADING, cardStyle } from "../theme";
-import { fetchChampionMap, type ChampionMaps } from "../ddragon";
+import { fetchChampionMap, fetchLatestVersion, fetchRuneStyles, runeIconUrl, type ChampionMaps, type RuneStyle } from "../ddragon";
 import { rolesOf } from "../lib/champion-roles";
 import type { LcuIdentity, RecommendedItemSet, SavedChampionBuild } from "../riftcompass";
 
@@ -61,6 +61,20 @@ interface EntradaPlanObjetos {
   games: number;
 }
 
+// Una página de runas del tablero de /api/v1/champion-builds: las más
+// jugadas, cada una con su muestra y sus victorias.
+interface PaginaPopular extends Omit<RunasRecomendadas, "games"> {
+  games: number;
+  wins: number;
+}
+
+// Cuántas páginas distintas de la recomendada se ofrecen. Más de dos es
+// una lista para leer, no un botón que pulsar con el reloj corriendo. Y con
+// menos de cinco partidas una página no es una alternativa, es una anécdota
+// (salían dos con "2 partidas · 100 %" y "2 partidas · 0 %").
+const MAX_ALTERNATIVAS = 2;
+const MIN_PARTIDAS_ALTERNATIVA = 5;
+
 // Una opción de build que el jugador puede aplicar. Las fuentes (la recomendada
 // y las suyas guardadas) se normalizan a esto para que aplicar sea un solo
 // camino y no uno por fuente.
@@ -68,9 +82,13 @@ interface OpcionBuild {
   clave: string;
   etiqueta: string;
   /** De dónde sale, para decírselo al jugador en vez de que lo deduzca. */
-  origen: "recomendada" | "guardada";
+  origen: "recomendada" | "alternativa" | "guardada";
   /** Partidas que la respaldan. Ausente en las guardadas: son decisión suya, no una medición. */
   muestra?: number;
+  /** Solo las alternativas: victorias sobre `muestra`, para decir el winrate. */
+  victorias?: number;
+  /** Icono de la runa clave, para distinguir las alternativas de un vistazo. */
+  icono?: string;
   perkIds: number[];
   primaryStyleId: number;
   subStyleId: number;
@@ -94,7 +112,7 @@ function runasAPerkIds(r: RunasRecomendadas): number[] {
 }
 
 export function ChampSelectView() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [identity, setIdentity] = useState<LcuIdentity | null>(null);
   const [sesion, setSesion] = useState<SesionSeleccion | null>(null);
   const [champions, setChampions] = useState<ChampionMaps>(SIN_CAMPEONES);
@@ -106,6 +124,12 @@ export function ChampSelectView() {
     situationalItems: EntradaPlanObjetos[];
   } | null>(null);
   const [guardadas, setGuardadas] = useState<SavedChampionBuild[]>([]);
+  // "Las otras de más winrate" que pidió el propietario: las páginas de runas
+  // más jugadas del tablero, con los mismos hechizos y objetos que la
+  // recomendada. El tablero no da builds enteras (runas, hechizos y objetos
+  // van por separado), y lo que de verdad cambia entre builds es la página.
+  const [paginasPopulares, setPaginasPopulares] = useState<PaginaPopular[]>([]);
+  const [estilosRunas, setEstilosRunas] = useState<RuneStyle[]>([]);
   const [aplicando, setAplicando] = useState<string | null>(null);
   const [aplicada, setAplicada] = useState<string | null>(null);
   const [fallo, setFallo] = useState(false);
@@ -148,6 +172,13 @@ export function ChampSelectView() {
       .then(setChampions)
       .catch(() => undefined);
   }, [champions]);
+
+  useEffect(() => {
+    fetchLatestVersion()
+      .then((version) => fetchRuneStyles(version, locale))
+      .then(setEstilosRunas)
+      .catch(() => undefined);
+  }, [locale]);
 
   useEffect(() => {
     window.riftcompass
@@ -214,6 +245,27 @@ export function ChampSelectView() {
     };
   }, [campeon, rol, rangoJugador]);
 
+  useEffect(() => {
+    if (!campeon || !rol) {
+      setPaginasPopulares([]);
+      return;
+    }
+    const params = new URLSearchParams({ champion: campeon.internalId, role: rol });
+    if (rangoJugador) params.set("rank", rangoJugador);
+    let cancelado = false;
+    fetch(`${API_BASE_URL}/api/v1/champion-builds?${params}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d) => {
+        if (!cancelado) setPaginasPopulares(d.runePages ?? []);
+      })
+      .catch(() => {
+        if (!cancelado) setPaginasPopulares([]);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [campeon, rol, rangoJugador]);
+
   // Al cambiar de campeón se olvida lo aplicado: si no, el tick verde de la
   // build anterior se quedaría puesto sobre las opciones del campeón nuevo.
   useEffect(() => {
@@ -243,6 +295,46 @@ export function ChampSelectView() {
         situationalItemIds: recomendada.situationalItems.map((e) => e.itemId),
         tituloSet: `RiftCompass · ${campeon.name} ${t(`Profile.positions.${rol.toLowerCase()}`)}`,
       });
+    }
+
+    // Alternativas: páginas populares que un jugador distinguiría de la
+    // recomendada y entre sí, es decir, con otra runa clave u otro árbol
+    // secundario (dos páginas que solo cambian una runa menor son la misma
+    // build para quien elige con el reloj corriendo), con los hechizos y
+    // objetos de la recomendada. Se nombran por eso mismo ("Ritmo Letal +
+    // Inspiración").
+    if (recomendada?.runes && recomendada.spells) {
+      const familia = (p: { perk0: number; subStyleId: number }) => `${p.perk0}:${p.subStyleId}`;
+      const familiasVistas = new Set([familia(recomendada.runes)]);
+      const nombreRuna = (id: number) => estilosRunas.flatMap((s) => s.slots.flat()).find((r) => r.id === id);
+      const nombreEstilo = (id: number) => estilosRunas.find((s) => s.id === id)?.name;
+      for (const pagina of paginasPopulares) {
+        if (pagina.games < MIN_PARTIDAS_ALTERNATIVA || familiasVistas.has(familia(pagina))) continue;
+        if (lista.filter((o) => o.origen === "alternativa").length >= MAX_ALTERNATIVAS) break;
+        familiasVistas.add(familia(pagina));
+        const perkIds = runasAPerkIds({ ...pagina, games: pagina.games });
+        const clave = nombreRuna(pagina.perk0);
+        const secundario = nombreEstilo(pagina.subStyleId);
+        lista.push({
+          clave: `alternativa:${perkIds.join("-")}`,
+          etiqueta: t("ChampSelect.alternative", {
+            runes: [clave?.name ?? String(pagina.perk0), secundario].filter(Boolean).join(" + "),
+          }),
+          origen: "alternativa",
+          muestra: pagina.games,
+          victorias: pagina.wins,
+          icono: clave ? runeIconUrl(clave.icon) : undefined,
+          perkIds,
+          primaryStyleId: pagina.primaryStyleId,
+          subStyleId: pagina.subStyleId,
+          spellLow: recomendada.spells.spellLow,
+          spellHigh: recomendada.spells.spellHigh,
+          itemIds: recomendada.itemOrder.map((e) => e.itemId),
+          startingItemIds: recomendada.startingItems.map((e) => e.itemId),
+          situationalItemIds: recomendada.situationalItems.map((e) => e.itemId),
+          tituloSet: `RiftCompass · ${campeon.name} ${t(`Profile.positions.${rol.toLowerCase()}`)}`,
+        });
+      }
     }
 
     // Solo las del campeón recién elegido, y solo las que traen runas y
@@ -278,7 +370,7 @@ export function ChampSelectView() {
     }
 
     return lista;
-  }, [campeon, rol, recomendada, guardadas, t]);
+  }, [campeon, rol, recomendada, paginasPopulares, estilosRunas, guardadas, t]);
 
   async function aplicar(opcion: OpcionBuild) {
     if (!campeon || !campeonId) return;
@@ -391,11 +483,19 @@ export function ChampSelectView() {
                 gap: 2,
               }}
             >
-              <span style={{ fontSize: 13 }}>{o.etiqueta}</span>
+              <span style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                {o.icono ? <img src={o.icono} alt="" style={{ width: 18, height: 18, borderRadius: 4 }} /> : null}
+                {o.etiqueta}
+              </span>
               <span style={{ fontSize: 11, color: COLORS.muted }}>
                 {o.origen === "guardada"
                   ? t("ChampSelect.fromSaved")
-                  : t("ChampSelect.fromSample", { games: String(o.muestra ?? 0) })}
+                  : o.origen === "alternativa"
+                    ? t("ChampSelect.alternativeStats", {
+                        games: String(o.muestra ?? 0),
+                        percent: String(Math.round(((o.victorias ?? 0) / Math.max(1, o.muestra ?? 0)) * 100)),
+                      })
+                    : t("ChampSelect.fromSample", { games: String(o.muestra ?? 0) })}
                 {o.itemIds.length > 0 ? ` · ${t("ChampSelect.withItems", { count: String(o.itemIds.length) })}` : ""}
                 {aplicando === o.clave ? ` · ${t("ChampSelect.applying")}` : ""}
                 {aplicada === o.clave ? ` · ${t("ChampSelect.applied")}` : ""}

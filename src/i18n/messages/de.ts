@@ -821,6 +821,8 @@ export const de: Messages = {
     pickFirst: "Wähle einen Champion, dann erscheinen die Builds hier.",
     noBuilds: "Für diesen Champion auf dieser Position gibt es noch keine Build.",
     fromSaved: "Deine gespeicherte Build",
+    alternative: "Alternative: {runes}",
+    alternativeStats: "{games} Spiele · {percent} % Siegrate",
     fromSample: "{games} Spiele",
     withItems: "{count} Items in Reihenfolge",
     applying: "wird angewendet",
