@@ -24,6 +24,7 @@
 import { app, screen } from "electron";
 import { kGameIds } from "@overwolf/ow-electron-packages-types/game-list";
 import type {
+  OverlayBrowserWindow,
   GameInfo,
   GamesFilter,
   IOverwolfOverlayApi,
@@ -87,6 +88,16 @@ function registerAndListen(overlayApi: IOverwolfOverlayApi): void {
   const filter: GamesFilter = { gamesIds: [kGameIds.LeagueofLegends], all: false };
   overlayApi.registerGames(filter);
 
+  // La ventana se crea YA, oculta, y en la partida solo se enseña. Creada
+  // después de inyectarse, en la misma partida, no llega a verse nunca; la
+  // única vez que el overlay se vio (2026-09-11), la ventana venía de antes y
+  // al inyectarse solo se volvió a mostrar. Cuatro partidas de prueba en
+  // cada sentido, incluida una retrasando la inyección hasta tener la
+  // partida en marcha, que tampoco sirvió.
+  createInGameOverlayWindow(overlayApi).catch((error) => {
+    console.error("[overlayEngine] failed to create in-game window", error);
+  });
+
   overlayApi.on(
     "game-launched",
     (event: { inject: () => void; dismiss: () => void }, gameInfo: GameInfo) => {
@@ -110,7 +121,12 @@ function registerAndListen(overlayApi: IOverwolfOverlayApi): void {
     console.log(`[overlay] inyectado en ${gameInfo?.name}`);
     if (gameInfo.type !== "Game") return;
     try {
-      await createInGameOverlayWindow(overlayApi);
+      const win = await createInGameOverlayWindow(overlayApi);
+      // show() y no showInactive(): es lo que hace la app de ejemplo de
+      // Overwolf. Dentro del juego la ventana no es una ventana de escritorio
+      // que pueda robar el foco, la compone Overwolf sobre el juego.
+      win.window.show();
+      console.log("[overlay] ventana mostrada");
     } catch (error) {
       console.error("[overlayEngine] failed to create in-game window", error);
     }
@@ -122,12 +138,11 @@ function registerAndListen(overlayApi: IOverwolfOverlayApi): void {
   });
 }
 
-async function createInGameOverlayWindow(overlayApi: IOverwolfOverlayApi): Promise<void> {
+// Devuelve la ventana, creándola la primera vez (oculta) y reutilizándola
+// después; enseñarla es cosa de quien llama.
+async function createInGameOverlayWindow(overlayApi: IOverwolfOverlayApi): Promise<OverlayBrowserWindow> {
   const existing = overlayApi.getAllWindows().find((w) => w.name === OVERLAY_WINDOW_NAME);
-  if (existing) {
-    existing.window.showInactive();
-    return;
-  }
+  if (existing) return existing;
 
   // The real game window's own size once injected, not the desktop's
   // primary display (windows.ts's plain-Electron path uses the latter
@@ -173,8 +188,10 @@ async function createInGameOverlayWindow(overlayApi: IOverwolfOverlayApi): Promi
     },
   };
 
+  console.log(`[overlay] creando ventana ${width}x${height}`);
   const overlayWindow = await overlayApi.createWindow(options);
+  console.log("[overlay] ventana creada");
   loadRenderer(overlayWindow.window, "view=overlay");
   setOwOverlayWindow(overlayWindow);
-  overlayWindow.window.showInactive();
+  return overlayWindow;
 }
