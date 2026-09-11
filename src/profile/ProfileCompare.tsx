@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { CaretRight, ArrowCounterClockwise, Path, ShieldWarning, Sword, X, type Icon } from "@phosphor-icons/react";
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
+import { DiagnosticBar, formatDiagnosticPair } from "./ProfileDetail";
 import { COLORS, FONT_HEADING, inputStyle } from "../theme";
 import { useI18n } from "../i18n";
 import { formatTierRank, PLATFORM_LABELS } from "../lib/rank-lp";
 import {
+  computeDiagnostic,
   computeHeadToHead,
-  computeRoadmap,
   computeRoleBreakdown,
-  computeSkillRadar,
+  DIAGNOSTIC_METRICS,
   positionIconUrl,
   rankEmblemUrl,
+  tipKey,
   RANKED_SOLO_QUEUE_ID,
   RANKED_FLEX_QUEUE_ID,
+  type DiagnosticMetric,
+  type DiagnosticResult,
   type HeadToHeadStat,
-  type RoadmapMetric,
-  type RoadmapNode,
   type RoleStats,
 } from "../lib/profile-analysis";
 import type { ProfileApiResponse, RecentMatchSummary, RiotLeagueEntry } from "../lib/profile-types";
@@ -29,7 +31,6 @@ import {
   useSavedProfiles,
   PlatformSelect,
   CompareSavedProfilePicker,
-  AXIS_LABEL_KEY,
   cardStyle,
   secondaryButtonStyle,
 } from "./ProfileShared";
@@ -523,29 +524,33 @@ function RetryCountdownButton({ seconds, onRetry }: { seconds: number; onRetry: 
   );
 }
 
+// The web's DuoRadarChart (duo-radar-chart.tsx) as one bar per player per
+// metric: each value is that player's ratio against their own lane
+// opponents, 100 = even, capped at 150 like the web's radar scale.
+const SIDE_BY_SIDE_CEILING = 150;
+
 function CompareSkillCard({ profiles, accents }: { profiles: ProfileApiResponse[]; accents: string[] }) {
   const { t } = useI18n();
-  const radars = profiles.map((p) => computeSkillRadar(p.profile.recentMatches, p.rankTier));
-  const axes = radars[0] ?? [];
-  if (axes.length === 0) return null;
+  const diagnostics = profiles.map((p) => computeDiagnostic(p.profile.recentMatches, p.rankTier));
+  if (!diagnostics.some((d) => d.ready)) return null;
   return (
     <div style={cardStyle}>
-      <span style={{ fontSize: 16, fontWeight: 700 }}>{t("ProfileSearch.skillOverview")}</span>
-      {/* Sin esta linea, un "62 %" por eje se lee como un valor absoluto. */}
-      <p style={{ fontSize: 13, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.skillRadarSubtitle")}</p>
+      <span style={{ fontSize: 16, fontWeight: 700 }}>{t("ProfileSearch.sideBySideTitle")}</span>
+      <p style={{ fontSize: 13, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.sideBySideSubtitle")}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 12 }}>
-        {axes.map((axisPoint, ai) => (
-          <div key={axisPoint.axis} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 13, color: COLORS.muted }}>{t(`ProfileSearch.axis.${AXIS_LABEL_KEY[axisPoint.axis]}`)}</span>
-            {radars.map((points, pi) => {
-              const value = points[ai]?.value ?? 0;
+        {DIAGNOSTIC_METRICS.map((metric) => (
+          <div key={metric} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 13, color: COLORS.muted }}>{t(`Roadmap.${metric}.short`)}</span>
+            {diagnostics.map((diagnostic, pi) => {
               const accent = accents[pi];
+              const node = diagnostic.ready ? diagnostic.nodes.find((n) => n.metric === metric) : undefined;
+              const value = node ? Math.min(SIDE_BY_SIDE_CEILING, Math.round(node.ratio * 100)) : null;
               return (
                 <div key={pi} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ flex: 1, height: 6, borderRadius: 999, background: `${COLORS.background}99`, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${Math.min(100, (value / 150) * 100)}%`, borderRadius: 999, background: accent }} />
+                    <div style={{ height: "100%", width: `${value === null ? 0 : (value / SIDE_BY_SIDE_CEILING) * 100}%`, borderRadius: 999, background: accent }} />
                   </div>
-                  <span style={{ width: 42, flexShrink: 0, fontSize: 12, color: accent, textAlign: "right" }}>{value}%</span>
+                  <span style={{ width: 42, flexShrink: 0, fontSize: 12, color: accent, textAlign: "right" }}>{value === null ? "—" : `${value}%`}</span>
                 </div>
               );
             })}
@@ -567,10 +572,14 @@ function CompareSkillCard({ profiles, accents }: { profiles: ProfileApiResponse[
 // player sits below target, with the same coaching tips.
 function CompareSharedFocus({ profiles }: { profiles: ProfileApiResponse[] }) {
   const { t } = useI18n();
-  const roadmaps = profiles.map((p) => computeRoadmap(p.profile.recentMatches, p.rankTier));
-  const shared = (roadmaps[0] ?? []).filter((node) =>
-    roadmaps.every((nodes) => nodes.find((x) => x.metric === node.metric)?.status === "below"),
-  );
+  // Same rule as the web's computeSharedWeaknesses (lib/riot/duo.ts): a
+  // metric counts only when every player with a diagnostic is behind their
+  // lane opponents on it; players without one drop out of the intersection.
+  const ready = profiles.map((p) => computeDiagnostic(p.profile.recentMatches, p.rankTier)).flatMap((d) => (d.ready ? [d] : []));
+  const shared =
+    ready.length < 2
+      ? []
+      : ready[0].nodes.filter((node) => ready.every((d) => d.nodes.find((x) => x.metric === node.metric)?.status === "below"));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 6 }}>
       <h2 style={{ fontFamily: FONT_HEADING, fontSize: 17, fontWeight: 400, margin: 0 }}>{t("ProfileSearch.sharedFocusTitle")}</h2>
@@ -677,23 +686,18 @@ function ComparePlayerColumn({
   );
 }
 
-// Fixed order, not each player's own worst-gap-first order (computeRoadmap
-// still sorts that way internally, used below only to pick each player's
-// own "biggest opportunity" line) — a comparison needs the same metric to
-// land in the same row for every player, or there's nothing to compare.
-const ROADMAP_METRIC_ORDER: RoadmapMetric[] = ["csPerMin", "visionPerMin", "kda", "laningAdvantage"];
-
 // One shared table instead of a RoadmapCard per player — see
-// ComparePlayerColumn's comment above for why. Same real computeRoadmap
-// data every single-profile view already uses, just laid out so the same
-// metric reads as one row across every player. A soft per-player color
+// ComparePlayerColumn's comment above for why. Same real diagnostic every
+// single-profile view already uses, in a fixed metric order (not each
+// player's own worst-first order) so the same metric reads as one row
+// across every player. A soft per-player color
 // wash on the card background stands in for repeating each name next to
 // every value (the name is still stated once, in the priority list above
 // the table, and once more as a column header above the first metric row).
 function RoadmapComparisonCard({ profiles, accents }: { profiles: ProfileApiResponse[]; accents: string[] }) {
   const { t } = useI18n();
-  const nodesPerPlayer = profiles.map((p) => computeRoadmap(p.profile.recentMatches, p.rankTier));
-  const priorityPerPlayer = nodesPerPlayer.map((nodes) => nodes.find((n) => n.status === "below"));
+  const diagnostics = profiles.map((p) => computeDiagnostic(p.profile.recentMatches, p.rankTier));
+  const priorityPerPlayer = diagnostics.map((d) => (d.ready ? d.nodes.find((n) => n.status === "below") : undefined));
 
   // Mostly-solid band per player (matching their equal share of the grid
   // columns below), blended into the next player's color only in a strip
@@ -728,9 +732,13 @@ function RoadmapComparisonCard({ profiles, accents }: { profiles: ProfileApiResp
           return (
             <li key={i} style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 6, fontSize: 14 }}>
               <span style={{ fontWeight: 600, color: accent }}>{p.profile.gameName}</span>
-              {priority ? (
+              {!diagnostics[i].ready ? (
                 <span style={{ color: COLORS.muted }}>
-                  {t("ProfileSearch.priorityLabel")} {t(`ProfileSearch.metric.${priority.metric}`)}
+                  {t("Roadmap.notReady", { games: diagnostics[i].games, required: (diagnostics[i] as { required: number }).required, total: diagnostics[i].totalGames })}
+                </span>
+              ) : priority ? (
+                <span style={{ color: COLORS.muted }}>
+                  {t("Roadmap.priorityLabel")} {t(`Roadmap.${priority.metric}.title`)}
                 </span>
               ) : null}
             </li>
@@ -739,15 +747,15 @@ function RoadmapComparisonCard({ profiles, accents }: { profiles: ProfileApiResp
       </ul>
 
       <div style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
-        {ROADMAP_METRIC_ORDER.map((metric, i) => (
+        {DIAGNOSTIC_METRICS.map((metric, i) => (
           <RoadmapMetricRow
             key={metric}
             metric={metric}
             profiles={profiles}
             accents={accents}
-            nodesPerPlayer={nodesPerPlayer}
+            diagnostics={diagnostics}
             showNames={i === 0}
-            isLast={i === ROADMAP_METRIC_ORDER.length - 1}
+            isLast={i === DIAGNOSTIC_METRICS.length - 1}
           />
         ))}
       </div>
@@ -759,22 +767,22 @@ function RoadmapMetricRow({
   metric,
   profiles,
   accents,
-  nodesPerPlayer,
+  diagnostics,
   showNames,
   isLast,
 }: {
-  metric: RoadmapMetric;
+  metric: DiagnosticMetric;
   profiles: ProfileApiResponse[];
   accents: string[];
-  nodesPerPlayer: RoadmapNode[][];
+  diagnostics: DiagnosticResult[];
   // Only the first metric row gets a name above its columns — every other
   // row skips it so it isn't repeated once per metric.
   showNames: boolean;
   isLast: boolean;
 }) {
   const { t } = useI18n();
-  const nodes = nodesPerPlayer.map((playerNodes) => playerNodes.find((n) => n.metric === metric));
-  const unit = metric === "laningAdvantage" ? "%" : "";
+  const cells = diagnostics.map((d) => (d.ready ? { diagnostic: d, node: d.nodes.find((n) => n.metric === metric)! } : null));
+  const referenceLabel = metric === "laningAdvantage" ? t("Roadmap.evenLabel") : t("Roadmap.rivalsLabel");
   const columnGrid: React.CSSProperties = {
     display: "grid",
     gridTemplateColumns: `repeat(auto-fit, minmax(110px, 1fr))`,
@@ -791,7 +799,7 @@ function RoadmapMetricRow({
         borderTop: isLast ? undefined : `1px solid ${COLORS.cardBorder}66`,
       }}
     >
-      <span style={{ fontSize: 13, fontWeight: 600 }}>{t(`ProfileSearch.metric.${metric}`)}</span>
+      <span style={{ fontSize: 13, fontWeight: 600 }}>{t(`Roadmap.${metric}.title`)}</span>
       {showNames ? (
         <div style={columnGrid}>
           {profiles.map((p, i) => (
@@ -814,25 +822,18 @@ function RoadmapMetricRow({
       ) : null}
       <div style={{ ...columnGrid, rowGap: 8 }}>
         {profiles.map((_, i) => {
-          const node = nodes[i];
-          if (!node) return <div key={i} />;
-          const fillPct = Math.min(100, Math.round((node.value / node.target) * 100));
-          const color = node.status === "above" ? COLORS.goodMild : COLORS.badMild;
+          const cell = cells[i];
+          if (!cell) return <span key={i} style={{ fontSize: 13, color: COLORS.muted }}>—</span>;
+          const pair = formatDiagnosticPair(cell.node);
           return (
             <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ fontSize: 13 }}>
-                <span style={{ fontWeight: 600 }}>
-                  {node.value}
-                  {unit}
-                </span>{" "}
+                <span style={{ fontWeight: 600 }}>{pair.value}</span>{" "}
                 <span style={{ fontSize: 11, color: COLORS.muted }}>
-                  / {t("ProfileSearch.target")} {node.target}
-                  {unit}
+                  · {referenceLabel} {pair.reference}
                 </span>
               </span>
-              <div style={{ height: 6, width: "100%", borderRadius: 999, background: `${COLORS.goodMild}1a`, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${fillPct}%`, borderRadius: 999, background: color }} />
-              </div>
+              <DiagnosticBar node={cell.node} />
             </div>
           );
         })}
@@ -847,15 +848,11 @@ function RoadmapMetricRow({
         </summary>
         <ul style={{ display: "flex", flexDirection: "column", gap: 6, margin: "8px 0 0", padding: "0 0 0 16px" }}>
           {profiles.map((p, i) => {
-            const node = nodes[i];
-            if (!node) return null;
-            const above = node.status === "above";
-            const tipKey = node.role
-              ? `Roadmap.${metric}.${above ? "tipAbove" : "tipBelow"}.${node.role}.${node.band}`
-              : `Roadmap.${metric}.${above ? "tipAbove" : "tipBelow"}.${node.band}`;
+            const cell = cells[i];
+            if (!cell) return null;
             return (
               <li key={i} style={{ fontSize: 12, color: COLORS.muted }}>
-                <span style={{ fontWeight: 600, color: accents[i] }}>{p.profile.gameName}:</span> {t(tipKey)}
+                <span style={{ fontWeight: 600, color: accents[i] }}>{p.profile.gameName}:</span> {t(tipKey(cell.node, cell.diagnostic))}
               </li>
             );
           })}
