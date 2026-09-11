@@ -23,9 +23,10 @@ import { COLORS, FONT_HEADING, TYPE, inputStyle, pillStyle } from "../theme";
 import { useI18n } from "../i18n";
 import { championSquareUrl, profileIconUrl, itemIconUrl, fetchSummonerSpellIconsById } from "../ddragon";
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
-import { PLATFORM_LABELS, formatTierRank, rankToLpValue, tierColor as lpTierColor } from "../lib/rank-lp";
+import { PLATFORM_LABELS, computeSeasonPeaks, formatTierRank, rankToLpValue, tierColor as lpTierColor } from "../lib/rank-lp";
 import {
   buildActivityGrid,
+  isBeforeActivityCalendarFloor,
   computeChampionOverview,
   computeChampionPool,
   computeDiagnostic,
@@ -82,13 +83,16 @@ async function fetchActivityCalendarMonth(
   puuid: string,
   year: number,
   month: number,
-): Promise<DayActivity[] | FetchProfileError> {
+): Promise<{ days: DayActivity[]; complete: boolean } | FetchProfileError> {
   try {
     const url = `${API_BASE_URL}/api/v1/activity-calendar?platform=${platform}&puuid=${encodeURIComponent(puuid)}&year=${year}&month=${month}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
     const data = await res.json();
     if (!res.ok) return { error: data.error ?? "unknown", status: data.status ?? res.status, retryAfterSeconds: data.retryAfterSeconds };
-    return data.days as DayActivity[];
+    // `complete` llegó a la API el 2026-09-11: false cuando Riot no respondió
+    // a todo y el mes trae solo lo que el servidor ya tenía guardado. Un
+    // servidor anterior no lo manda: se asume completo, como hasta ahora.
+    return { days: data.days as DayActivity[], complete: data.complete !== false };
   } catch {
     return { error: "network" };
   }
@@ -529,11 +533,13 @@ function ProfileDetail({
           title={t("ProfileSearch.soloQueue")}
           entry={profile.soloQueue}
           roleStats={computeRoleBreakdown(profile.recentMatches, RANKED_SOLO_QUEUE_ID)}
+          history={lpHistory}
         />
         <RankCard
           title={t("ProfileSearch.flexQueue")}
           entry={profile.flexQueue}
           roleStats={computeRoleBreakdown(profile.recentMatches, RANKED_FLEX_QUEUE_ID)}
+          history={flexLpHistory ?? []}
         />
       </div>
 
@@ -567,11 +573,39 @@ function ProfileDetail({
   );
 }
 
-function RankCard({ title, entry, roleStats }: { title: string; entry: RiotLeagueEntry | null; roleStats: RoleStats[] }) {
-  const { t } = useI18n();
+function RankCard({
+  title,
+  entry,
+  roleStats,
+  history,
+}: {
+  title: string;
+  entry: RiotLeagueEntry | null;
+  roleStats: RoleStats[];
+  /** This ladder's snapshots from /api/v1/profile, oldest first. */
+  history: ProfileApiResponse["lpHistory"];
+}) {
+  const { t, locale } = useI18n();
   const emblem = entry ? rankEmblemUrl(entry.tier) : null;
   const total = entry ? entry.wins + entry.losses : 0;
   const winPct = total > 0 && entry ? Math.round((entry.wins / total) * 100) : 0;
+  // Máximo por temporada (ver computeSeasonPeaks), igual que la RankCard de
+  // la web: la temporada en curso siempre que haya algún snapshot, y las
+  // anteriores según se vayan pillando reinicios de temporada.
+  const seasonPeaks = computeSeasonPeaks(history);
+  const now = new Date();
+  const shortDate = (date: Date) =>
+    date.toLocaleDateString(locale, {
+      day: "numeric",
+      month: "short",
+      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+    });
+  const seasonLabel = (index: number) =>
+    index === 0
+      ? t("ProfileSearch.seasonCurrent")
+      : index === 1
+        ? t("ProfileSearch.seasonPrevious")
+        : t("ProfileSearch.seasonsAgo", { count: index });
   return (
     <div style={{ ...cardStyle, borderTop: entry ? `2px solid ${lpTierColor(entry.tier)}` : cardStyle.border, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
       <span style={{ fontSize: 12, color: COLORS.muted }}>{title}</span>
@@ -616,6 +650,32 @@ function RankCard({ title, entry, roleStats }: { title: string; entry: RiotLeagu
           </div>
         ) : null}
       </div>
+      {seasonPeaks.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${COLORS.cardBorder}` }}>
+          <span style={{ fontSize: 11, color: COLORS.muted }}>{t("ProfileSearch.seasonPeaksTitle")}</span>
+          {seasonPeaks.map((peak, index) => {
+            const peakEmblem = rankEmblemUrl(peak.tier);
+            return (
+              <div key={peak.from.toISOString()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 12 }}>
+                <span style={{ color: COLORS.muted, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {seasonLabel(index)}
+                  <span style={{ opacity: 0.7 }}>
+                    {" · "}
+                    {index === 0
+                      ? t("ProfileSearch.seasonSince", { date: shortDate(peak.from) })
+                      : t("ProfileSearch.seasonRange", { from: shortDate(peak.from), to: shortDate(peak.to) })}
+                  </span>
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, fontWeight: 600 }}>
+                  {peakEmblem ? <img src={peakEmblem} alt="" style={{ width: 18, height: 18 }} /> : null}
+                  <span style={{ color: lpTierColor(peak.tier) }}>{formatTierRank(peak.tier, peak.rank)}</span>
+                  <span style={{ color: COLORS.muted, fontWeight: 400 }}>· {peak.leaguePoints} LP</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -809,12 +869,17 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
   // existe por esa llamada, igual que en la web.
   const [viewedMonth, setViewedMonth] = useState<{ year: number; monthIndex: number } | null>(null);
   const [monthState, setMonthState] = useState<
-    { kind: "idle" } | { kind: "loading" } | ({ kind: "error" } & FetchProfileError) | { kind: "ok"; days: DayActivity[] }
+    { kind: "idle" } | { kind: "loading" } | ({ kind: "error" } & FetchProfileError) | { kind: "ok"; days: DayActivity[]; complete: boolean }
   >({ kind: "idle" });
 
   const isCurrentMonth = viewedMonth === null;
   const targetYear = viewedMonth?.year ?? now.getFullYear();
   const targetMonthIndex = viewedMonth?.monthIndex ?? now.getMonth();
+  // Primer mes con datos (profile-analysis.ts, ACTIVITY_CALENDAR_FLOOR): la
+  // flecha "anterior" se apaga ahí igual que la "siguiente" en el mes en
+  // curso, en vez de pedir un mes que el servidor rechaza.
+  const previousMonth = new Date(targetYear, targetMonthIndex - 1, 1);
+  const isAtFloor = isBeforeActivityCalendarFloor(previousMonth.getFullYear(), previousMonth.getMonth());
 
   useEffect(() => {
     let cancelled = false;
@@ -822,7 +887,7 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
     setMonthState(isCurrentMonth ? { kind: "idle" } : { kind: "loading" });
     fetchActivityCalendarMonth(platform, puuid, targetYear, targetMonthIndex + 1).then((result) => {
       if (cancelled) return;
-      if (Array.isArray(result)) setMonthState({ kind: "ok", days: result });
+      if ("days" in result) setMonthState({ kind: "ok", days: result.days, complete: result.complete });
       else setMonthState({ kind: "error", ...result });
     });
     return () => {
@@ -866,9 +931,22 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
           <button
-            onClick={() => goToMonth(-1)}
+            onClick={() => !isAtFloor && goToMonth(-1)}
+            disabled={isAtFloor}
             aria-label={t("ProfileSearch.previousMonth")}
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, border: "none", background: "none", color: COLORS.muted, cursor: "pointer", borderRadius: 4 }}
+            title={isAtFloor ? t("ProfileSearch.noEarlierMonths") : undefined}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 22,
+              height: 22,
+              border: "none",
+              background: "none",
+              color: isAtFloor ? `${COLORS.muted}4d` : COLORS.muted,
+              cursor: isAtFloor ? "default" : "pointer",
+              borderRadius: 4,
+            }}
           >
             <CaretLeft size={14} />
           </button>
@@ -893,6 +971,11 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
           </button>
         </div>
       </div>
+      {monthState.kind === "ok" && !monthState.complete && !isCurrentMonth ? (
+        // Solo en un mes navegado, igual que en la web: el mes en curso
+        // siempre tiene al menos las partidas recientes y ahí sería ruido.
+        <p style={{ fontSize: 12, color: COLORS.rose, margin: "10px 0 0" }}>{t("ProfileSearch.partialMonth")}</p>
+      ) : null}
       {monthState.kind === "loading" ? (
         <p style={{ fontSize: 12, color: COLORS.muted, margin: "10px 0 0" }}>{t("ProfileSearch.loading")}</p>
       ) : monthState.kind === "error" && !isCurrentMonth ? (

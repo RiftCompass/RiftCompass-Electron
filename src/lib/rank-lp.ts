@@ -53,6 +53,59 @@ export function tierColor(tier: string): string {
   return TIER_COLORS[tier.toUpperCase()] ?? TIER_COLORS.GOLD;
 }
 
+// Máximo alcanzado en cada temporada clasificatoria — copia de la función
+// homónima de la web (lib/riot/rank-lp.ts), sobre los mismos snapshots que
+// /api/v1/profile ya manda en lpHistory/flexLpHistory. Riot no expone el
+// rango de temporadas pasadas, así que solo existe desde la primera vez que
+// alguien miró el perfil; el corte entre temporadas es el reinicio del
+// contador de partidas (victorias + derrotas vuelven a cero con cada
+// temporada/split). Los ecos rancios de Riot, que también van hacia atrás
+// pero por pocas partidas, ya los quita el servidor antes de mandarlos.
+export interface SeasonPeak {
+  tier: string;
+  rank: string;
+  leaguePoints: number;
+  /** Primer y último snapshot de esa temporada (desde cuándo la vemos). */
+  from: Date;
+  to: Date;
+  games: number;
+}
+
+interface SeasonSnapshot {
+  tier: string;
+  rank: string;
+  leaguePoints: number;
+  wins: number;
+  losses: number;
+  capturedAt: string | Date;
+}
+
+export function computeSeasonPeaks(history: SeasonSnapshot[]): SeasonPeak[] {
+  const seasons: SeasonSnapshot[][] = [];
+  for (const snapshot of history) {
+    const current = seasons[seasons.length - 1];
+    const last = current?.[current.length - 1];
+    if (!last || snapshot.wins + snapshot.losses < last.wins + last.losses) seasons.push([snapshot]);
+    else current.push(snapshot);
+  }
+  return seasons
+    .map((snapshots) => {
+      const peak = snapshots.reduce((best, s) =>
+        rankToLpValue(s.tier, s.rank, s.leaguePoints) > rankToLpValue(best.tier, best.rank, best.leaguePoints) ? s : best,
+      );
+      const last = snapshots[snapshots.length - 1];
+      return {
+        tier: peak.tier,
+        rank: peak.rank,
+        leaguePoints: peak.leaguePoints,
+        from: new Date(snapshots[0].capturedAt),
+        to: new Date(last.capturedAt),
+        games: last.wins + last.losses,
+      };
+    })
+    .reverse();
+}
+
 export const PLATFORM_LABELS: Record<string, string> = {
   euw1: "EUW",
   eun1: "EUNE",
