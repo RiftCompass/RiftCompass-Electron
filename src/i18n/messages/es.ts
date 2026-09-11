@@ -821,6 +821,8 @@ export const es: Messages = {
     pickFirst: "Elige campeón y aquí aparecen las builds.",
     noBuilds: "Todavía no hay build para este campeón en esta posición.",
     fromSaved: "Build guardada tuya",
+    alternative: "Alternativa: {runes}",
+    alternativeStats: "{games} partidas · {percent} % de victorias",
     fromSample: "{games} partidas",
     withItems: "{count} objetos en orden",
     applying: "aplicando",

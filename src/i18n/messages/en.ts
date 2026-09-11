@@ -833,6 +833,8 @@ export const en = {
     pickFirst: "Pick a champion and the builds show up here.",
     noBuilds: "No build for this champion in this role yet.",
     fromSaved: "Your saved build",
+    alternative: "Alternative: {runes}",
+    alternativeStats: "{games} games · {percent}% win rate",
     fromSample: "{games} games",
     withItems: "{count} items in order",
     applying: "applying",
