@@ -518,8 +518,8 @@ function ProfileDetail({
         ) : null}
       </DropdownMenu>
 
-      {/* Same story order as the web's profile page: who you are, how
-          much you play, what you play, how you play, then the games. Paired
+      {/* Same order as the web's profile page: who you are, how much you
+          play, how you play, what you play, then the games. Paired
           rows group cards whose natural content height is close; each
           card's own internal layout (see cardStyle usage below) centers its
           content vertically within the row's `stretch`, so any residual
@@ -542,15 +542,15 @@ function ProfileDetail({
         <ActivityCalendarCard matches={profile.recentMatches} puuid={profile.puuid} platform={target.platform} />
       </div>
 
-      <ChampionOverviewCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
+      {/* The roadmap alone, full width, then the two champion cards side
+          by side (same as the web): they are of a similar height, whereas
+          pairing either with the much taller roadmap left a hole under
+          the shorter one and the page scrolling twice as far. */}
+      <RoadmapCard matches={profile.recentMatches} tier={rankTier} />
 
-      {/* Champion pool and roadmap side by side (the web mirrors this row
-          since 2026-09-11): stacked, the two tallest cards made the page
-          scroll twice as far. The overview table above takes the full
-          width alone; a table reads fine wide. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 12 }}>
+        <ChampionOverviewCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
         <ChampionPoolCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
-        <RoadmapCard matches={profile.recentMatches} tier={rankTier} />
       </div>
 
       <hr style={{ border: "none", borderTop: `1px solid ${COLORS.cardBorder}`, margin: 0 }} />
