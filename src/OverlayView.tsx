@@ -5,6 +5,7 @@ import { useI18n } from "./i18n";
 import { COLORS, TYPE } from "./theme";
 import { API_BASE_URL } from "./shared/api";
 import { CS_PER_MIN_TARGETS, positionIconUrl, rankEmblemUrl, tierToBand } from "./lib/profile-analysis";
+import { primaryRoleOf } from "./lib/champion-roles";
 import type { AbilityBarCalibration, LcuIdentity, OverlayModules, OverlayPanelPositions } from "./riftcompass";
 
 // Este fichero redeclaraba la paleta a mano, con un verde (#7edc96) que no
@@ -129,8 +130,18 @@ interface LiveGameItem {
   price: number;
 }
 
+interface LiveGameSpell {
+  displayName: string;
+  /** "GeneratedTip_SummonerSpell_SummonerFlash_DisplayName": el mismo en todos los idiomas del cliente. */
+  rawDisplayName?: string;
+}
+
 interface LiveGamePlayer {
   championName: string;
+  /** "game_character_displayname_Darius": el id interno, venga el cliente en el idioma que venga. */
+  rawChampionName?: string;
+  /** "TOP" | "JUNGLE" | "MIDDLE" | "BOTTOM" | "UTILITY", o "" en modos sin posiciones. */
+  position?: string;
   isDead: boolean;
   level: number;
   team: "ORDER" | "CHAOS";
@@ -140,8 +151,8 @@ interface LiveGamePlayer {
   items?: LiveGameItem[];
   scores: { kills: number; deaths: number; assists: number; creepScore: number };
   summonerSpells?: {
-    summonerSpellOne: { displayName: string };
-    summonerSpellTwo: { displayName: string };
+    summonerSpellOne: LiveGameSpell;
+    summonerSpellTwo: LiveGameSpell;
   };
 }
 
@@ -299,18 +310,26 @@ function csPerMinute(p: LiveGamePlayer, gameTimeSeconds: number): number | null 
 // two by hand; matches the current (patch-stable) Summoner's Rift kit —
 // not ARAM's Mark or Nexus-siege's To the King!, which never show up here
 // since this panel only renders in CLASSIC games.
-const SUMMONER_SPELL_INFO: Record<string, { ddragonKey: string; cooldownSeconds: number }> = {
-  Flash: { ddragonKey: "SummonerFlash", cooldownSeconds: 300 },
-  Ignite: { ddragonKey: "SummonerDot", cooldownSeconds: 180 },
-  Exhaust: { ddragonKey: "SummonerExhaust", cooldownSeconds: 210 },
-  Barrier: { ddragonKey: "SummonerBarrier", cooldownSeconds: 180 },
-  Cleanse: { ddragonKey: "SummonerBoost", cooldownSeconds: 210 },
-  Heal: { ddragonKey: "SummonerHeal", cooldownSeconds: 240 },
-  Ghost: { ddragonKey: "SummonerHaste", cooldownSeconds: 210 },
-  Teleport: { ddragonKey: "SummonerTeleport", cooldownSeconds: 360 },
-  Smite: { ddragonKey: "SummonerSmite", cooldownSeconds: 90 },
-  Clarity: { ddragonKey: "SummonerMana", cooldownSeconds: 240 },
+// Por la clave interna de Data Dragon, que es lo que trae `rawDisplayName`
+// ("GeneratedTip_SummonerSpell_SummonerFlash_DisplayName") en cualquier
+// idioma del cliente. Antes iba por `displayName` en inglés y con el cliente
+// en español ("Destello") no salía ni un icono (visto el 2026-09-11).
+const SUMMONER_SPELL_INFO: Record<string, { cooldownSeconds: number }> = {
+  SummonerFlash: { cooldownSeconds: 300 },
+  SummonerDot: { cooldownSeconds: 180 },
+  SummonerExhaust: { cooldownSeconds: 210 },
+  SummonerBarrier: { cooldownSeconds: 180 },
+  SummonerBoost: { cooldownSeconds: 210 },
+  SummonerHeal: { cooldownSeconds: 240 },
+  SummonerHaste: { cooldownSeconds: 210 },
+  SummonerTeleport: { cooldownSeconds: 360 },
+  SummonerSmite: { cooldownSeconds: 90 },
+  SummonerMana: { cooldownSeconds: 240 },
 };
+
+function summonerSpellKey(spell: LiveGameSpell): string | undefined {
+  return /SummonerSpell_(\w+)_DisplayName/.exec(spell.rawDisplayName ?? "")?.[1];
+}
 
 // Suma el coste real de lo que cada jugador lleva construido. Es una
 // subestimacion (no cuenta el oro ya gastado en wards, pociones u objetos
@@ -345,31 +364,36 @@ interface LaneRow {
 // players, client-display-locale name for bots — see ChampionMaps'
 // byNormalizedName doc comment) the same normalized way everywhere it's
 // used for an icon, not just lane matching.
-function championInfoFor(champions: ChampionMaps, championName: string) {
-  return champions.byNormalizedName[normalizeChampionName(championName)];
+// `rawChampionName` trae el id interno en cualquier idioma del cliente; el
+// nombre traducido queda de respaldo por si Riot lo deja vacío.
+function championInfoFor(champions: ChampionMaps, player: Pick<LiveGamePlayer, "championName" | "rawChampionName">) {
+  const internalId = player.rawChampionName?.replace(/^game_character_displayname_/, "");
+  return (internalId ? champions.byInternalId[internalId] : undefined) ?? champions.byNormalizedName[normalizeChampionName(player.championName)];
 }
 
+// Quién juega cada carril, en este orden de confianza: la posición que da la
+// propia partida (`position`, que las colas con roles rellenan); si viene
+// vacía, la de champ select (que en a ciegas y personalizadas solo se conoce
+// del propio equipo, y por eso el rival salía sin foto ni diferencia de oro,
+// visto el 2026-09-11); y si tampoco, el carril habitual de cada campeón.
 function resolveLanePlayer(
+  teamPlayers: LiveGamePlayer[],
   team: ChampSelectPlayer[],
   position: string,
   champions: ChampionMaps,
-  allPlayers: LiveGamePlayer[],
 ): LiveGamePlayer | undefined {
+  const porPartida = teamPlayers.find((p) => p.position?.toLowerCase() === position);
+  if (porPartida) return porPartida;
+
   // Case-insensitive: ranked/normal queues report assignedPosition
   // lowercase ("top"), but custom lobbies with a manual per-slot role
-  // picker (the dropdown next to each player before the game starts)
-  // report it uppercase ("TOP") — same field, different casing depending
-  // on where it was set.
+  // picker report it uppercase ("TOP").
   const picked = team.find((p) => p.assignedPosition?.toLowerCase() === position);
   const info = picked?.championId ? champions.byId[picked.championId] : undefined;
-  if (!info) return undefined;
-  // Live Client Data reports the English internal id for real players,
-  // but a bot-controlled champion's name comes back in the client's own
-  // display locale ("Maestro Yi" for MasterYi under a Spanish-locale
-  // client) — normalized matching
-  // against champions.byNormalizedName (populated with both forms by
-  // mergeLocalizedChampionNames) covers both.
-  return allPlayers.find((p) => championInfoFor(champions, p.championName) === info);
+  if (info) return teamPlayers.find((p) => championInfoFor(champions, p) === info);
+
+  const sinPosicion = teamPlayers.filter((p) => !p.position);
+  return sinPosicion.find((p) => primaryRoleOf(championInfoFor(champions, p)?.internalId ?? "")?.toLowerCase() === position);
 }
 
 function buildLaneRows(
@@ -377,11 +401,14 @@ function buildLaneRows(
   theirTeam: ChampSelectPlayer[],
   champions: ChampionMaps,
   allPlayers: LiveGamePlayer[],
+  localTeam: "ORDER" | "CHAOS" | undefined,
 ): LaneRow[] {
+  const mine = allPlayers.filter((p) => p.team === localTeam);
+  const theirs = allPlayers.filter((p) => p.team !== localTeam);
   return LANE_POSITIONS.map((position) => ({
     position,
-    mine: resolveLanePlayer(myTeam, position, champions, allPlayers),
-    theirs: resolveLanePlayer(theirTeam, position, champions, allPlayers),
+    mine: resolveLanePlayer(mine, myTeam, position, champions),
+    theirs: resolveLanePlayer(theirs, theirTeam, position, champions),
   }));
 }
 
@@ -518,6 +545,10 @@ export function OverlayView() {
   // recompute a countdown against — no point running a timer during champ
   // select or while Tab isn't held and the panel is invisible.
   const [now, setNow] = useState(() => Date.now());
+  // Cuándo llegó el último dato de la partida: el sondeo es cada dos
+  // segundos y los temporizadores saltaban de dos en dos. Con esto el reloj
+  // avanza solo entre sondeo y sondeo, con el tic de un segundo de `now`.
+  const liveGameReceivedAtRef = useRef(Date.now());
 
   useEffect(() => {
     window.riftcompass.onPhase((p) => setPhase(p));
@@ -540,7 +571,10 @@ export function OverlayView() {
       setTheirTeam(s.theirTeam ?? []);
       setLocalCellId(s.localPlayerCellId ?? null);
     });
-    window.riftcompass.onLiveGameData((data) => setLiveGame(data as LiveGameData | null));
+    window.riftcompass.onLiveGameData((data) => {
+      setLiveGame(data as LiveGameData | null);
+      liveGameReceivedAtRef.current = Date.now();
+    });
     window.riftcompass.onTabHeld(setTabHeld);
     window.riftcompass.onCalibrationStart(() => setCalibrationStep("q"));
     window.riftcompass.onLcuIdentity((identity: LcuIdentity | null) => setGameClientLocale(identity?.gameClientLocale));
@@ -806,11 +840,12 @@ export function OverlayView() {
   // band — same benchmark table the web profile's roadmap uses
   // (lib/profile-analysis.ts), not a new number.
   const localLiveGamePlayer = liveGame?.allPlayers.find((p) => isLocalPlayer(p, liveGame.activePlayerName));
-  const localCsPerMin = localLiveGamePlayer ? csPerMinute(localLiveGamePlayer, liveGame?.gameData?.gameTime ?? 0) : null;
+  const gameTime = (liveGame?.gameData?.gameTime ?? 0) + Math.max(0, now - liveGameReceivedAtRef.current) / 1000;
+  const localCsPerMin = localLiveGamePlayer ? csPerMinute(localLiveGamePlayer, gameTime) : null;
   const localCsTarget = CS_PER_MIN_TARGETS[tierToBand(localRankTier)];
   const localRankIcon = localRankTier ? rankEmblemUrl(localRankTier) : null;
 
-  const laneRows = liveGame ? buildLaneRows(myTeam, theirTeam, champions, liveGame.allPlayers) : [];
+  const laneRows = liveGame ? buildLaneRows(myTeam, theirTeam, champions, liveGame.allPlayers, localLiveGamePlayer?.team) : [];
   const enemyPlayers = liveGame && localLiveGamePlayer ? liveGame.allPlayers.filter((p) => p.team !== localLiveGamePlayer.team) : [];
 
   const goldDrag = useDraggablePanel(panelPositions.gold, (pos) => {
@@ -1066,21 +1101,20 @@ export function OverlayView() {
             cursor: "grab",
           }}
         >
-          {computeObjectiveTimers(liveGame.events.Events, liveGame.gameData?.gameTime ?? 0).map((obj) => {
+          {computeObjectiveTimers(liveGame.events.Events, gameTime).map((obj) => {
             const up = obj.remainingSeconds <= 0 && !obj.windowClosing;
             return (
               <div
                 key={obj.key}
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: 44, filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.85))" }}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 44, filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.85))" }}
                 title={t(`Overlay.${obj.key}Timer`)}
               >
                 <img src={OBJECTIVE_ICON[obj.key]} alt="" style={{ width: 26, height: 26, opacity: up ? 1 : 0.55 }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: up ? GOOD : obj.windowClosing ? MUTED : "#fff" }}>
-                  {up
-                    ? t("Overlay.objectiveUp")
-                    : obj.windowClosing
-                      ? t("Overlay.voidGrubsWindow", { time: formatCountdown(obj.remainingSeconds) })
-                      : formatCountdown(obj.remainingSeconds)}
+                {obj.windowClosing ? (
+                  <span style={{ fontSize: 10, color: MUTED, whiteSpace: "nowrap" }}>{t("Overlay.voidGrubsWindow")}</span>
+                ) : null}
+                <span style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", color: up ? GOOD : obj.windowClosing ? MUTED : "#fff" }}>
+                  {up ? t("Overlay.objectiveUp") : formatCountdown(obj.remainingSeconds)}
                 </span>
               </div>
             );
@@ -1159,14 +1193,14 @@ export function OverlayView() {
                     borderTop: index > 0 ? BORDER : "none",
                   }}
                 >
-                  <LaneChampion champ={row.mine ? championInfoFor(champions, row.mine.championName) : undefined} align="right" />
+                  <LaneChampion champ={row.mine ? championInfoFor(champions, row.mine) : undefined} align="right" />
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 60 }}>
                     {icon ? <img src={icon} alt="" style={{ width: 12, height: 12, opacity: 0.6, marginBottom: 2 }} /> : null}
                     <span style={{ fontSize: 12, fontWeight: 700, color: diff === null ? MUTED : diff > 0 ? GOOD : diff < 0 ? BAD : MUTED }}>
                       {diff === null ? "—" : `~${diff > 0 ? "+" : ""}${diff}`}
                     </span>
                   </div>
-                  <LaneChampion champ={row.theirs ? championInfoFor(champions, row.theirs.championName) : undefined} align="left" />
+                  <LaneChampion champ={row.theirs ? championInfoFor(champions, row.theirs) : undefined} align="left" />
                 </div>
               );
             })}
@@ -1177,7 +1211,7 @@ export function OverlayView() {
       {/* Enemy summoner-spell tracker: champion icon + their two spells,
           clickable to start a manual cooldown countdown (see
           SUMMONER_SPELL_INFO above). Own draggable panel, default
-          bottom-right, only while Tab is held. */}
+          bottom-left, only while Tab is held. */}
       {phase === "InProgress" && liveGame && tabHeld && enemyPlayers.length > 0 ? (
         <div
           onMouseEnter={enemySpellsDrag.onMouseEnter}
@@ -1186,7 +1220,7 @@ export function OverlayView() {
           style={{
             ...(enemySpellsDrag.dragPos
               ? { position: "fixed", left: enemySpellsDrag.dragPos.x, top: enemySpellsDrag.dragPos.y }
-              : { position: "fixed", bottom: 12, right: 12 }),
+              : { position: "fixed", bottom: 12, left: 12 }),
             width: "auto",
             cursor: "grab",
             ...cardStyle,
@@ -1198,7 +1232,7 @@ export function OverlayView() {
           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {enemyPlayers.map((p) => {
               const key = `${p.team}-${p.championName}`;
-              const champ = championInfoFor(champions, p.championName);
+              const champ = championInfoFor(champions, p);
               const spells = [p.summonerSpells?.summonerSpellOne, p.summonerSpells?.summonerSpellTwo] as const;
               return (
                 <div key={key} style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -1208,7 +1242,8 @@ export function OverlayView() {
                   <div style={{ display: "flex", gap: 4 }}>
                     {spells.map((spell, i) => {
                       if (!spell) return null;
-                      const info = SUMMONER_SPELL_INFO[spell.displayName];
+                      const spellKey = summonerSpellKey(spell);
+                      const info = spellKey ? SUMMONER_SPELL_INFO[spellKey] : undefined;
                       const slot = i === 0 ? "one" : "two";
                       if (!info) {
                         return (
@@ -1244,7 +1279,7 @@ export function OverlayView() {
                             }}
                           >
                             <img
-                              src={`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/spell/${info.ddragonKey}.png`}
+                              src={`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/spell/${spellKey}.png`}
                               alt={spell.displayName}
                               style={{ width: "100%", height: "100%", objectFit: "cover", opacity: onCooldown ? 0.35 : 1 }}
                             />
