@@ -799,6 +799,7 @@ function SavedProfilesPanel({ onOpenProfile, textFilter }: { onOpenProfile: (tar
   const [sortMode, setSortMode] = useState<SortMode>("elo");
   const [groupFilter, setGroupFilter] = useState<string>("all");
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
+  const [folderError, setFolderError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -823,12 +824,14 @@ function SavedProfilesPanel({ onOpenProfile, textFilter }: { onOpenProfile: (tar
     const trimmed = name.trim();
     if (!trimmed) return;
     const r = await window.riftcompass.createProfileFolder(trimmed);
+    setFolderError(r.ok ? null : folderErrorKey(r.error));
     if (r.ok) setFolders(r.folders);
   }
   async function handleRenameGroup(id: string, name: string) {
     const trimmed = name.trim();
     if (!trimmed) return;
     const r = await window.riftcompass.renameProfileFolder(id, trimmed);
+    setFolderError(r.ok ? null : folderErrorKey(r.error));
     if (r.ok) setFolders(r.folders);
   }
   async function handleDeleteGroup(id: string) {
@@ -904,6 +907,11 @@ function SavedProfilesPanel({ onOpenProfile, textFilter }: { onOpenProfile: (tar
               ))}
               <div style={{ height: 1, background: COLORS.cardBorder, margin: "4px 0" }} />
               <NewFolderControl onCreate={handleCreateGroup} />
+              {folderError ? (
+                <p style={{ fontSize: 11, color: COLORS.destructive, margin: "2px 8px 4px" }}>
+                  {t(`SavedProfiles.folderErrors.${folderError}`)}
+                </p>
+              ) : null}
             </>
           )}
         </IconPopoverButton>
@@ -1074,6 +1082,12 @@ function FolderSection({
       {!collapsed ? <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 4 }}>{children}</div> : null}
     </div>
   );
+}
+
+const FOLDER_ERROR_KEYS = ["invalidName", "nameTooLong", "nameOffensive", "network"];
+
+function folderErrorKey(error: string): string {
+  return FOLDER_ERROR_KEYS.includes(error) ? error : "unknown";
 }
 
 function NewFolderControl({ onCreate }: { onCreate: (name: string) => void }) {
@@ -1934,7 +1948,7 @@ function ProfileSection({
       setStatus({ kind: "saved", message: t("Settings.usernameSaved") });
       return;
     }
-    const known = ["invalidUsername", "usernameTaken", "network"];
+    const known = ["invalidUsername", "usernameTaken", "nameOffensive", "network"];
     const key = known.includes(result.error) ? result.error : "unknown";
     setStatus({ kind: "error", message: t(`Settings.usernameErrors.${key}`) });
   }
