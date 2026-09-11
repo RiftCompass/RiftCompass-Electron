@@ -30,12 +30,14 @@ used by the website.
 
 4. License and use
 
-You're granted a personal, non-exclusive, non-transferable license to
-install and run RiftCompass for your own use. You may not redistribute,
-sell, reverse-engineer for the purpose of building a competing product,
-or use the app to violate Riot Games' Terms of Service or Third-Party
-Application Policy. You can uninstall the app at any time from Windows
-Settings or the uninstaller in its install folder.
+RiftCompass is open source software, released under the MIT License. Its
+source code is publicly available at
+https://github.com/RiftCompass/RiftCompass-Electron, and you may use,
+copy, modify and redistribute it under the terms of that license. The
+RiftCompass name and logo are not covered by the license. You may not use
+the app to violate Riot Games' Terms of Service or Third-Party Application
+Policy. You can uninstall the app at any time from Windows Settings or the
+uninstaller in its install folder.
 
 5. No warranty, limited liability
 
