@@ -73,6 +73,12 @@ if (!gotSingleInstanceLock) {
   app.on("second-instance", () => showMainWindow());
 
   app.whenReady().then(() => {
+    // Windows agrupa los botones de la barra de tareas por este identificador
+    // y les pone el icono de la primera ventana del grupo. Bajo `ow-electron`
+    // el ejecutable es el de Overwolf y, sin fijarlo, el grupo heredaba el
+    // suyo: la app salia en la barra con el icono de Overwolf (visto el
+    // 2026-09-11). Es el mismo appId de electron-builder.yml.
+    app.setAppUserModelId("com.riftcompass.desktop");
     applyContentSecurityPolicy();
     registerIpcHandlers();
     createMainWindow();
