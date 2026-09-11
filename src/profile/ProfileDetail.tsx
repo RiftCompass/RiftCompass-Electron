@@ -18,11 +18,11 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { API_BASE_URL } from "../shared/api";
-import { COLORS, FONT_HEADING, TYPE, inputStyle } from "../theme";
+import { COLORS, FONT_HEADING, TYPE, inputStyle, pillStyle } from "../theme";
 import { useI18n } from "../i18n";
 import { championSquareUrl, profileIconUrl, itemIconUrl, fetchSummonerSpellIconsById } from "../ddragon";
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
-import { PLATFORM_LABELS, formatTierRank, tierColor as lpTierColor } from "../lib/rank-lp";
+import { PLATFORM_LABELS, formatTierRank, rankToLpValue, tierColor as lpTierColor } from "../lib/rank-lp";
 import {
   buildActivityGrid,
   computeChampionOverview,
@@ -374,7 +374,7 @@ function ProfileDetail({
     );
   }
 
-  const { profile, ddragonVersion, rankTier, topMasteryChampionId, lpHistory } = state.data;
+  const { profile, ddragonVersion, rankTier, topMasteryChampionId, lpHistory, flexLpHistory } = state.data;
 
   // Same semantics as the web's SaveProfileButton: one toggle endpoint,
   // canonical names from the fetched profile (not the raw search input),
@@ -545,7 +545,7 @@ function ProfileDetail({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
-        <RankTrendCard lpHistory={lpHistory} matches={profile.recentMatches} />
+        <RankTrendCard lpHistory={lpHistory} flexLpHistory={flexLpHistory} matches={profile.recentMatches} />
         <SkillRadarCard matches={profile.recentMatches} tier={rankTier} />
       </div>
 
@@ -717,7 +717,13 @@ function SkillRadarSvg({ points }: { points: SkillRadarPoint[] }) {
   const polygon = points.map((p, i) => coordFor(i, p.value).join(",")).join(" ");
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ margin: "0 auto", display: "block" }}>
+    // Scales with the card instead of a fixed 220px square: on any real
+    // window the paired row is far taller and wider than that, and the
+    // radar sat as a small pentagon floating in empty space. The viewBox
+    // keeps the geometry, `width: 100%` + `height: auto` let it grow, and
+    // the cap keeps the labels (which scale with it) from getting huge in
+    // a very wide card.
+    <svg viewBox={`0 0 ${size} ${size}`} style={{ display: "block", width: "100%", maxWidth: 340, height: "auto", margin: "0 auto" }}>
       {[50, 100, 150].map((ring) => (
         <polygon
           key={ring}
@@ -778,26 +784,87 @@ function SkillRadarCard({ matches, tier }: { matches: RecentMatchSummary[]; tier
   );
 }
 
+type RankedQueue = "solo" | "flex";
+const RANKED_QUEUES: RankedQueue[] = ["solo", "flex"];
+const RANKED_QUEUE_ID: Record<RankedQueue, number> = { solo: RANKED_SOLO_QUEUE_ID, flex: RANKED_FLEX_QUEUE_ID };
+
+function signedNumber(n: number): string {
+  return `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)}`;
+}
+
 // LP over time, real snapshots only (lib/riot/rank-snapshot.ts on the web
 // side, same source) — never fabricated history. Same gradient-fill
-// polyline pattern as InlineLpSparkline, just full-size.
-function RankTrendCard({ lpHistory, matches }: { lpHistory: ProfileApiResponse["lpHistory"]; matches: RecentMatchSummary[] }) {
+// polyline pattern as InlineLpSparkline, just full-size. Mirrors the web's
+// RankTrendChart (rank-trend-chart.tsx): a Solo/Duo ⇄ Flex selector that
+// swaps both the chart and the figures, and everything below is scoped to
+// the selected queue — its own LP snapshots and, for the win/loss fallback,
+// only the games that can actually move that ladder (queueId 420 / 440).
+// Before that filter an unranked player got a "rank trend" drawn from
+// normals, exactly the fake signal this card must never give.
+function RankTrendCard({
+  lpHistory,
+  flexLpHistory,
+  matches,
+}: {
+  lpHistory: ProfileApiResponse["lpHistory"];
+  flexLpHistory: ProfileApiResponse["flexLpHistory"];
+  matches: RecentMatchSummary[];
+}) {
   const { t } = useI18n();
+  const historyByQueue: Record<RankedQueue, ProfileApiResponse["lpHistory"]> = {
+    solo: lpHistory,
+    flex: flexLpHistory ?? [],
+  };
+  const hasData = (queue: RankedQueue) =>
+    historyByQueue[queue].length >= 2 || matches.some((m) => m.queueId === RANKED_QUEUE_ID[queue]);
+  // Solo/duo is the ladder people mean by "my rank", so it's the default —
+  // unless it has nothing at all to show and flex does.
+  const [queue, setQueue] = useState<RankedQueue>(() => (!hasData("solo") && hasData("flex") ? "flex" : "solo"));
+  const queueLabel = t(queue === "solo" ? "ProfileSearch.rankTrendQueueSolo" : "ProfileSearch.rankTrendQueueFlex");
+  const history = historyByQueue[queue];
+  const queueMatches = matches.filter((m) => m.queueId === RANKED_QUEUE_ID[queue]);
+
+  // Same fallback the web uses: a single real LP snapshot can't draw a
+  // line. Riot's API has no LP-history endpoint, so absent ≥2 of our own
+  // snapshots this plots a running win(+1)/loss(-1) tally from real ranked
+  // results instead — an honest momentum line, not fabricated LP. With no
+  // ranked games of this queue either, say so instead of drawing anything.
+  const mode = history.length >= 2 ? "lp" : queueMatches.length > 0 ? "momentum" : "empty";
+
+  return (
+    <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.rankTrend")}</span>
+      <div role="group" aria-label={t("ProfileSearch.rankTrendQueueLabel")} style={{ display: "flex", gap: 6, marginTop: 8 }}>
+        {RANKED_QUEUES.map((q) => (
+          <button key={q} type="button" onClick={() => setQueue(q)} aria-pressed={queue === q} style={pillStyle(queue === q, "compact")}>
+            {t(q === "solo" ? "ProfileSearch.rankTrendQueueSolo" : "ProfileSearch.rankTrendQueueFlex")}
+          </button>
+        ))}
+      </div>
+      {mode === "lp" ? (
+        <LpHistoryBody key={queue} history={history} />
+      ) : mode === "momentum" ? (
+        <MomentumBody key={queue} matches={queueMatches} queueLabel={queueLabel} />
+      ) : (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6, marginTop: 10 }}>
+          <span style={{ fontSize: 15, fontWeight: 600 }}>{t("ProfileSearch.rankTrendEmptyTitle", { queue: queueLabel })}</span>
+          <span style={{ fontSize: 12, color: COLORS.muted, lineHeight: 1.5 }}>{t("ProfileSearch.rankTrendEmptyBody", { queue: queueLabel })}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LpHistoryBody({ history }: { history: ProfileApiResponse["lpHistory"] }) {
+  const { t, locale } = useI18n();
   const gradientId = useId();
-
-  // Same fallback the web's RankTrendChart uses (rank-trend-chart.tsx): a
-  // single real LP snapshot can't draw a line. Riot's API has no
-  // LP-history endpoint, so absent ≥2 of our own snapshots this plots a
-  // running win(+1)/loss(-1) tally from real match results instead — an
-  // honest momentum line, not fabricated LP.
-  if (lpHistory.length < 2) {
-    if (matches.length === 0) return null;
-    return <MomentumTrendCard matches={matches} />;
-  }
-
   const width = 400;
   const height = 140;
-  const values = lpHistory.map((h) => h.leaguePoints);
+  // rankToLpValue, not the raw LP field: tier + division + LP folded into
+  // one climbing number, so a promotion (95 LP → 0 LP in the next division)
+  // draws as the climb it is instead of a cliff — same conversion the web's
+  // chart and the saved-profiles sparkline already use.
+  const values = history.map((h) => rankToLpValue(h.tier, h.rank, h.leaguePoints));
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
@@ -805,17 +872,23 @@ function RankTrendCard({ lpHistory, matches }: { lpHistory: ProfileApiResponse["
     .map((v, i) => `${(i / (values.length - 1)) * width},${height - ((v - min) / range) * height}`)
     .join(" ");
   const areaPoints = `0,${height} ${points} ${width},${height}`;
-  const trendingUp = values[values.length - 1] >= values[0];
-  const color = trendingUp ? COLORS.goodMild : COLORS.badMild;
-  const latest = lpHistory[lpHistory.length - 1];
+  const delta = values[values.length - 1] - values[0];
+  const color = delta >= 0 ? COLORS.goodMild : COLORS.badMild;
+  const latest = history[history.length - 1];
+  // Explicit `locale`, not `undefined` (which reads the OS locale instead of
+  // the one picked in Ajustes) — see the calendar's monthLabel below.
+  const since = new Date(history[0].capturedAt).toLocaleDateString(locale, { day: "numeric", month: "short" });
 
   return (
-    <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.rankTrend")}</span>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 6 }}>
+    <>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
         <span style={{ fontSize: 15, fontWeight: 600 }}>{formatTierRank(latest.tier, latest.rank)}</span>
         <span style={{ fontSize: 12, color: COLORS.muted }}>{latest.leaguePoints} LP</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color, marginLeft: "auto" }}>{signedNumber(delta)} LP</span>
       </div>
+      <span style={{ fontSize: 11, color: COLORS.muted, marginTop: 2 }}>
+        {t("ProfileSearch.lpHistorySubtitle", { count: history.length, since })}
+      </span>
       {/* height:100% (not a fixed px height) — a row that stretches this
           card taller than its own natural content grows the chart itself
           instead of leaving empty space around a fixed-size one;
@@ -831,15 +904,16 @@ function RankTrendCard({ lpHistory, matches }: { lpHistory: ProfileApiResponse["
         <polygon points={areaPoints} fill={`url(#${gradientId})`} />
         <polyline points={points} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-    </div>
+    </>
   );
 }
 
 // Win/loss momentum fallback for RankTrendCard above — same data and math
 // as the web's RankTrendChart (rank-trend-chart.tsx) when it has fewer
-// than 2 real LP snapshots: a running +1/-1 tally across recent games,
-// zero-referenced so a losing stretch reads as a real dip below the line.
-function MomentumTrendCard({ matches }: { matches: RecentMatchSummary[] }) {
+// than 2 real LP snapshots: a running +1/-1 tally across the selected
+// queue's recent ranked games, zero-referenced so a losing stretch reads
+// as a real dip below the line.
+function MomentumBody({ matches, queueLabel }: { matches: RecentMatchSummary[]; queueLabel: string }) {
   const { t } = useI18n();
   const gradientId = useId();
   const width = 400;
@@ -869,14 +943,10 @@ function MomentumTrendCard({ matches }: { matches: RecentMatchSummary[] }) {
   const areaPoints = `0,${height} ${points} ${width},${height}`;
 
   return (
-    <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.rankTrend")}</span>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 6 }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color }}>
-          {current > 0 ? "+" : current < 0 ? "−" : ""}
-          {Math.abs(current)}
-        </span>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.momentumSubtitle")}</span>
+    <>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 10 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color }}>{signedNumber(current)}</span>
+        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.momentumSubtitle", { queue: queueLabel })}</span>
       </div>
       <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ marginTop: 8, display: "block", flex: 1, minHeight: 80 }}>
         <defs>
@@ -889,7 +959,7 @@ function MomentumTrendCard({ matches }: { matches: RecentMatchSummary[] }) {
         <polygon points={areaPoints} fill={`url(#${gradientId})`} />
         <polyline points={points} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-    </div>
+    </>
   );
 }
 
@@ -996,14 +1066,16 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
           {t(`ProfileSearch.errors.${errorMessageKey(monthState.error, monthState.status)}`)}
         </p>
       ) : (
-      // Fluid, up to a cap (same idea as the web's ActivityCalendar,
-      // mx-auto max-w-[280px]) instead of a fixed 26px cell size — the
-      // card this sits in can be a lot wider than 7×26px on a real
-      // window, which would otherwise leave the grid looking tiny relative
-      // to it. Cells stay square (day count fixes the grid's real height),
-      // so a taller row just centers this block vertically instead of
-      // stretching cells into rectangles.
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", maxWidth: 320, margin: "10px auto 0" }}>
+      // Full card width with fixed-height cells (same as the web's
+      // ActivityCalendar since 2026-09-11): the previous centered 320px cap
+      // left a third of the card empty on each side once the window was
+      // any wider than the minimum, with a small grid floating in the
+      // middle. Cells stretch to whatever width the column gives them (a
+      // real calendar's rectangles) while the row height stays put, so the
+      // card never grows into a giant square heatmap and unbalances the
+      // champion overview next to it; a taller row still just centers this
+      // block vertically.
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", marginTop: 10 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 4 }}>
           {weekdayLabels.map((label, i) => (
             <span key={i} style={{ textAlign: "center", fontSize: 11, color: COLORS.muted }}>
@@ -1040,7 +1112,8 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
               title={isFuture ? undefined : t("ProfileSearch.activityDayTitle", { games: day.games, wins: day.wins, losses: day.losses })}
               style={{
                 width: "100%",
-                aspectRatio: "1",
+                height: 32,
+                boxSizing: "border-box",
                 borderRadius: 5,
                 background: bg,
                 display: "flex",
@@ -1062,10 +1135,9 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
       </div>
       )}
       {monthState.kind === "ok" || isCurrentMonth ? (
-        // Sibling of the centered maxWidth:320 grid above, not nested
-        // inside it, so the legend sits flush against the card's own left
-        // edge instead of being centered along with the grid (same
-        // structure as the web version's legend).
+        // Sibling of the grid above, not nested inside it, so the legend
+        // sits flush against the card's own left edge (same structure as
+        // the web version's legend).
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11, color: COLORS.muted }}>
           <span>{t("ProfileSearch.activityLegendLoss")}</span>
           <span style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.bad }} />
