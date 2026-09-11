@@ -1,9 +1,9 @@
-// Ported from the web app's src/lib/riot/{rank-band,roadmap,skill-radar,
-// role-breakdown,head-to-head}.ts — same real benchmarks and formulas
-// (CS/min targets, KDA/vision/kill-participation/damage targets, the
-// laning-advantage midpoint), not re-derived. All pure functions of the
+// Ported from the web app's src/lib/riot/{rank-band,diagnostic,
+// role-breakdown,head-to-head}.ts — same formulas (the lane-opponent
+// diagnostic, the CS/min table, the laning-advantage midpoint), not
+// re-derived. All pure functions of the
 // same RecentMatchSummary[] the profile endpoint already returns, so the
-// desktop app computes roadmap/skill-radar/role-breakdown/head-to-head
+// desktop app computes diagnostic/role-breakdown/head-to-head
 // client-side from one fetch instead of needing a matching endpoint per
 // widget. Kept in one file (the web app splits these into 5) since this
 // app doesn't need the same file-per-concern granularity.
@@ -32,209 +32,253 @@ function average(values: number[]): number {
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
-function isSupportRole(matches: RecentMatchSummary[]): boolean {
-  return matches.filter((m) => m.teamPosition === "UTILITY").length > matches.length / 2;
-}
+// --- diagnostic.ts ---
+// One diagnostic feeds everything the profile says about "how you play":
+// the roadmap rows, the strength/focus pills above them, the per-game note
+// and score in the match list, the post-game report and the compare view.
+// The reference for every metric is the player's real lane opponent in
+// each game (same teamPosition on the other team): same role, same elo, no
+// invented benchmark. Only Summoner's Rift 5v5 games count, and the only
+// published number left is the CS/min table above, shown as a side note.
+export type DiagnosticMetric = "csPerMin" | "visionPerMin" | "damagePerMin" | "killParticipation" | "kda" | "laningAdvantage";
 
-function isJungleRole(matches: RecentMatchSummary[]): boolean {
-  return matches.filter((m) => m.teamPosition === "JUNGLE").length > matches.length / 2;
-}
+export const DIAGNOSTIC_METRICS: DiagnosticMetric[] = ["csPerMin", "visionPerMin", "damagePerMin", "killParticipation", "kda", "laningAdvantage"];
 
-// --- roadmap.ts ---
-export type RoadmapMetric = "csPerMin" | "visionPerMin" | "kda" | "laningAdvantage";
-export type RoadmapStatus = "above" | "below";
+/** Metrics that exist for a single game (laningAdvantage is a per-game flag, only meaningful as a share of games). */
+export const MATCH_METRICS: Exclude<DiagnosticMetric, "laningAdvantage">[] = ["csPerMin", "visionPerMin", "damagePerMin", "killParticipation", "kda"];
 
-export interface RoadmapNode {
-  metric: RoadmapMetric;
+export const SUMMONERS_RIFT_QUEUE_IDS: ReadonlySet<number> = new Set([400, 420, 430, 440, 490, 700]);
+export const MIN_DIAGNOSTIC_GAMES = 3;
+export const STRENGTH_RATIO = 1.15;
+export const FOCUS_RATIO = 0.85;
+const LANING_ADVANTAGE_REFERENCE = 50;
+
+export type DiagnosticStatus = "above" | "below";
+
+export interface DiagnosticNode {
+  metric: DiagnosticMetric;
+  /** The player's own figure over the diagnosed games. */
   value: number;
-  target: number;
-  status: RoadmapStatus;
+  /** Their lane opponents' figure over the same games (laningAdvantage: the 50% midpoint). */
+  reference: number;
+  /** value / reference: 1 = even with the opponent. */
+  ratio: number;
+  status: DiagnosticStatus;
+}
+
+export type Position = (typeof KNOWN_POSITIONS)[number];
+
+export interface Diagnostic {
+  ready: true;
+  games: number;
+  totalGames: number;
+  primaryRole: Position;
+  primaryRoleGames: number;
   band: RankBand;
-  role?: "jungle" | "laner";
+  /** Published CS/min reference for the rank band; absent without a rank and for supports. */
+  csReference?: number;
+  /** Worst gap first. */
+  nodes: DiagnosticNode[];
+  strengths: DiagnosticMetric[];
+  focus: DiagnosticMetric[];
 }
 
-const VISION_TARGET = 1;
-const SUPPORT_VISION_TARGET = 1.8;
-const KDA_TARGET = 3;
-const LANING_ADVANTAGE_TARGET = 50;
-
-function gapRatio(node: RoadmapNode): number {
-  if (node.status === "above" || node.target === 0) return -1;
-  return (node.target - node.value) / node.target;
+export interface DiagnosticNotReady {
+  ready: false;
+  games: number;
+  totalGames: number;
+  required: number;
 }
 
-export function computeRoadmap(matches: RecentMatchSummary[], tier?: string | null): RoadmapNode[] {
-  if (matches.length === 0) return [];
+export type DiagnosticResult = Diagnostic | DiagnosticNotReady;
 
-  const band = tierToBand(tier);
-  const support = isSupportRole(matches);
-  const jungle = isJungleRole(matches);
-
-  const csPerMin = average(matches.map((m) => m.cs / Math.max(1, m.durationSeconds / 60)));
-  const visionPerMin = average(matches.map((m) => m.visionScore / Math.max(1, m.durationSeconds / 60)));
-  const kda = average(matches.map((m) => (m.kills + m.assists) / Math.max(1, m.deaths)));
-  const laningAdvantagePct = (matches.filter((m) => m.laningAdvantage).length / matches.length) * 100;
-
-  const csTarget = support ? SUPPORT_CS_PER_MIN_TARGET : CS_PER_MIN_TARGETS[band];
-  const visionTarget = support ? SUPPORT_VISION_TARGET : VISION_TARGET;
-
-  const nodes: RoadmapNode[] = [
-    { metric: "csPerMin", value: Math.round(csPerMin * 10) / 10, target: csTarget, status: csPerMin >= csTarget ? "above" : "below", band },
-    { metric: "visionPerMin", value: Math.round(visionPerMin * 10) / 10, target: visionTarget, status: visionPerMin >= visionTarget ? "above" : "below", band },
-    { metric: "kda", value: Math.round(kda * 10) / 10, target: KDA_TARGET, status: kda >= KDA_TARGET ? "above" : "below", band },
-    {
-      metric: "laningAdvantage",
-      value: Math.round(laningAdvantagePct),
-      target: LANING_ADVANTAGE_TARGET,
-      status: laningAdvantagePct >= LANING_ADVANTAGE_TARGET ? "above" : "below",
-      band,
-      role: jungle ? "jungle" : "laner",
-    },
-  ];
-
-  return nodes.sort((a, b) => gapRatio(b) - gapRatio(a));
+function isKnownPosition(position: string): position is Position {
+  return (KNOWN_POSITIONS as readonly string[]).includes(position);
 }
 
-// --- skill-radar.ts ---
-export type SkillAxis = "farm" | "vision" | "kda" | "killParticipation" | "damage";
-
-export interface SkillRadarPoint {
-  axis: SkillAxis;
-  value: number;
+/** The enemy in the same position as `participant`, or null outside Summoner's Rift / without one. */
+export function laneOpponentOf(participant: MatchParticipantSummary, match: Pick<RecentMatchSummary, "queueId" | "participants">): MatchParticipantSummary | null {
+  if (!SUMMONERS_RIFT_QUEUE_IDS.has(match.queueId) || !isKnownPosition(participant.teamPosition)) return null;
+  return match.participants.find((p) => p.teamPosition === participant.teamPosition && p.teamId !== participant.teamId) ?? null;
 }
 
-function scaleToTarget(value: number, target: number): number {
-  return Math.min(150, Math.round((value / target) * 100));
+// RecentMatchSummary doesn't carry the tracked player's teamId: their own
+// row is the one on the winning/losing side with their champion in their
+// position (mirror picks in blind pick are told apart by `win`).
+function trackedParticipant(match: RecentMatchSummary): MatchParticipantSummary | null {
+  return match.participants.find((p) => p.teamPosition === match.teamPosition && p.win === match.win && p.championName === match.championName) ?? null;
 }
 
-export function computeSkillRadar(matches: RecentMatchSummary[], tier?: string | null): SkillRadarPoint[] {
-  if (matches.length === 0) return [];
-
-  const support = isSupportRole(matches);
-  const band = tierToBand(tier);
-  const minutes = matches.map((m) => Math.max(1, m.durationSeconds / 60));
-
-  const csPerMin = average(matches.map((m, i) => m.cs / minutes[i]));
-  const visionPerMin = average(matches.map((m, i) => m.visionScore / minutes[i]));
-  const kda = average(matches.map((m) => (m.kills + m.assists) / Math.max(1, m.deaths)));
-  const killParticipation = average(matches.map((m) => ((m.kills + m.assists) / Math.max(1, m.teamKills)) * 100));
-  const damagePerMin = average(matches.map((m, i) => m.damageDealt / minutes[i]));
-
-  const farmTarget = support ? SUPPORT_CS_PER_MIN_TARGET : CS_PER_MIN_TARGETS[band];
-
-  return [
-    { axis: "farm", value: scaleToTarget(csPerMin, farmTarget) },
-    { axis: "vision", value: scaleToTarget(visionPerMin, support ? 1.8 : 1) },
-    { axis: "kda", value: scaleToTarget(kda, 3) },
-    { axis: "killParticipation", value: scaleToTarget(killParticipation, 60) },
-    { axis: "damage", value: scaleToTarget(damagePerMin, support ? 200 : 500) },
-  ];
+export function laneOpponent(match: RecentMatchSummary): MatchParticipantSummary | null {
+  const me = trackedParticipant(match);
+  return me ? laneOpponentOf(me, match) : null;
 }
 
-// --- skill-radar.ts's summarizeMatchPerformance, generalized ---
-// The web's version only scores the tracked player (its input is a Pick
-// off their own RecentMatchSummary); here the same real, benchmark-based
-// scoring applies to every participant so the expanded scoreboard can
-// show who actually played well on both teams. Same formula, same honest
-// per-real-stat benchmarks (see rank-band.ts's own comment on why only
-// CS/min is rank-tiered) — just fed any participant's real numbers.
-export type PerformanceSentiment = "good" | "neutral" | "bad";
-
-export interface MatchPerformanceNote {
-  axis: SkillAxis | "wellRounded";
-  sentiment: PerformanceSentiment;
-  /** 0-10, one decimal. */
-  score: number;
-  scoreSentiment: PerformanceSentiment;
-  /** Per-axis breakdown (farm/vision/kda/killParticipation/damage), for a
-   * full report rather than just the single standout axis above — used by
-   * the post-game report screen. */
-  points: SkillRadarPoint[];
-}
-
-// Exported so callers building a full per-axis breakdown (the post-game
-// report screen) can classify every axis with the same real thresholds
-// this file already uses for badges/standout notes, instead of a second
-// hardcoded copy drifting out of sync.
-export const STRENGTH_THRESHOLD = 110;
-export const FOCUS_THRESHOLD = 70;
-
-interface ParticipantStatsInput {
-  cs: number;
-  visionScore: number;
+interface GameStats {
+  csPerMin: number;
+  visionPerMin: number;
+  damagePerMin: number;
+  killParticipation: number;
   kills: number;
   deaths: number;
   assists: number;
-  damageDealt: number;
-  teamPosition: string;
 }
 
-export function summarizeParticipantPerformance(
-  stats: ParticipantStatsInput,
-  durationSeconds: number,
-  teamKills: number,
-  tier?: string | null,
-): MatchPerformanceNote {
-  const support = stats.teamPosition === "UTILITY";
-  const band = tierToBand(tier);
+function participantGameStats(p: MatchParticipantSummary, durationSeconds: number): GameStats {
   const minutes = Math.max(1, durationSeconds / 60);
-  const farmTarget = support ? SUPPORT_CS_PER_MIN_TARGET : CS_PER_MIN_TARGETS[band];
-
-  const points: SkillRadarPoint[] = [
-    { axis: "farm", value: scaleToTarget(stats.cs / minutes, farmTarget) },
-    { axis: "vision", value: scaleToTarget(stats.visionScore / minutes, support ? 1.8 : 1) },
-    { axis: "kda", value: scaleToTarget((stats.kills + stats.assists) / Math.max(1, stats.deaths), 3) },
-    { axis: "killParticipation", value: scaleToTarget(((stats.kills + stats.assists) / Math.max(1, teamKills)) * 100, 60) },
-    { axis: "damage", value: scaleToTarget(stats.damageDealt / minutes, support ? 200 : 500) },
-  ];
-
-  const standout = points.reduce((most, p) => (Math.abs(p.value - 100) > Math.abs(most.value - 100) ? p : most));
-  const overall = points.reduce((sum, p) => sum + p.value, 0) / points.length;
-  const score = Math.round((overall / 15) * 10) / 10;
-  const scoreSentiment: PerformanceSentiment = overall >= STRENGTH_THRESHOLD ? "good" : overall < FOCUS_THRESHOLD ? "bad" : "neutral";
-
-  if (standout.value >= STRENGTH_THRESHOLD) return { axis: standout.axis, sentiment: "good", score, scoreSentiment, points };
-  if (standout.value < FOCUS_THRESHOLD) return { axis: standout.axis, sentiment: "bad", score, scoreSentiment, points };
-  return { axis: "wellRounded", sentiment: "neutral", score, scoreSentiment, points };
+  return {
+    csPerMin: p.cs / minutes,
+    visionPerMin: p.visionScore / minutes,
+    damagePerMin: p.damageDealt / minutes,
+    killParticipation: p.killParticipation * 100,
+    kills: p.kills,
+    deaths: p.deaths,
+    assists: p.assists,
+  };
 }
 
-export function summarizeMatchPerformance(match: RecentMatchSummary, tier?: string | null): MatchPerformanceNote {
-  return summarizeParticipantPerformance(match, match.durationSeconds, match.teamKills, tier);
+function kdaOf(stats: Pick<GameStats, "kills" | "deaths" | "assists">): number {
+  return (stats.kills + stats.assists) / Math.max(1, stats.deaths);
 }
 
-// --- skill-radar.ts's computePerformanceBadges ---
-export type PerformanceBadgeKey = "farm" | "vision" | "kda" | "killParticipation" | "damage" | "wellRounded" | "focus";
-export type PerformanceBadgeSentiment = PerformanceSentiment;
-
-export interface PerformanceBadge {
-  key: PerformanceBadgeKey;
-  /** Which skill axis this badge is about, if any (used for the icon/label). */
-  axis?: SkillAxis;
-  sentiment: PerformanceBadgeSentiment;
+function ratioOf(value: number, reference: number): number {
+  if (reference > 0) return value / reference;
+  return value > 0 ? STRENGTH_RATIO : 1;
 }
 
-export function computePerformanceBadges(points: SkillRadarPoint[]): PerformanceBadge[] {
-  if (points.length === 0) return [];
+function roundTo(value: number, decimals: number): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
 
-  const badges: PerformanceBadge[] = [];
-  for (const p of points) {
-    if (p.value >= STRENGTH_THRESHOLD) badges.push({ key: p.axis, axis: p.axis, sentiment: "good" });
-    else if (p.value < FOCUS_THRESHOLD) badges.push({ key: "focus", axis: p.axis, sentiment: "bad" });
+// Ratio and verdict come from the rounded figures the UI prints, so a row
+// can never show "0.7 vs 0.7" painted as behind.
+function node(metric: DiagnosticMetric, rawValue: number, rawReference: number): DiagnosticNode {
+  const decimals = metric === "damagePerMin" || metric === "killParticipation" || metric === "laningAdvantage" ? 0 : 1;
+  const value = roundTo(rawValue, decimals);
+  const reference = roundTo(rawReference, decimals);
+  const ratio = ratioOf(value, reference);
+  return { metric, value, reference, ratio, status: ratio >= 1 ? "above" : "below" };
+}
+
+function sumOf(stats: GameStats[], key: "kills" | "deaths" | "assists"): number {
+  return stats.reduce((sum, game) => sum + game[key], 0);
+}
+
+export function computeDiagnostic(matches: RecentMatchSummary[], tier?: string | null): DiagnosticResult {
+  const diagnosed: { match: RecentMatchSummary; me: MatchParticipantSummary; opponent: MatchParticipantSummary }[] = [];
+  for (const match of matches) {
+    const me = trackedParticipant(match);
+    const opponent = me ? laneOpponentOf(me, match) : null;
+    if (me && opponent) diagnosed.push({ match, me, opponent });
+  }
+  if (diagnosed.length < MIN_DIAGNOSTIC_GAMES) {
+    return { ready: false, games: diagnosed.length, totalGames: matches.length, required: MIN_DIAGNOSTIC_GAMES };
   }
 
-  if (badges.length === 0) badges.push({ key: "wellRounded", sentiment: "neutral" });
+  const mine = diagnosed.map(({ match, me }) => participantGameStats(me, match.durationSeconds));
+  const theirs = diagnosed.map(({ match, opponent }) => participantGameStats(opponent, match.durationSeconds));
 
-  return badges;
+  // KDA over the whole sample as one ratio of sums, not the mean of per-game
+  // KDAs: a single deathless game used to carry a dozen bad ones.
+  const myKda = kdaOf({ kills: sumOf(mine, "kills"), deaths: sumOf(mine, "deaths"), assists: sumOf(mine, "assists") });
+  const theirKda = kdaOf({ kills: sumOf(theirs, "kills"), deaths: sumOf(theirs, "deaths"), assists: sumOf(theirs, "assists") });
+  const laningAdvantagePct = (diagnosed.filter(({ match }) => match.laningAdvantage).length / diagnosed.length) * 100;
+
+  const nodes = [
+    node("csPerMin", average(mine.map((g) => g.csPerMin)), average(theirs.map((g) => g.csPerMin))),
+    node("visionPerMin", average(mine.map((g) => g.visionPerMin)), average(theirs.map((g) => g.visionPerMin))),
+    node("damagePerMin", average(mine.map((g) => g.damagePerMin)), average(theirs.map((g) => g.damagePerMin))),
+    node("killParticipation", average(mine.map((g) => g.killParticipation)), average(theirs.map((g) => g.killParticipation))),
+    node("kda", myKda, theirKda),
+    node("laningAdvantage", laningAdvantagePct, LANING_ADVANTAGE_REFERENCE),
+  ].sort((a, b) => a.ratio - b.ratio);
+
+  const roleCounts = new Map<Position, number>();
+  for (const { match } of diagnosed) {
+    const position = match.teamPosition as Position;
+    roleCounts.set(position, (roleCounts.get(position) ?? 0) + 1);
+  }
+  const [primaryRole, primaryRoleGames] = [...roleCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const band = tierToBand(tier);
+
+  return {
+    ready: true,
+    games: diagnosed.length,
+    totalGames: matches.length,
+    primaryRole,
+    primaryRoleGames,
+    band,
+    csReference: primaryRole === "UTILITY" || band === "default" ? undefined : CS_PER_MIN_TARGETS[band],
+    nodes,
+    strengths: nodes.filter((n) => n.ratio >= STRENGTH_RATIO).map((n) => n.metric),
+    focus: nodes.filter((n) => n.ratio <= FOCUS_RATIO).map((n) => n.metric),
+  };
 }
 
-export function summarizeParticipant(
-  participant: MatchParticipantSummary,
-  durationSeconds: number,
-  teams: { teamId: number; kills: number }[],
-  tier?: string | null,
-): MatchPerformanceNote {
-  const teamKills = teams.find((t) => t.teamId === participant.teamId)?.kills ?? 1;
-  return summarizeParticipantPerformance(participant, durationSeconds, teamKills, tier);
+/** Roadmap i18n key of a node's advice: by rank band, and for laning also by jungle vs. laner. */
+export function tipKey(node: DiagnosticNode, diagnostic: Pick<Diagnostic, "band" | "primaryRole">): string {
+  const verdict = node.status === "above" ? "tipAbove" : "tipBelow";
+  if (node.metric === "laningAdvantage") {
+    const role = diagnostic.primaryRole === "JUNGLE" ? "jungle" : "laner";
+    return `Roadmap.${node.metric}.${verdict}.${role}.${diagnostic.band}`;
+  }
+  return `Roadmap.${node.metric}.${verdict}.${diagnostic.band}`;
+}
+
+export type Sentiment = "good" | "neutral" | "bad";
+
+export interface MatchDiagnostic {
+  /** Same five per-game metrics as the roadmap, each against this game's lane opponent. */
+  nodes: DiagnosticNode[];
+  standout: { metric: DiagnosticMetric; sentiment: "good" | "bad" } | { metric: "even"; sentiment: "neutral" };
+  /** 0-10, one decimal: the five ratios averaged, 1.5 (and above) = 10, even with the opponent = 6.7. */
+  score: number;
+  scoreSentiment: Sentiment;
+}
+
+const SCORE_CEILING_RATIO = 1.5;
+
+// Any participant of a game against their own lane opponent, so the
+// expanded scoreboard can score all ten players with the same rule the
+// tracked player gets. Null when the game has no lane opponents (ARAM).
+export function diagnoseParticipant(participant: MatchParticipantSummary, match: Pick<RecentMatchSummary, "queueId" | "participants" | "durationSeconds">): MatchDiagnostic | null {
+  const opponent = laneOpponentOf(participant, match);
+  if (!opponent) return null;
+
+  const mine = participantGameStats(participant, match.durationSeconds);
+  const theirs = participantGameStats(opponent, match.durationSeconds);
+  const nodes = MATCH_METRICS.map((metric) => (metric === "kda" ? node("kda", kdaOf(mine), kdaOf(theirs)) : node(metric, mine[metric], theirs[metric])));
+
+  const overall = average(nodes.map((n) => Math.min(SCORE_CEILING_RATIO, n.ratio)));
+  const score = roundTo((overall / SCORE_CEILING_RATIO) * 10, 1);
+  const scoreSentiment: Sentiment = overall >= STRENGTH_RATIO ? "good" : overall <= FOCUS_RATIO ? "bad" : "neutral";
+
+  const furthest = nodes.reduce((most, n) => (Math.abs(n.ratio - 1) > Math.abs(most.ratio - 1) ? n : most));
+  const standout: MatchDiagnostic["standout"] =
+    furthest.ratio >= STRENGTH_RATIO
+      ? { metric: furthest.metric, sentiment: "good" }
+      : furthest.ratio <= FOCUS_RATIO
+        ? { metric: furthest.metric, sentiment: "bad" }
+        : { metric: "even", sentiment: "neutral" };
+
+  return { nodes, standout, score, scoreSentiment };
+}
+
+export function diagnoseMatch(match: RecentMatchSummary): MatchDiagnostic | null {
+  const me = trackedParticipant(match);
+  return me ? diagnoseParticipant(me, match) : null;
+}
+
+/** Share of a tug-of-war bar the player's side fills: 50 = even with the opponent. */
+export function playerShare(node: DiagnosticNode): number {
+  const total = node.value + node.reference;
+  if (total <= 0) return 50;
+  return Math.round((node.value / total) * 100);
+}
+
+export function metricUnit(metric: DiagnosticMetric): "" | "%" {
+  return metric === "killParticipation" || metric === "laningAdvantage" ? "%" : "";
 }
 
 // --- role-breakdown.ts ---

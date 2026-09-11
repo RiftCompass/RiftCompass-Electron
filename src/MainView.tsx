@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowsDownUp,
+  SquaresFour,
   FlagCheckered,
   Sword,
   Check,
@@ -144,6 +145,18 @@ const TOOL_SPLASH_ACCENTS: Record<ToolId, SplashAccent[]> = {
   ],
 };
 
+const toolNavButtonStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  background: "none",
+  border: "none",
+  color: COLORS.muted,
+  fontSize: 13,
+  cursor: "pointer",
+  padding: 0,
+};
+
 export function MainView() {
   const { t } = useI18n();
   const [panel, setPanel] = useState<Panel>("tools");
@@ -152,6 +165,11 @@ export function MainView() {
   // Champion Builds); cleared as soon as the tool pane is left, so coming
   // back to the same tool by hand starts empty.
   const [requestedChampion, setRequestedChampion] = useState<string | null>(null);
+  // Tools the open one was reached from, oldest first (Meta Tier List ->
+  // Champion Builds leaves ["metaTierList"]), so "back" can return to the
+  // previous tool instead of always dropping to the menu. Empty whenever a
+  // tool was opened from the menu itself.
+  const [toolTrail, setToolTrail] = useState<ToolId[]>([]);
   const [lcuStatus, setLcuStatus] = useState<"connected" | "disconnected">("disconnected");
   const [user, setUser] = useState<AccountUser | null | undefined>(undefined);
   const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
@@ -174,14 +192,31 @@ export function MainView() {
   function closeTool() {
     setOpenToolId(null);
     setRequestedChampion(null);
+    setToolTrail([]);
   }
 
   // A tool asking for another tool (see tool-navigation.tsx): the champion,
   // when there is one, is handed to the tool that opens rather than kept as
   // shared state, so nothing else in the app has to know about it.
   function openToolFrom(request: ToolNavigationRequest) {
+    const from = openToolIdRef.current;
+    if (from) setToolTrail((trail) => [...trail, from]);
     setRequestedChampion(request.championInternalId ?? null);
     setOpenToolId(request.toolId);
+  }
+
+  // One step back along the trail; from a tool opened straight from the
+  // menu that is the menu itself.
+  function backOneTool() {
+    const trail = toolTrailRef.current;
+    const previous = trail[trail.length - 1];
+    if (!previous) {
+      closeTool();
+      return;
+    }
+    setToolTrail(trail.slice(0, -1));
+    setRequestedChampion(null);
+    setOpenToolId(previous);
   }
 
   function openProfile(profileT: ProfileTarget | null) {
@@ -205,6 +240,7 @@ export function MainView() {
   // not yank them away from whatever they're actively doing.
   const panelRef = useRef(panel);
   const openToolIdRef = useRef(openToolId);
+  const toolTrailRef = useRef(toolTrail);
   const profileTargetRef = useRef(profileTarget);
   useEffect(() => {
     panelRef.current = panel;
@@ -212,6 +248,9 @@ export function MainView() {
   useEffect(() => {
     openToolIdRef.current = openToolId;
   }, [openToolId]);
+  useEffect(() => {
+    toolTrailRef.current = toolTrail;
+  }, [toolTrail]);
   useEffect(() => {
     profileTargetRef.current = profileTarget;
   }, [profileTarget]);
@@ -293,16 +332,18 @@ export function MainView() {
     });
   }, []);
 
-  // Mouse back/forward side buttons close the open tool — button 3/4 are
-  // the XButton1/XButton2 side buttons most mice map to back/forward.
-  // There's no real forward destination here (a couple of flat panels,
-  // not a history stack), so both side buttons do the same "back to the
-  // tools menu" action rather than only one of them working.
+  // Mouse back/forward side buttons step back — button 3/4 are the
+  // XButton1/XButton2 side buttons most mice map to back/forward. There's
+  // no real forward destination here (a couple of flat panels plus the
+  // tool trail), so both side buttons do the same "back" action rather
+  // than only one of them working: one tool back when the open tool was
+  // reached from another, otherwise the tools menu.
   useEffect(() => {
     function handleMouseUp(e: MouseEvent) {
       if (e.button === 3 || e.button === 4) {
         e.preventDefault();
-        goHome();
+        if (panelRef.current === "tools" && openToolIdRef.current) backOneTool();
+        else goHome();
       }
     }
     window.addEventListener("mouseup", handleMouseUp);
@@ -504,23 +545,16 @@ export function MainView() {
                   style={accent.style}
                 />
               ))}
-              <button
-                onClick={closeTool}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  alignSelf: "flex-start",
-                  background: "none",
-                  border: "none",
-                  color: COLORS.muted,
-                  fontSize: 13,
-                  cursor: "pointer",
-                  padding: 0,
-                }}
-              >
-                <ArrowLeft size={15} /> {t("Common.backToTools")}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, alignSelf: "flex-start" }}>
+                <button onClick={backOneTool} style={toolNavButtonStyle}>
+                  <ArrowLeft size={15} /> {t(toolTrail.length > 0 ? "Common.back" : "Common.backToTools")}
+                </button>
+                {toolTrail.length > 0 ? (
+                  <button onClick={closeTool} style={toolNavButtonStyle}>
+                    <SquaresFour size={15} /> {t("Common.allTools")}
+                  </button>
+                ) : null}
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <openTool.icon size={22} color={openTool.accent} />
                 <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>

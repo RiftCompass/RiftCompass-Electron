@@ -15,6 +15,7 @@ import {
   Sword,
   Target,
   Grains,
+  TrendUp,
   type Icon,
 } from "@phosphor-icons/react";
 import { API_BASE_URL } from "../shared/api";
@@ -27,23 +28,23 @@ import {
   buildActivityGrid,
   computeChampionOverview,
   computeChampionPool,
-  computePerformanceBadges,
-  computeRoadmap,
+  computeDiagnostic,
   computeRoleBreakdown,
-  computeSkillRadar,
+  diagnoseMatch,
+  diagnoseParticipant,
   formatRelativeTime,
+  metricUnit,
+  playerShare,
   positionIconUrl,
   rankEmblemUrl,
-  summarizeMatchPerformance,
-  summarizeParticipant,
+  tipKey,
   RANKED_SOLO_QUEUE_ID,
   RANKED_FLEX_QUEUE_ID,
   type DayActivity,
-  type PerformanceBadge,
-  type RoadmapNode,
+  type Diagnostic,
+  type DiagnosticMetric,
+  type DiagnosticNode,
   type RoleStats,
-  type SkillAxis,
-  type SkillRadarPoint,
 } from "../lib/profile-analysis";
 import type { ProfileApiResponse, RecentMatchSummary, RiotLeagueEntry } from "../lib/profile-types";
 import type { SavedProfileWithRank } from "../riftcompass";
@@ -57,7 +58,6 @@ import {
   DropdownMenu,
   PlatformSelect,
   CompareSavedProfilePicker,
-  AXIS_LABEL_KEY,
   cardStyle,
   selectStyle,
   secondaryButtonStyle,
@@ -518,19 +518,12 @@ function ProfileDetail({
         ) : null}
       </DropdownMenu>
 
-      <PerformanceBadgesRow points={computeSkillRadar(profile.recentMatches, rankTier)} />
-
-      {/* Paired rows, grouping cards whose natural content height is
-          close (a rank card next to another rank card, a compact chart
-          next to another compact chart, a taller grid next to a
-          similarly-tall table). ChampionPool+Roadmap are paired here on
-          purpose, desktop-only: the web keeps those two full-width/
-          stacked, so that one row is a deliberate divergence from the
-          web rather than the mirrored layout the rows above still are.
-          Don't mirror it back to the web. Each card's own internal layout (see
-          cardStyle usage below) still centers its content vertically
-          within the row's `stretch`, so any residual height difference
-          reads as intentional, not leftover space. */}
+      {/* Same story order as the web's profile page: who you are, how
+          much you play, what you play, how you play, then the games. Paired
+          rows group cards whose natural content height is close; each
+          card's own internal layout (see cardStyle usage below) centers its
+          content vertically within the row's `stretch`, so any residual
+          height difference reads as intentional, not leftover space. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
         <RankCard
           title={t("ProfileSearch.soloQueue")}
@@ -544,24 +537,17 @@ function ProfileDetail({
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 12 }}>
         <RankTrendCard lpHistory={lpHistory} flexLpHistory={flexLpHistory} matches={profile.recentMatches} />
-        <SkillRadarCard matches={profile.recentMatches} tier={rankTier} />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 12 }}>
         <ActivityCalendarCard matches={profile.recentMatches} puuid={profile.puuid} platform={target.platform} />
-        <ChampionOverviewCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
       </div>
 
-      {/* Paired on purpose, desktop-only (the web keeps these full-width/
-          stacked, see the comment above). Same auto-fit/340px pattern as
-          the calendar+overview row above, since both cards run similarly
-          tall (a champion grid vs. a metric-row list). */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 12 }}>
+        <ChampionOverviewCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
         <ChampionPoolCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
-        <RoadmapCard matches={profile.recentMatches} tier={rankTier} />
       </div>
+
+      <RoadmapCard matches={profile.recentMatches} tier={rankTier} />
 
       <hr style={{ border: "none", borderTop: `1px solid ${COLORS.cardBorder}`, margin: 0 }} />
 
@@ -570,7 +556,6 @@ function ProfileDetail({
         ddragonVersion={ddragonVersion}
         summonerSpellIcons={summonerSpellIcons}
         puuid={profile.puuid}
-        tier={rankTier}
         platform={target.platform}
         onOpenProfile={onOpenProfile}
       />
@@ -578,73 +563,6 @@ function ProfileDetail({
   );
 }
 
-// Web's PerformanceBadges (src/components/performance-badges.tsx): one pill
-// per skill-radar axis that clears a strength/focus threshold, same
-// benchmark-derived data already feeding SkillRadarCard — never a separate
-// computation.
-const AXIS_ICON: Record<SkillAxis, Icon> = {
-  farm: Grains,
-  vision: Eye,
-  kda: Crosshair,
-  killParticipation: Sword,
-  damage: Fire,
-};
-
-function badgeIcon(badge: PerformanceBadge): Icon {
-  if (badge.key === "wellRounded") return Sparkle;
-  if (badge.key === "focus") return Target;
-  return AXIS_ICON[badge.axis as SkillAxis];
-}
-
-function PerformanceBadgesRow({ points }: { points: SkillRadarPoint[] }) {
-  const { t } = useI18n();
-  const badges = computePerformanceBadges(points);
-  if (badges.length === 0) return null;
-
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-      {badges.map((badge) => {
-        const Icon = badgeIcon(badge);
-        const axisLabel = badge.axis ? t(`ProfileSearch.axis.${badge.axis}`) : "";
-        const label =
-          badge.key === "focus"
-            ? t("ProfileSearch.badges.focus.label", { axis: axisLabel })
-            : t(`ProfileSearch.badges.${badge.key}.label`);
-        const colors =
-          badge.sentiment === "good"
-            ? { border: `${COLORS.good}4d`, bg: `${COLORS.good}1a`, text: COLORS.goodMild }
-            : badge.sentiment === "bad"
-              ? { border: `${COLORS.bad}4d`, bg: `${COLORS.bad}1a`, text: COLORS.badMild }
-              : { border: `${COLORS.neutral}66`, bg: `${COLORS.neutral}1a`, text: COLORS.muted };
-        return (
-          <span
-            key={`${badge.key}-${badge.axis ?? ""}`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              borderRadius: 999,
-              border: `1px solid ${colors.border}`,
-              background: colors.bg,
-              color: colors.text,
-              padding: "5px 12px",
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            <Icon size={13} />
-            {label}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-// Web's RankCard (src/app/[locale]/profile/[platform]/[riotId]/page.tsx):
-// rank info and that queue's own role breakdown live in the SAME card,
-// side by side, rather than a standalone role-breakdown card further down
-// the page.
 function RankCard({ title, entry, roleStats }: { title: string; entry: RiotLeagueEntry | null; roleStats: RoleStats[] }) {
   const { t } = useI18n();
   const emblem = entry ? rankEmblemUrl(entry.tier) : null;
@@ -693,92 +611,6 @@ function RankCard({ title, entry, roleStats }: { title: string; entry: RiotLeagu
             })}
           </div>
         ) : null}
-      </div>
-    </div>
-  );
-}
-
-// Matches the web's SkillRadarChart shape (a real polar/spider chart, not
-// a bar list) — same 5 axes, same 0-150 scale (100 = on-benchmark). Hand-
-// rolled SVG rather than pulling in a charting library, same approach the
-// sidebar's InlineLpSparkline (MainView.tsx) already uses for its own chart.
-function SkillRadarSvg({ points }: { points: SkillRadarPoint[] }) {
-  const { t } = useI18n();
-  const size = 220;
-  const center = size / 2;
-  const maxRadius = size / 2 - 34;
-  const maxValue = 150;
-  const angleFor = (i: number) => (Math.PI * 2 * i) / points.length - Math.PI / 2;
-  const coordFor = (i: number, value: number): [number, number] => {
-    const r = (Math.min(maxValue, value) / maxValue) * maxRadius;
-    const angle = angleFor(i);
-    return [center + r * Math.cos(angle), center + r * Math.sin(angle)];
-  };
-  const polygon = points.map((p, i) => coordFor(i, p.value).join(",")).join(" ");
-
-  return (
-    // Scales with the card instead of a fixed 220px square: on any real
-    // window the paired row is far taller and wider than that, and the
-    // radar sat as a small pentagon floating in empty space. The viewBox
-    // keeps the geometry, `width: 100%` + `height: auto` let it grow, and
-    // the cap keeps the labels (which scale with it) from getting huge in
-    // a very wide card.
-    <svg viewBox={`0 0 ${size} ${size}`} style={{ display: "block", width: "100%", maxWidth: 340, height: "auto", margin: "0 auto" }}>
-      {[50, 100, 150].map((ring) => (
-        <polygon
-          key={ring}
-          points={points.map((_, i) => coordFor(i, ring).join(",")).join(" ")}
-          fill="none"
-          stroke={COLORS.cardBorder}
-          strokeWidth={1}
-        />
-      ))}
-      {points.map((_, i) => {
-        const [x, y] = coordFor(i, maxValue);
-        return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke={COLORS.cardBorder} strokeWidth={1} />;
-      })}
-      <polygon points={polygon} fill={`${COLORS.rose}33`} stroke={COLORS.rose} strokeWidth={2} strokeLinejoin="round" />
-      {/* Same value-on-hover the web's SkillRadarChart gives via its
-          ChartTooltip — this hand-rolled SVG has no charting library to
-          supply that, so a native <title> per vertex (real browser
-          tooltip, no extra state/positioning code) is the direct
-          equivalent: previously the polygon's shape was the only signal,
-          with no way to read an exact number. */}
-      {points.map((p, i) => {
-        const [x, y] = coordFor(i, p.value);
-        return (
-          <circle key={`${p.axis}-dot`} cx={x} cy={y} r={4} fill={COLORS.rose} stroke={COLORS.background} strokeWidth={1.5}>
-            <title>{`${p.value}% ${t("ProfileSearch.skillRadarVsBenchmark")}`}</title>
-          </circle>
-        );
-      })}
-      {points.map((p, i) => {
-        const [x, y] = coordFor(i, maxValue + 30);
-        return (
-          <text key={p.axis} x={x} y={y} fill={COLORS.muted} fontSize={10} textAnchor="middle" dominantBaseline="middle">
-            {t(`ProfileSearch.axis.${AXIS_LABEL_KEY[p.axis]}`)}
-          </text>
-        );
-      })}
-    </svg>
-  );
-}
-
-function SkillRadarCard({ matches, tier }: { matches: RecentMatchSummary[]; tier: string | null }) {
-  const { t } = useI18n();
-  const points = computeSkillRadar(matches, tier);
-  // Sin partidas la tarjeta desaparece, como ya hacen Champion Pool y el
-  // resumen de campeones aqui mismo y las cuatro equivalentes de la web. Antes
-  // eran tres cajas con borde repitiendo la misma frase.
-  if (points.length === 0) return null;
-  return (
-    <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.skillOverview")}</span>
-      {/* Cada eje va de 0 a 150 con 100 = objetivo del rango: sin decirlo, un
-          "62 %" se lee como un valor absoluto. */}
-      <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.skillRadarSubtitle")}</p>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", marginTop: 6 }}>
-        <SkillRadarSvg points={points} />
       </div>
     </div>
   );
@@ -1244,66 +1076,156 @@ function ChampionPoolCard({
   );
 }
 
+const METRIC_ICON: Record<DiagnosticMetric, Icon> = {
+  csPerMin: Grains,
+  visionPerMin: Eye,
+  damagePerMin: Fire,
+  killParticipation: Sword,
+  kda: Crosshair,
+  laningAdvantage: TrendUp,
+};
+
+// Web's ImprovementRoadmap (src/components/improvement-roadmap.tsx): the
+// one diagnostic of the profile, you against your lane opponents, with the
+// strength/focus pills as the summary of the rows right below them.
 function RoadmapCard({ matches, tier }: { matches: RecentMatchSummary[]; tier: string | null }) {
   const { t } = useI18n();
-  const nodes = computeRoadmap(matches, tier);
-  const topPriority = nodes.find((n) => n.status === "below");
-  if (nodes.length === 0) return null;
+  if (matches.length === 0) return null;
+  const diagnostic = computeDiagnostic(matches, tier);
+
+  if (!diagnostic.ready) {
+    return (
+      <div style={cardStyle}>
+        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Roadmap.title")}</span>
+        <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>
+          {t("Roadmap.notReady", { games: diagnostic.games, required: diagnostic.required, total: diagnostic.totalGames })}
+        </p>
+      </div>
+    );
+  }
+
+  const topPriority = diagnostic.nodes.find((n) => n.status === "below");
   return (
     <div style={cardStyle}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.roadmap")}</span>
+      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Roadmap.title")}</span>
       <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>
-        {t("Roadmap.subtitle", { count: matches.length })}
+        {t("Roadmap.subtitle", {
+          games: diagnostic.games,
+          role: t(`Profile.positions.${diagnostic.primaryRole.toLowerCase()}`),
+          roleGames: diagnostic.primaryRoleGames,
+        })}
       </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 10 }}>
+        <SummaryPills diagnostic={diagnostic} />
         {topPriority ? (
           <p style={{ margin: 0, padding: "8px 10px", borderRadius: 6, border: `1px solid ${COLORS.rose}4d`, background: `${COLORS.rose}0d`, fontSize: 12 }}>
             <span style={{ fontWeight: 600, color: COLORS.rose }}>{t("Roadmap.priorityLabel")}</span>{" "}
             <span style={{ color: COLORS.muted }}>{t(`Roadmap.${topPriority.metric}.title`)}</span>
           </p>
         ) : null}
-        {nodes.map((n) => (
-          <RoadmapRow key={n.metric} node={n} />
+        {diagnostic.nodes.map((n) => (
+          <RoadmapRow key={n.metric} node={n} diagnostic={diagnostic} />
         ))}
-        {nodes.length === 0 ? <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.noMatches")}</p> : null}
       </div>
     </div>
   );
 }
 
-// Same fillPct/track-and-fill pattern as the web's ImprovementRoadmap
-// (src/components/improvement-roadmap.tsx) — a bare number/arrow told you
-// which side of the target you were on, but not how close, which is the
-// whole point of a "roadmap".
-function RoadmapRow({ node }: { node: RoadmapNode }) {
+// A pill exists only for a metric that clears STRENGTH_RATIO / FOCUS_RATIO
+// against the opponents, and every one of them has its row further down.
+function SummaryPills({ diagnostic }: { diagnostic: Diagnostic }) {
   const { t } = useI18n();
-  const above = node.status === "above";
-  const color = above ? COLORS.goodMild : COLORS.badMild;
-  // El relleno de la barra va en el tono pleno, como `bg-soft-good`/`bg-soft-bad`
-  // de la web; el texto se queda en el paso suave.
-  const fillColor = above ? COLORS.good : COLORS.bad;
-  const unit = node.metric === "laningAdvantage" ? "%" : "";
-  const fillPct = Math.min(100, Math.round((node.value / node.target) * 100));
-  // Same lookup as the web's ImprovementRoadmap (improvement-roadmap.tsx) —
-  // laningAdvantage's tip is role-scoped (jungle vs laner), the other three
-  // metrics aren't.
-  const tipKey = node.role
-    ? `Roadmap.${node.metric}.${above ? "tipAbove" : "tipBelow"}.${node.role}.${node.band}`
-    : `Roadmap.${node.metric}.${above ? "tipAbove" : "tipBelow"}.${node.band}`;
+  const pills: { key: string; metric?: DiagnosticMetric; sentiment: "good" | "bad" | "neutral" }[] = [
+    ...diagnostic.strengths.map((metric) => ({ key: `strength-${metric}`, metric, sentiment: "good" as const })),
+    ...diagnostic.focus.map((metric) => ({ key: `focus-${metric}`, metric, sentiment: "bad" as const })),
+  ];
+  if (pills.length === 0) pills.push({ key: "even", sentiment: "neutral" });
+
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      {pills.map((pill) => {
+        const PillIcon = pill.metric ? METRIC_ICON[pill.metric] : pill.sentiment === "neutral" ? Sparkle : Target;
+        const label = pill.metric
+          ? t(pill.sentiment === "good" ? "Roadmap.strengthPill" : "Roadmap.focusPill", { metric: t(`Roadmap.${pill.metric}.short`) })
+          : t("Roadmap.evenPill");
+        const description = pill.metric
+          ? t(pill.sentiment === "good" ? "Roadmap.strengthPillDescription" : "Roadmap.focusPillDescription", { metric: t(`Roadmap.${pill.metric}.short`) })
+          : t("Roadmap.evenPillDescription");
+        const colors =
+          pill.sentiment === "good"
+            ? { border: `${COLORS.good}4d`, bg: `${COLORS.good}1a`, text: COLORS.goodMild }
+            : pill.sentiment === "bad"
+              ? { border: `${COLORS.bad}4d`, bg: `${COLORS.bad}1a`, text: COLORS.badMild }
+              : { border: `${COLORS.neutral}66`, bg: `${COLORS.neutral}1a`, text: COLORS.muted };
+        return (
+          <span
+            key={pill.key}
+            title={description}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              borderRadius: 999,
+              border: `1px solid ${colors.border}`,
+              background: colors.bg,
+              color: colors.text,
+              padding: "5px 12px",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            <PillIcon size={13} />
+            {label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+// The player's side of a tug-of-war against their lane opponents (web's
+// diagnostic-bar.tsx): the fill is their share of (you + them), so the
+// center tick is "even" whatever the metric's unit.
+export function DiagnosticBar({ node, height = 6 }: { node: DiagnosticNode; height?: number }) {
+  const fillColor = node.status === "above" ? COLORS.good : COLORS.bad;
+  return (
+    <div style={{ position: "relative", height, width: "100%", borderRadius: 999, background: `${COLORS.goodMild}1a`, overflow: "hidden" }}>
+      <div style={{ height: "100%", width: `${playerShare(node)}%`, borderRadius: 999, background: fillColor }} />
+      <div aria-hidden="true" style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, background: `${COLORS.text}66` }} />
+    </div>
+  );
+}
+
+export function formatDiagnosticPair(node: DiagnosticNode): { value: string; reference: string } {
+  const unit = metricUnit(node.metric);
+  return { value: `${node.value}${unit}`, reference: `${node.reference}${unit}` };
+}
+
+function RoadmapRow({ node, diagnostic }: { node: DiagnosticNode; diagnostic: Diagnostic }) {
+  const { t } = useI18n();
+  const pair = formatDiagnosticPair(node);
+  const RowIcon = METRIC_ICON[node.metric];
+  const referenceLabel = node.metric === "laningAdvantage" ? t("Roadmap.evenLabel") : t("Roadmap.rivalsLabel");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{t(`ProfileSearch.metric.${node.metric}`)}</span>
-        <span style={{ fontSize: 12, fontWeight: 600, color }}>
-          {node.value}
-          {unit} {above ? "↑" : "↓"} {t("ProfileSearch.target")} {node.target}
-          {unit}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: COLORS.text }}>
+          <RowIcon size={13} color={COLORS.muted} />
+          {t(`Roadmap.${node.metric}.title`)}
+        </span>
+        <span style={{ fontSize: 12, color: COLORS.muted }}>
+          <span style={{ fontWeight: 600, color: COLORS.text }}>
+            {t("Roadmap.youLabel")} {pair.value}
+          </span>
+          {" · "}
+          {referenceLabel} {pair.reference}
         </span>
       </div>
-      <div style={{ height: 6, width: "100%", borderRadius: 999, background: `${COLORS.goodMild}1a`, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${fillPct}%`, borderRadius: 999, background: fillColor }} />
-      </div>
-      <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, lineHeight: 1.5 }}>{t(tipKey)}</p>
+      <DiagnosticBar node={node} />
+      <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, lineHeight: 1.5 }}>{t(tipKey(node, diagnostic))}</p>
+      {node.metric === "csPerMin" && diagnostic.csReference ? (
+        <p style={{ fontSize: 10, color: COLORS.muted, margin: 0 }}>{t("Roadmap.csReference", { target: diagnostic.csReference })}</p>
+      ) : null}
     </div>
   );
 }
@@ -1372,7 +1294,6 @@ function MatchHistoryCard({
   ddragonVersion,
   summonerSpellIcons,
   puuid,
-  tier,
   platform,
   onOpenProfile,
 }: {
@@ -1380,7 +1301,6 @@ function MatchHistoryCard({
   ddragonVersion: string;
   summonerSpellIcons: Record<number, string>;
   puuid: string;
-  tier: string | null;
   platform: string;
   onOpenProfile: (target: ProfileTarget) => void;
 }) {
@@ -1394,17 +1314,16 @@ function MatchHistoryCard({
         {matches.length === 0 ? <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.noMatches")}</p> : null}
         {matches.map((m) => {
           const isOpen = expandedId === m.matchId;
-          const note = summarizeMatchPerformance(m, tier);
-          // "wellRounded" significa que ningun eje destaca, no el eje de
-          // farmeo: el tooltip lo traducia como "Farmeo" y era el caso mas
-          // frecuente. Ademas la etiqueta ahora se lee, como en la web, en vez
-          // de vivir solo en un tooltip.
-          const noteLabel =
-            note.axis === "wellRounded"
-              ? t("ProfileSearch.matchNoteWellRounded")
-              : t(note.sentiment === "good" ? "ProfileSearch.matchNoteGood" : "ProfileSearch.matchNoteBad", {
-                  axis: t(`ProfileSearch.axis.${note.axis}`),
-                });
+          // Null for games outside the diagnostic (ARAM, no lane opponent):
+          // those rows show no note and no score rather than a made-up one.
+          const note = diagnoseMatch(m);
+          const noteLabel = note
+            ? note.standout.metric === "even"
+              ? t("ProfileSearch.matchNoteEven")
+              : t(note.standout.sentiment === "good" ? "ProfileSearch.matchNoteGood" : "ProfileSearch.matchNoteBad", {
+                  metric: t(`Roadmap.${note.standout.metric}.short`),
+                })
+            : "";
           return (
             <div key={m.matchId} style={{ borderRadius: 8, overflow: "hidden", background: `${COLORS.background}66` }}>
               <button
@@ -1454,10 +1373,10 @@ function MatchHistoryCard({
                     fontSize: 12,
                     fontWeight: 700,
                     textAlign: "right",
-                    color: note.scoreSentiment === "good" ? COLORS.goodMild : note.scoreSentiment === "bad" ? COLORS.badMild : COLORS.muted,
+                    color: note?.scoreSentiment === "good" ? COLORS.goodMild : note?.scoreSentiment === "bad" ? COLORS.badMild : COLORS.muted,
                   }}
                 >
-                  {note.score.toFixed(1)}
+                  {note ? note.score.toFixed(1) : ""}
                 </span>
                 <span style={{ width: 108, flexShrink: 0, fontSize: 11, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {noteLabel}
@@ -1490,7 +1409,6 @@ function MatchHistoryCard({
                 <MatchScoreboard
                   match={m}
                   puuid={puuid}
-                  tier={tier}
                   ddragonVersion={ddragonVersion}
                   summonerSpellIcons={summonerSpellIcons}
                   platform={platform}
@@ -1507,8 +1425,8 @@ function MatchHistoryCard({
 
 // Expandable match scoreboard, like the web's (match-history.tsx): the
 // same real per-participant stats already in the match payload, scored
-// with the same honest benchmark formula (see summarizeParticipant in
-// lib/profile-analysis.ts) applied to all 10 players instead of only the
+// against their own lane opponent (see diagnoseParticipant in
+// lib/profile-analysis.ts) for all 10 players instead of only the
 // tracked one. Same level of detail as the web's own scoreboard — team
 // header (result/KDA/gold/objectives), column headers, and per player:
 // level badge, summoner spells, kill participation, gold, a damage bar
@@ -1524,7 +1442,6 @@ function formatDuration(totalSeconds: number): string {
 function MatchScoreboard({
   match,
   puuid,
-  tier,
   ddragonVersion,
   summonerSpellIcons,
   platform,
@@ -1532,7 +1449,6 @@ function MatchScoreboard({
 }: {
   match: RecentMatchSummary;
   puuid: string;
-  tier: string | null;
   ddragonVersion: string;
   summonerSpellIcons: Record<number, string>;
   platform: string;
@@ -1594,7 +1510,7 @@ function MatchScoreboard({
               <span style={{ width: 144, flexShrink: 0, textAlign: "right" }}>{t("ProfileSearch.matchColumns.items")}</span>
             </div>
             {team.map((p) => {
-              const note = summarizeParticipant(p, match.durationSeconds, match.teams, tier);
+              const note = diagnoseParticipant(p, match);
               const isTracked = p.puuid === puuid;
               const csPerMin = Math.round((p.cs / minutes) * 10) / 10;
               return (
@@ -1700,10 +1616,10 @@ function MatchScoreboard({
                       fontSize: 12,
                       fontWeight: 700,
                       flexShrink: 0,
-                      color: note.scoreSentiment === "good" ? COLORS.goodMild : note.scoreSentiment === "bad" ? COLORS.badMild : COLORS.muted,
+                      color: note?.scoreSentiment === "good" ? COLORS.goodMild : note?.scoreSentiment === "bad" ? COLORS.badMild : COLORS.muted,
                     }}
                   >
-                    {note.score.toFixed(1)}
+                    {note ? note.score.toFixed(1) : ""}
                   </span>
                 </button>
               );
