@@ -197,6 +197,11 @@ export function registerIpcHandlers(): void {
   );
   ipcMain.handle(CMD.AccountDeleteBuild, (_e, { id }: { id: string }) => account.accountDeleteBuild(id));
   ipcMain.handle(CMD.AccountGetSavedChampionBuilds, () => account.accountGetSavedChampionBuilds());
+  ipcMain.handle(
+    CMD.AccountFetchProfileForced,
+    (_e, { platform, gameName, tagLine }: { platform: string; gameName: string; tagLine: string }) =>
+      account.accountFetchProfileForced(platform, gameName, tagLine),
+  );
   ipcMain.handle(CMD.AccountCreateChampionBuild, (_e, { build }: { build: unknown }) =>
     account.accountCreateChampionBuild(build),
   );

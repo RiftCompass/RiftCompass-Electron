@@ -87,6 +87,7 @@ export const CMD = {
   AccountDeleteBuild: "account_delete_build",
   /** invoke, no args. returns SavedChampionBuild[] */
   AccountGetSavedChampionBuilds: "account_get_saved_champion_builds",
+  AccountFetchProfileForced: "account_fetch_profile_forced",
   /** invoke { build }. returns SaveChampionBuildResult */
   AccountCreateChampionBuild: "account_create_champion_build",
   /** invoke { id, build }. returns SaveChampionBuildResult */
