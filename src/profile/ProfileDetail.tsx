@@ -542,12 +542,16 @@ function ProfileDetail({
         <ActivityCalendarCard matches={profile.recentMatches} puuid={profile.puuid} platform={target.platform} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 12 }}>
-        <ChampionOverviewCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
-        <ChampionPoolCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
-      </div>
+      <ChampionOverviewCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
 
-      <RoadmapCard matches={profile.recentMatches} tier={rankTier} />
+      {/* Champion pool and roadmap side by side (the web mirrors this row
+          since 2026-09-11): stacked, the two tallest cards made the page
+          scroll twice as far. The overview table above takes the full
+          width alone; a table reads fine wide. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 12 }}>
+        <ChampionPoolCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
+        <RoadmapCard matches={profile.recentMatches} tier={rankTier} />
+      </div>
 
       <hr style={{ border: "none", borderTop: `1px solid ${COLORS.cardBorder}`, margin: 0 }} />
 
