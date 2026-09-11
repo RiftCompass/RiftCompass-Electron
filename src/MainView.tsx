@@ -23,6 +23,7 @@ import { ProfileScreen } from "./profile/ProfileDetail";
 import { ProfileCompareEntry } from "./profile/ProfileCompare";
 import { parseRiotId, PlatformSelect, type ProfileTarget } from "./profile/ProfileShared";
 import { PostGameReport } from "./profile/PostGameReport";
+import { scheduleRankSnapshot } from "./lib/rank-snapshot";
 import { DraftAdvisor } from "./champselect/DraftAdvisor";
 import { SQUAD_SYNERGY, TOOLS, type ToolId, type ToolMeta } from "./tool-meta";
 import { GoldCalculator } from "./tools/GoldCalculator";
@@ -247,16 +248,25 @@ export function MainView() {
   // match from before this game" while Riot's own API catches up.
   const gameStartedAtRef = useRef<number | null>(null);
   const prevPhaseRef = useRef<string>("None");
+  // Pending LP capture for the game that just ended (lib/rank-snapshot.ts).
+  // Independent of the report screen below: the point is recording the
+  // game in the player's LP history on the server, whether or not they are
+  // looking at anything here. A new game starting cancels it.
+  const cancelRankSnapshotRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     window.riftcompass.onPhase((phase) => {
       const wasInProgress = prevPhaseRef.current === "InProgress";
       if (phase === "InProgress" && prevPhaseRef.current !== "InProgress") {
         gameStartedAtRef.current = Date.now();
+        cancelRankSnapshotRef.current?.();
+        cancelRankSnapshotRef.current = null;
       }
       prevPhaseRef.current = phase;
       if (!wasInProgress || phase === "InProgress") return;
       const identity = localIdentityRef.current;
       if (!identity) return;
+      cancelRankSnapshotRef.current?.();
+      cancelRankSnapshotRef.current = scheduleRankSnapshot(identity.platform, identity.puuid);
       if (panelRef.current === "tools" && !openToolIdRef.current && !profileTargetRef.current) {
         setPostGameContext({ identity, startedAt: gameStartedAtRef.current ?? Date.now() });
         setPanel("postgame");

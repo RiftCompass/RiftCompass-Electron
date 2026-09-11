@@ -87,11 +87,25 @@ export interface PlayerProfile {
   fetchedAt: string;
 }
 
+export interface RankSnapshotSummary {
+  tier: string;
+  rank: string;
+  leaguePoints: number;
+  wins: number;
+  losses: number;
+  capturedAt: string;
+}
+
 export interface ProfileApiResponse {
   profile: PlayerProfile;
   ddragonVersion: string;
   rankTier: string | null;
-  lpHistory: { tier: string; rank: string; leaguePoints: number; wins: number; losses: number; capturedAt: string }[];
+  /** Solo/duo ladder snapshots (oldest first). Kept under this historic name
+   * on the wire for older builds; see flexLpHistory for the other ladder. */
+  lpHistory: RankSnapshotSummary[];
+  /** Flex ladder snapshots. Optional: added to the API on 2026-09-11, so a
+   * server not yet updated (or a cached response) simply lacks it. */
+  flexLpHistory?: RankSnapshotSummary[];
   // The player's own highest-mastery champion (Data Dragon string id),
   // resolved server-side by the same lib the web profile header and /duo
   // use. Optional so older cached responses stay valid.
