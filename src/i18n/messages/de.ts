@@ -802,6 +802,7 @@ export const de: Messages = {
     voidGrubsTimer: "Voidgrubs",
     objectiveUp: "Verfügbar!",
     laneGold: "Gold pro Lane",
+    csPerMinLabel: "CS/min",
     enemySpells: "Gegnerische Zauber",
     calibrationClick: "Klicke auf dein {ability}-Symbol",
     recommendedBuild: "Empfohlene Build",
