@@ -35,6 +35,7 @@ import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
 import { useOpenAccountPanel } from "../account-panel";
 import { useRequestedChampion } from "../tool-navigation";
+import { LoadError } from "./LoadError";
 import { COLORS, FONT_HEADING, cardStyle, inputStyle, pillStyle } from "../theme";
 
 // The desktop half of the web's champion pages (/champions/<champion>):
@@ -211,9 +212,19 @@ export function ChampionBuilds() {
   useEffect(() => {
     fetchChampionMap().then((maps) => {
       setChampions(Object.values(maps.byInternalId));
-      // Opened from another tool: land straight on that champion, and let
-      // its own most-played position win (roleTouched stays false).
-      if (requestedChampion) setChampion(maps.byInternalId[requestedChampion] ?? null);
+      // Opened from another tool: land straight on that champion. The
+      // position and rank it was being looked at in come along when the
+      // caller had them (a Meta Tier List row); otherwise the champion's
+      // own most-played position wins (roleTouched stays false).
+      if (!requestedChampion) return;
+      setChampion(maps.byInternalId[requestedChampion.championInternalId] ?? null);
+      const role = requestedChampion.role as Role | undefined;
+      const rank = requestedChampion.rank as RankTier | undefined;
+      if (role && ROLES.includes(role)) {
+        setRole(role);
+        setRoleTouched(true);
+      }
+      if (rank && RANK_TIERS.includes(rank)) setRank(rank);
     });
   }, [requestedChampion]);
 
@@ -511,7 +522,7 @@ export function ChampionBuilds() {
 
             {!board ? (
               boardStatus === "error" ? (
-                <BoardLoadError onRetry={() => setBoardAttempt((n) => n + 1)} />
+                <LoadError onRetry={() => setBoardAttempt((n) => n + 1)} />
               ) : (
                 <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
               )
@@ -640,7 +651,7 @@ export function ChampionBuilds() {
             </div>
             {!board ? (
               boardStatus === "error" ? (
-                <BoardLoadError onRetry={() => setBoardAttempt((n) => n + 1)} />
+                <LoadError onRetry={() => setBoardAttempt((n) => n + 1)} />
               ) : (
                 <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
               )
@@ -802,18 +813,6 @@ export function ChampionBuilds() {
 function itemTooltip(catalog: ItemCatalog | null, id: string): string {
   const item = catalog?.byId[id];
   return item ? `${item.name} (${item.totalGold})` : id;
-}
-
-function BoardLoadError({ onRetry }: { onRetry: () => void }) {
-  const { t } = useI18n();
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
-      <p style={{ fontSize: 13, color: COLORS.destructive, margin: 0 }}>{t("ChampionBuilds.loadError")}</p>
-      <button onClick={onRetry} style={{ ...pillStyle(true, "compact"), cursor: "pointer" }}>
-        {t("ProfileSearch.retryNow")}
-      </button>
-    </div>
-  );
 }
 
 function stripCounts(page: PopularRunePage): ChampionBuildRunes {

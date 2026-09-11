@@ -14,6 +14,7 @@
 // /tools/tier-list/saved page.
 export const en = {
   Common: {
+    networkError: "Couldn't reach riftcompass.com. Check your connection.",
     loadingSaved: "Loading your saved items…",
     tools: "Tools",
     settings: "Settings",
@@ -38,8 +39,8 @@ export const en = {
     map: { title: "Map Editor", description: "Sketch rotations, ganks, and plays directly on Summoner's Rift." },
     personalityTest: { title: "Personality Test", description: "Answer a few questions about your play style and find your best-matching champions." },
     jungleXp: { title: "Jungle XP Calculator", description: "See how much XP each jungle camp gives at your level, and tally up a clear." },
-    championPool: { title: "Champion Pool Builder", description: "Build a focused pool per role. Core picks, flex picks, and a pocket pick." },
-    metaTierList: { title: "Meta Tier List", description: "Champions ranked by real win rate from RiftCompass's own tracked matches." },
+    championPool: { title: "Champion Pool Builder", description: "Build a focused pool per role: core picks, flex picks, and a pocket pick." },
+    metaTierList: { title: "Meta Tier List", description: "Champions ranked by real win rate from RiftCompass's own tracked matches, not a third-party source." },
     championBuilds: { title: "Champion Builds", description: "Every champion's most-played runes, spells, items and skill order, plus your own saved builds." },
   },
   Profile: {
@@ -763,7 +764,6 @@ export const en = {
     loginToSaveLink: "Sign in",
     skillOrder: "Skill order",
     noSkillOrderData: "No tracked skill order for this champion in this position and rank yet.",
-    loadError: "Couldn't reach riftcompass.com. Check your connection.",
     rank: "Rank",
     winRateIn: "win rate in {position}, {games} tracked games",
     damageTypes: { AD: "Attack damage", AP: "Ability power", mixed: "Mixed damage" },

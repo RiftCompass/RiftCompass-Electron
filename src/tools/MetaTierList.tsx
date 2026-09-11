@@ -9,6 +9,7 @@ import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
 import { useOpenTool } from "../tool-navigation";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../theme";
+import { LoadError } from "./LoadError";
 
 // Ported from the web app's /tools/meta-tier-list page and
 // src/lib/crawler/meta-tier-list.ts's tierChampionsByWinrate — same
@@ -61,26 +62,45 @@ export function MetaTierList() {
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
   const [rank, setRank] = useState<(typeof RANK_TIERS)[number]>("CHALLENGER");
   const [winrates, setWinrates] = useState<ChampionWinrate[] | null>(null);
+  const [loadStatus, setLoadStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   // Which patch the data actually comes from: the API falls back to the
   // newest patch with enough samples while the current one fills up.
   const [dataPatch, setDataPatch] = useState<{ patch: string; latestPatch: string } | null>(null);
 
   useEffect(() => {
-    fetchChampionMap().then((m) => setChampions(Object.values(m.byInternalId)));
+    // Without Data Dragon the chips fall back to text (see below); the
+    // board itself comes from the API and still renders.
+    fetchChampionMap()
+      .then((m) => setChampions(Object.values(m.byInternalId)))
+      .catch(() => setChampions([]));
   }, []);
 
+  // A dead network is not "no data for this role": the empty copy is a
+  // claim about the crawler's sample, so it only shows once a board has
+  // actually loaded. `cancelled` keeps a slow answer for the previous rank
+  // from landing after the current one.
   useEffect(() => {
+    let cancelled = false;
     setWinrates(null);
     setDataPatch(null);
+    setLoadStatus("loading");
     const url = `${API_BASE_URL}/api/v1/champion-winrates?rank=${rank}`;
     fetch(url)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data: { winrates: ChampionWinrate[]; patch?: string; latestPatch?: string }) => {
+        if (cancelled) return;
         setWinrates(data.winrates);
         if (data.patch && data.latestPatch) setDataPatch({ patch: data.patch, latestPatch: data.latestPatch });
+        setLoadStatus("ready");
       })
-      .catch(() => setWinrates([]));
-  }, [rank]);
+      .catch(() => {
+        if (!cancelled) setLoadStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rank, loadAttempt]);
 
   const championByInternalId = useMemo(() => new Map(champions.map((c) => [c.internalId, c])), [champions]);
   const byRole = useMemo(() => (winrates ? groupByRole(winrates) : {}), [winrates]);
@@ -118,13 +138,9 @@ export function MetaTierList() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      {/* Only methodologyNote, not intro — the tool header above this
-          component (MainView.tsx's ToolsIndex.metaTierList.description)
-          already says "real win rate from RiftCompass's own tracked
-          matches"; MetaTierList.intro repeats that near-verbatim. The
-          genuinely new information web's intro+methodologyNote pair adds
-          is the S/D-are-relative-percentiles explanation, which is what
-          methodologyNote alone covers. */}
+      {/* Only methodologyNote here: the tool header above this component
+          already shows MetaTierList.intro (tool-meta.ts's introKey), the
+          same pair the web's page prints. */}
       <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("MetaTierList.methodologyNote")}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {RANK_TIERS.map((r) => (
@@ -168,7 +184,11 @@ export function MetaTierList() {
       ) : null}
 
       {winrates === null ? (
-        <p style={{ fontSize: 13, color: COLORS.muted }}>…</p>
+        loadStatus === "error" ? (
+          <LoadError onRetry={() => setLoadAttempt((n) => n + 1)} />
+        ) : (
+          <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+        )
       ) : (
         // flex+wrap+center instead of a CSS grid: with 5 role cards a
         // grid's incomplete last row (3 then 2) sticks to the left because
@@ -180,14 +200,14 @@ export function MetaTierList() {
             const entries = byRole[role] ?? [];
             return (
               <div key={role} style={{ ...cardStyle, flex: "1 1 420px", maxWidth: 560 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {(() => {
+                    const roleIcon = positionIconUrl(role);
+                    return roleIcon ? <img src={roleIcon} alt="" style={{ width: 20, height: 20 }} /> : null;
+                  })()}
                   <h2 style={{ fontFamily: FONT_HEADING, fontSize: 16, fontWeight: 400, margin: 0 }}>
                     {t(`Profile.positions.${role.toLowerCase()}`)}
                   </h2>
-                  {(() => {
-                    const roleIcon = positionIconUrl(role);
-                    return roleIcon ? <img src={roleIcon} alt="" style={{ width: 20, height: 20, opacity: 0.8 }} /> : null;
-                  })()}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", marginTop: 14 }}>
                   {entries.length === 0 ? (
@@ -231,7 +251,7 @@ export function MetaTierList() {
                               const matched = trimmedSearch !== "" && name.toLowerCase().includes(trimmedSearch);
                               const dimmed = trimmedSearch !== "" && !matched;
                               const openBuilds = openTool
-                                ? () => openTool({ toolId: "championBuilds", championInternalId: entry.championName })
+                                ? () => openTool({ toolId: "championBuilds", championInternalId: entry.championName, role, rank })
                                 : undefined;
                               return (
                                 <div
@@ -276,7 +296,21 @@ export function MetaTierList() {
                                   >
                                     {champ ? (
                                       <img src={champ.iconUrl} alt={champ.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    ) : null}
+                                    ) : (
+                                      <span
+                                        style={{
+                                          display: "flex",
+                                          width: "100%",
+                                          height: "100%",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          fontSize: 10,
+                                          color: COLORS.muted,
+                                        }}
+                                      >
+                                        {name.slice(0, 4)}
+                                      </span>
+                                    )}
                                   </div>
                                   <span
                                     style={{
@@ -306,4 +340,5 @@ export function MetaTierList() {
   );
 }
 
-const cardStyle = makeCardStyle({ padding: 20 });
+// 0xd9 = 85%, the web's bg-card/85 on these same role cards.
+const cardStyle = { ...makeCardStyle({ padding: 20 }), background: `${COLORS.card}d9` };

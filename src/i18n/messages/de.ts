@@ -2,6 +2,7 @@ import type { Messages } from "../index";
 
 export const de: Messages = {
   Common: {
+    networkError: "riftcompass.com ist nicht erreichbar. Prüfe deine Verbindung.",
     loadingSaved: "Deine Speicherstände werden geladen…",
     tools: "Tools",
     settings: "Einstellungen",
@@ -26,8 +27,8 @@ export const de: Messages = {
     map: { title: "Karten-Editor", description: "Skizziere Rotationen, Ganks und Spielzüge direkt auf Summoner's Rift." },
     personalityTest: { title: "Persönlichkeitstest", description: "Beantworte ein paar Fragen zu deinem Spielstil und finde die Champions, die am besten zu dir passen." },
     jungleXp: { title: "Jungle-XP-Rechner", description: "Sieh, wie viel XP jedes Jungle-Lager auf deiner Stufe bringt, und rechne einen Clear zusammen." },
-    championPool: { title: "Champion Pool Builder", description: "Baue einen fokussierten Pool pro Rolle. Core Picks, Flex Picks und einen Pocket Pick." },
-    metaTierList: { title: "Meta Tier List", description: "Champions gerankt nach echter Winrate aus RiftCompass' eigenen erfassten Matches." },
+    championPool: { title: "Champion Pool Builder", description: "Baue einen fokussierten Pool pro Rolle: Core-Picks, Flex-Picks und einen Pocket-Pick." },
+    metaTierList: { title: "Meta Tier List", description: "Champions gerankt nach echter Winrate aus RiftCompass' eigenen erfassten Matches, nicht aus einer Drittquelle." },
     championBuilds: { title: "Champion-Builds", description: "Die meistgespielten Runen, Beschwörerzauber, Items und Skill-Reihenfolgen jedes Champions, dazu deine eigenen gespeicherten Builds." },
   },
   Profile: {
@@ -751,7 +752,6 @@ export const de: Messages = {
     loginToSaveLink: "Anmelden",
     skillOrder: "Skill-Reihenfolge",
     noSkillOrderData: "Für diesen Champion gibt es auf dieser Position und in diesem Rang noch keine erfasste Skill-Reihenfolge.",
-    loadError: "riftcompass.com ist nicht erreichbar. Prüfe deine Verbindung.",
     rank: "Rang",
     winRateIn: "Siegrate auf {position}, {games} erfasste Partien",
     damageTypes: { AD: "Angriffsschaden", AP: "Fähigkeitsstärke", mixed: "Gemischter Schaden" },
