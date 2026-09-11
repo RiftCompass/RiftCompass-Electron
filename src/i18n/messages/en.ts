@@ -125,7 +125,7 @@ export const en = {
     axis: { farm: "Farm", vision: "Vision", kda: "KDA", killParticipation: "Kill participation", damage: "Damage" },
     rankTrend: "Rank trend",
     notTrackedYet: "Not tracked over time yet.",
-    momentumSubtitle: "Running win/loss tally of recent {queue} games, not exact LP",
+    momentumSubtitle: "Wins and losses across recent {queue} games",
     rankTrendQueueSolo: "Solo/Duo",
     rankTrendQueueFlex: "Flex",
     rankTrendQueueLabel: "Ranked queue",
