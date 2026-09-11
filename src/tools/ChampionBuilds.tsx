@@ -29,6 +29,7 @@ import {
   type SummonerSpellPick,
 } from "../ddragon";
 import { ChampionCombobox } from "../ChampionCombobox";
+import { damageTypeOf } from "../lib/champion-damage-type";
 import { positionIconUrl } from "../lib/profile-analysis";
 import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
@@ -155,6 +156,16 @@ function winRatePercent(games: number, wins: number): number {
   return games > 0 ? Math.round((wins / games) * 100) : 0;
 }
 
+// Same accent-insensitive match the web's build editor and the Gold
+// Calculator here use: "epee" must find "Épée" in the French catalog.
+function normalizeSearch(text: string): string {
+  return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+// Fewer tracked games than this and a win rate is noise, so the header
+// stays silent (same floor as the web's champion page).
+const MIN_GAMES_FOR_WINRATE = 20;
+
 export function ChampionBuilds() {
   const { t, locale } = useI18n();
   const openAccountPanel = useOpenAccountPanel();
@@ -168,6 +179,11 @@ export function ChampionBuilds() {
   const [roleTouched, setRoleTouched] = useState(false);
   const [rank, setRank] = useState<RankTier>("CHALLENGER");
   const [board, setBoard] = useState<BuildBoard | null>(null);
+  const [boardStatus, setBoardStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [boardAttempt, setBoardAttempt] = useState(0);
+  // The champion whose first board already picked the position for us:
+  // switching rank reloads the board and must not move the position again.
+  const [autoRoledChampion, setAutoRoledChampion] = useState<string | null>(null);
   const [detail, setDetail] = useState<ChampionDetail | null>(null);
   const [catalog, setCatalog] = useState<ItemCatalog | null>(null);
   const [runeStyles, setRuneStyles] = useState<RuneStyle[]>([]);
@@ -230,6 +246,7 @@ export function ChampionBuilds() {
     }
     let cancelled = false;
     setBoard(null);
+    setBoardStatus("loading");
     setRunePick(0);
     setSpellPick(0);
     setItemPick(0);
@@ -237,24 +254,28 @@ export function ChampionBuilds() {
     fetch(`${API_BASE_URL}/api/v1/champion-builds?${params}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data: BuildBoard) => {
-        if (!cancelled) setBoard(data);
+        if (cancelled) return;
+        setBoard(data);
+        setBoardStatus("ready");
       })
       .catch(() => {
-        if (!cancelled) setBoard(null);
+        if (!cancelled) setBoardStatus("error");
       });
     return () => {
       cancelled = true;
     };
-  }, [champion, role, rank]);
+  }, [champion, role, rank, boardAttempt]);
 
   // Opening a champion lands on the position it is actually played in,
   // until the player picks one themselves: the roles list comes back with
-  // the board, ordered by real tracked games.
+  // the board, ordered by real tracked games. Only the champion's first
+  // board gets a say; later boards (another rank) keep the position as is.
   useEffect(() => {
-    if (roleTouched || !board || board.roles.length === 0) return;
-    const top = board.roles[0].role as Role;
-    if (ROLES.includes(top) && top !== role) setRole(top);
-  }, [board, roleTouched, role]);
+    if (!champion || !board || roleTouched || autoRoledChampion === champion.internalId) return;
+    setAutoRoledChampion(champion.internalId);
+    const top = board.roles[0]?.role as Role | undefined;
+    if (top && ROLES.includes(top) && top !== role) setRole(top);
+  }, [champion, board, roleTouched, autoRoledChampion, role]);
 
   useEffect(() => {
     if (!user) {
@@ -286,10 +307,13 @@ export function ChampionBuilds() {
 
   const itemResults = useMemo(() => {
     if (!catalog) return [];
-    const needle = itemQuery.trim().toLowerCase();
-    const pool = needle ? catalog.list.filter((item) => item.name.toLowerCase().includes(needle)) : catalog.list;
+    const needle = normalizeSearch(itemQuery.trim());
+    const pool = needle ? catalog.list.filter((item) => normalizeSearch(item.name).includes(needle)) : catalog.list;
     return pool.slice(0, 60);
   }, [catalog, itemQuery]);
+
+  const damageType = champion ? damageTypeOf(champion.internalId) : null;
+  const roleSample = board?.roles.find((entry) => entry.role === role) ?? null;
 
   const abilityIcon = (slot: number): string | null => {
     const spell = detail?.spells[slot - 1];
@@ -410,6 +434,35 @@ export function ChampionBuilds() {
         <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.pickChampion")}</p>
       ) : (
         <>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+              {version ? (
+                <img
+                  src={championSquareUrl(version, toDDragonId(champion.internalId))}
+                  alt=""
+                  style={{ width: 48, height: 48, borderRadius: 10, border: `1px solid ${COLORS.cardBorder}`, flex: "none" }}
+                />
+              ) : null}
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <h2 style={{ fontFamily: FONT_HEADING, fontSize: 20, fontWeight: 400, margin: 0 }}>{champion.name}</h2>
+                {damageType ? (
+                  <span style={{ fontSize: 12, color: COLORS.muted }}>{t(`ChampionBuilds.damageTypes.${damageType}`)}</span>
+                ) : null}
+              </div>
+            </div>
+            {roleSample && roleSample.games >= MIN_GAMES_FOR_WINRATE ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, marginLeft: "auto" }}>
+                <span style={{ fontFamily: FONT_HEADING, fontSize: 18 }}>{winRatePercent(roleSample.games, roleSample.wins)}%</span>
+                <span style={{ fontSize: 11, color: COLORS.muted, textAlign: "right" }}>
+                  {t("ChampionBuilds.winRateIn", {
+                    position: t(`Profile.positions.${role.toLowerCase()}`),
+                    games: roleSample.games.toLocaleString(locale),
+                  })}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {ROLES.map((option) => {
               const icon = positionIconUrl(option);
@@ -431,7 +484,8 @@ export function ChampionBuilds() {
             })}
           </div>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 12, color: COLORS.muted, marginRight: 2 }}>{t("ChampionBuilds.rank")}</span>
             {RANK_TIERS.map((tier) => (
               <button key={tier} onClick={() => setRank(tier)} style={pillStyle(tier === rank, "compact")}>
                 {t(`MetaTierList.rankTiers.${tier}`)}
@@ -456,7 +510,11 @@ export function ChampionBuilds() {
             </div>
 
             {!board ? (
-              <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>…</p>
+              boardStatus === "error" ? (
+                <BoardLoadError onRetry={() => setBoardAttempt((n) => n + 1)} />
+              ) : (
+                <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+              )
             ) : board.runePages.length === 0 && board.itemCores.length === 0 ? (
               <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noBuildData")}</p>
             ) : (
@@ -528,7 +586,7 @@ export function ChampionBuilds() {
                               key={`${id}-${itemIndex}`}
                               src={itemIconUrl(version, id)}
                               alt={catalog?.byId[id]?.name ?? id}
-                              title={catalog?.byId[id]?.name ?? id}
+                              title={itemTooltip(catalog, id)}
                               style={{ width: 26, height: 26, borderRadius: 6 }}
                             />
                           ))}
@@ -580,7 +638,13 @@ export function ChampionBuilds() {
                 </span>
               ) : null}
             </div>
-            {!board || board.skillOrder.path.length === 0 ? (
+            {!board ? (
+              boardStatus === "error" ? (
+                <BoardLoadError onRetry={() => setBoardAttempt((n) => n + 1)} />
+              ) : (
+                <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+              )
+            ) : board.skillOrder.path.length === 0 ? (
               <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noSkillOrderData")}</p>
             ) : (
               <>
@@ -670,7 +734,7 @@ export function ChampionBuilds() {
                             key={`${id}-${index}`}
                             src={itemIconUrl(version, id)}
                             alt={catalog?.byId[id]?.name ?? id}
-                            title={catalog?.byId[id]?.name ?? id}
+                            title={itemTooltip(catalog, id)}
                             style={{ width: 22, height: 22, borderRadius: 5 }}
                           />
                         ))}
@@ -731,6 +795,23 @@ export function ChampionBuilds() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function itemTooltip(catalog: ItemCatalog | null, id: string): string {
+  const item = catalog?.byId[id];
+  return item ? `${item.name} (${item.totalGold})` : id;
+}
+
+function BoardLoadError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+      <p style={{ fontSize: 13, color: COLORS.destructive, margin: 0 }}>{t("ChampionBuilds.loadError")}</p>
+      <button onClick={onRetry} style={{ ...pillStyle(true, "compact"), cursor: "pointer" }}>
+        {t("ProfileSearch.retryNow")}
+      </button>
     </div>
   );
 }
@@ -1051,11 +1132,19 @@ function BuildEditor({
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <span style={label}>{t("ChampionBuilds.position")}</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {ROLES.map((option) => (
-              <button key={option} onClick={() => patch({ role: option })} style={pillStyle(option === draft.role, "compact")}>
-                {t(`Profile.positions.${option.toLowerCase()}`)}
-              </button>
-            ))}
+            {ROLES.map((option) => {
+              const icon = positionIconUrl(option);
+              return (
+                <button
+                  key={option}
+                  onClick={() => patch({ role: option })}
+                  style={{ ...pillStyle(option === draft.role, "compact"), display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  {icon ? <img src={icon} alt="" style={{ width: 13, height: 13, opacity: 0.85 }} /> : null}
+                  {t(`Profile.positions.${option.toLowerCase()}`)}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1212,7 +1301,7 @@ function BuildEditor({
               <button
                 key={`${id}-${index}`}
                 onClick={() => toggleItem(id)}
-                title={catalog?.byId[id]?.name ?? id}
+                title={t("ChampionBuilds.removeItem", { item: catalog?.byId[id]?.name ?? id })}
                 style={{ position: "relative", border: "none", background: "none", padding: 0, cursor: "pointer", lineHeight: 0 }}
               >
                 <img src={itemIconUrl(version, id)} alt="" style={{ width: 30, height: 30, borderRadius: 6 }} />
