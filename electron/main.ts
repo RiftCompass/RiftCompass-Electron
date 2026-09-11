@@ -33,8 +33,8 @@ function applyContentSecurityPolicy(): void {
   const csp = [
     "default-src 'self'",
     `script-src 'self'${isDev ? " 'unsafe-eval' 'unsafe-inline'" : ""}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src https://fonts.gstatic.com",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
     // BACKEND_ORIGIN belongs here as well as in connect-src: /api/v1/me
     // returns the account's avatar as an absolute URL on that same host
     // (/avatars/<file>), so an origin the app fetches JSON from is also
