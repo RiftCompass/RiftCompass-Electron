@@ -325,6 +325,12 @@ export interface RiftCompassApi {
   createBuild: (name: string, items: string[], supportRole: boolean) => Promise<SaveBuildResult>;
   deleteBuild: (id: string) => Promise<SaveBuildResult>;
   getSavedChampionBuilds: () => Promise<SavedChampionBuild[]>;
+  /** Perfil con `?force=true` y la sesión de la app: la web solo fuerza el refresco con sesión. */
+  fetchProfileForced: (
+    platform: string,
+    gameName: string,
+    tagLine: string,
+  ) => Promise<{ status: number; body: Record<string, unknown> | null } | { error: "network" }>;
   createChampionBuild: (build: ChampionBuildInput) => Promise<SaveChampionBuildResult>;
   updateChampionBuild: (id: string, build: ChampionBuildInput) => Promise<SaveChampionBuildResult>;
   deleteChampionBuild: (id: string) => Promise<SaveChampionBuildResult>;

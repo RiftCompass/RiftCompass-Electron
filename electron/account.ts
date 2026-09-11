@@ -223,6 +223,29 @@ export function accountSetProfileFolder(profileId: string, folderId: string): Pr
   return folderApiCall("PATCH", `/api/v1/saved-profiles/${profileId}`, { folderId });
 }
 
+// El refresco forzado de un perfil (`?force=true`) solo lo acepta la web
+// con sesión de la app, para que nadie gaste cuota de Riot a nombre de otro.
+// El token vive aquí y no en el renderer, así que la petición se hace aquí y
+// se devuelve tal cual (código y cuerpo) para que el renderer la interprete
+// igual que las que hace él mismo.
+export async function accountFetchProfileForced(
+  platform: string,
+  gameName: string,
+  tagLine: string,
+): Promise<{ status: number; body: Record<string, any> | null } | { error: "network" }> {
+  const stored = loadPersistedSession();
+  const slug = `${encodeURIComponent(gameName)}-${encodeURIComponent(tagLine)}`;
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/profile/${platform}/${slug}?force=true`, {
+      headers: stored ? { Authorization: `Bearer ${stored.token}` } : {},
+      signal: AbortSignal.timeout(15000),
+    });
+    return { status: res.status, body: await readJson(res) };
+  } catch {
+    return { error: "network" };
+  }
+}
+
 async function getList(urlPath: string, key: string): Promise<unknown[]> {
   const stored = loadPersistedSession();
   if (!stored) return [];
