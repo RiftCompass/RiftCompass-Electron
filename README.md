@@ -11,3 +11,7 @@ The app reads the game client on your PC to show live insights during champion s
 Built with Electron, React and TypeScript. Distributed through GitHub Releases with automatic updates.
 
 RiftCompass isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+
+## License
+
+MIT. See [LICENSE](LICENSE). The RiftCompass name and logo are not covered by the license.
