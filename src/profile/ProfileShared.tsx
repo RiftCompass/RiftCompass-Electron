@@ -197,16 +197,6 @@ export function DropdownMenu({
   );
 }
 
-// Shared between SkillRadarSvg (single-profile view) and CompareSkillCard
-// (compare view) — both label the same 5 skill-radar axes.
-export const AXIS_LABEL_KEY: Record<string, string> = {
-  farm: "farm",
-  vision: "vision",
-  kda: "kda",
-  killParticipation: "killParticipation",
-  damage: "damage",
-};
-
 // fontWeight 500 (not the body default 400) and TYPE.body's 13px, not a
 // smaller one-off: light-weight small text in near-white on this app's
 // near-black card background reads as noticeably weaker/thinner than the

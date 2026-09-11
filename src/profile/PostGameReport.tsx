@@ -1,13 +1,14 @@
 // Dedicated "how did that game go" coaching screen, shown automatically
 // from MainView.tsx right after a match ends — not just a jump to the
-// profile screen. Reuses the same per-match scoring already computed for
-// the profile's match history (summarizeParticipantPerformance in
-// lib/profile-analysis.ts) but surfaces the full per-axis breakdown as a
-// report instead of a single compact note.
+// profile screen. Reuses the same per-match diagnostic already computed for
+// the profile's match history (diagnoseMatch in lib/profile-analysis.ts)
+// but surfaces the full per-metric breakdown, you against this game's lane
+// opponent, as a report instead of a single compact note.
 import { useEffect, useState } from "react";
 import { championSquareUrl } from "../ddragon";
 import { useI18n } from "../i18n";
-import { FOCUS_THRESHOLD, STRENGTH_THRESHOLD, summarizeMatchPerformance, type SkillAxis } from "../lib/profile-analysis";
+import { diagnoseMatch, FOCUS_RATIO, STRENGTH_RATIO } from "../lib/profile-analysis";
+import { DiagnosticBar, formatDiagnosticPair } from "./ProfileDetail";
 import type { RecentMatchSummary } from "../lib/profile-types";
 import type { LcuIdentity } from "../riftcompass";
 import { COLORS, TYPE, cardStyle as makeCardStyle } from "../theme";
@@ -28,9 +29,9 @@ const RETRY_DELAY_MS = 5000;
 
 type Sentiment = "good" | "neutral" | "bad";
 
-function axisSentiment(value: number): Sentiment {
-  if (value >= STRENGTH_THRESHOLD) return "good";
-  if (value < FOCUS_THRESHOLD) return "bad";
+function ratioSentiment(ratio: number): Sentiment {
+  if (ratio >= STRENGTH_RATIO) return "good";
+  if (ratio <= FOCUS_RATIO) return "bad";
   return "neutral";
 }
 
@@ -39,8 +40,6 @@ function sentimentColor(s: Sentiment): string {
   if (s === "bad") return COLORS.badMild;
   return COLORS.muted;
 }
-
-const AXIS_ORDER: SkillAxis[] = ["farm", "vision", "kda", "killParticipation", "damage"];
 
 export function PostGameReport({
   identity,
@@ -54,7 +53,6 @@ export function PostGameReport({
   const { t } = useI18n();
   const [status, setStatus] = useState<"loading" | "ready" | "timeout">("loading");
   const [match, setMatch] = useState<RecentMatchSummary | null>(null);
-  const [tier, setTier] = useState<string | null>(null);
   const [ddragonVersion, setDdragonVersion] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,7 +75,6 @@ export function PostGameReport({
         const top = data.profile.recentMatches[0];
         if (top && top.playedAt >= gameStartedAt - FRESHNESS_MARGIN_MS) {
           setMatch(top);
-          setTier(data.rankTier);
           setDdragonVersion(data.ddragonVersion);
           setStatus("ready");
           return;
@@ -133,8 +130,7 @@ export function PostGameReport({
     );
   }
 
-  const note = summarizeMatchPerformance(match, tier);
-  const pointByAxis = new Map(note.points.map((p) => [p.axis, p.value]));
+  const note = diagnoseMatch(match);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -154,34 +150,44 @@ export function PostGameReport({
             {match.kills}/{match.deaths}/{match.assists} · {Math.round(match.durationSeconds / 60)}m
           </span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-          <span style={{ fontSize: TYPE.heading, fontWeight: 700, color: sentimentColor(note.scoreSentiment) }}>{note.score.toFixed(1)}</span>
-          <span style={{ fontSize: 11, color: COLORS.muted }}>{t("PostGameReport.scoreLabel")}</span>
-        </div>
+        {note ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <span style={{ fontSize: TYPE.heading, fontWeight: 700, color: sentimentColor(note.scoreSentiment) }}>{note.score.toFixed(1)}</span>
+            <span style={{ fontSize: 11, color: COLORS.muted }}>{t("PostGameReport.scoreLabel")}</span>
+          </div>
+        ) : null}
       </div>
 
       <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 10 }}>
         <span style={{ fontSize: 12, color: COLORS.muted }}>{t("PostGameReport.breakdownTitle")}</span>
-        {/* Cada eje es un porcentaje del objetivo del rango, no un valor
-            absoluto: sin decirlo, un "62 %" se lee como otra cosa. */}
-        <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.skillRadarSubtitle")}</p>
-        {AXIS_ORDER.map((axis) => {
-          const value = pointByAxis.get(axis) ?? 0;
-          const sentiment = axisSentiment(value);
-          const color = sentimentColor(sentiment);
-          const barWidth = Math.min(100, (value / 150) * 100);
-          return (
-            <div key={axis} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                <span style={{ color: COLORS.text }}>{t(`ProfileSearch.axis.${axis}`)}</span>
-                <span style={{ color, fontWeight: 700 }}>{value}%</span>
-              </div>
-              <div style={{ height: 6, borderRadius: 999, background: COLORS.background, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${barWidth}%`, background: color, borderRadius: 999 }} />
-              </div>
-            </div>
-          );
-        })}
+        {note ? (
+          <>
+            <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>{t("PostGameReport.breakdownSubtitle")}</p>
+            {note.nodes.map((node) => {
+              const pair = formatDiagnosticPair(node);
+              const color = sentimentColor(ratioSentiment(node.ratio));
+              return (
+                <div key={node.metric} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12 }}>
+                    <span style={{ color: COLORS.text }}>{t(`Roadmap.${node.metric}.title`)}</span>
+                    <span style={{ color: COLORS.muted }}>
+                      <span style={{ color, fontWeight: 700 }}>
+                        {t("Roadmap.youLabel")} {pair.value}
+                      </span>
+                      {" · "}
+                      {t("PostGameReport.opponentLabel")} {pair.reference}
+                    </span>
+                  </div>
+                  <DiagnosticBar node={node} />
+                </div>
+              );
+            })}
+          </>
+        ) : (
+          // ARAM, Arena and the like: no lane opponent to measure against,
+          // and a made-up benchmark would be worse than saying so.
+          <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>{t("PostGameReport.noOpponent")}</p>
+        )}
       </div>
 
       <button
