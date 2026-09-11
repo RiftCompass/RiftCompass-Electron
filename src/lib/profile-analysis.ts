@@ -367,10 +367,14 @@ export function positionIconUrl(teamPosition: string): string | null {
 
 const VALID_TIERS = new Set(["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"]);
 
+// Same asset set as the web's rank-emblem.ts (rcp-fe-lol-shared-components):
+// the client's own crest art for every tier. The previous "ranked-mini-crests"
+// folder lost emerald.png (only an emerald.svg glyph remains), so every
+// Emerald player saw a broken image — switched on 2026-09-11.
 export function rankEmblemUrl(tier: string): string | null {
   const normalized = tier.toUpperCase();
   if (!VALID_TIERS.has(normalized)) return null;
-  return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-mini-crests/${normalized.toLowerCase()}.png`;
+  return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/${normalized.toLowerCase()}.png`;
 }
 
 // --- champion-pool.ts ---
@@ -471,16 +475,31 @@ export function computeChampionOverview(matches: RecentMatchSummary[], limit = M
 }
 
 // --- activity-calendar.ts ---
-// Current-calendar-month view only, built from the same recentMatches the
-// profile payload already carries — the web's month-navigation (browsing
-// to past months) needs a fresh Riot Match-V5 range query the desktop app
-// doesn't make; out of scope here (see PROGRESS.md).
+// Current-calendar-month grid built from the recentMatches the profile
+// payload already carries (shown while the full month loads); any other
+// month comes from /api/v1/activity-calendar (see ProfileDetail.tsx's
+// fetchActivityCalendarMonth).
 export interface DayActivity {
   /** YYYY-MM-DD, local time */
   date: string;
   games: number;
   wins: number;
   losses: number;
+}
+
+// Primer mes que el calendario deja ver — el mismo límite que la web
+// (ACTIVITY_CALENDAR_FLOOR en su lib/riot/activity-calendar.ts) y que
+// /api/v1/activity-calendar, que responde 400 antes de él. RiftCompass
+// empezó a guardar partidas en julio de 2026: un mes anterior son hasta 100
+// llamadas a Riot que agotaban el presupuesto compartido. `monthIndex` es
+// 0-11 como en `Date` (6 = julio).
+export const ACTIVITY_CALENDAR_FLOOR = { year: 2026, monthIndex: 6 } as const;
+
+export function isBeforeActivityCalendarFloor(year: number, monthIndex: number): boolean {
+  return (
+    year < ACTIVITY_CALENDAR_FLOOR.year ||
+    (year === ACTIVITY_CALENDAR_FLOOR.year && monthIndex < ACTIVITY_CALENDAR_FLOOR.monthIndex)
+  );
 }
 
 function dateKey(epochMs: number): string {
