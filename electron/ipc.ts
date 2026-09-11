@@ -20,14 +20,36 @@ const FLASH_ID = 4;
 // against the League client.
 const RENDERER_READABLE_LCU_PATHS = ["/lol-summoner/v1/summoners/puuid/", "/lol-ranked-stats/v1/current-ranked-stats"];
 
+const RUNE_PAGE_PERKS = 9;
+
+function esIdPositivo(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
+function esPaginaDeRunas(perkIds: unknown, primaryStyleId: unknown, subStyleId: unknown): boolean {
+  return (
+    Array.isArray(perkIds) &&
+    perkIds.length === RUNE_PAGE_PERKS &&
+    perkIds.every(esIdPositivo) &&
+    esIdPositivo(primaryStyleId) &&
+    esIdPositivo(subStyleId)
+  );
+}
+
 export function registerIpcHandlers(): void {
   ipcMain.handle(CMD.LcuGetState, () => connectionSnapshot());
   ipcMain.handle(CMD.GetChampSelectState, () => champSelectSnapshot());
   ipcMain.handle(CMD.LcuGet, (_e, { path }: { path: string }) => {
-    if (typeof path !== "string" || !RENDERER_READABLE_LCU_PATHS.some((prefix) => path.startsWith(prefix))) {
+    // La ruta se normaliza como la vería el cliente antes de compararla con
+    // la lista: "/lol-summoner/v1/summoners/puuid/../../../lol-perks/v1/pages"
+    // empieza por un prefijo permitido y termina en otro sitio. `new URL`
+    // resuelve los ".." y descodifica; y se compara lo resuelto, nunca lo
+    // recibido.
+    const resolved = typeof path === "string" ? new URL(path, "https://127.0.0.1").pathname : "";
+    if (typeof path !== "string" || !path.startsWith("/") || !RENDERER_READABLE_LCU_PATHS.some((prefix) => resolved.startsWith(prefix))) {
       throw new Error(`LCU path not readable from the renderer: ${path}`);
     }
-    return lcuRequest(currentCreds(), "GET", path);
+    return lcuRequest(currentCreds(), "GET", resolved);
   });
 
   ipcMain.handle(CMD.OverlaySetInteractive, (_e, { interactive }: { interactive: boolean }) => {
@@ -91,6 +113,13 @@ export function registerIpcHandlers(): void {
         itemSet?: BuildParaSet;
       },
     ) => {
+      // Lo que llega del renderer es lo que sale de la API o de una build
+      // guardada; aun así, al cliente de League solo se le mandan enteros
+      // positivos con la forma exacta de una página (9 runas: 6 + 3
+      // fragmentos), y un id que no cumpla eso no puede colarse por aquí.
+      if (!esPaginaDeRunas(perkIds, primaryStyleId, subStyleId) || !esIdPositivo(spellLow) || !esIdPositivo(spellHigh)) {
+        return { ok: false as const, reason: "invalidBuild" };
+      }
       const creds = currentCreds();
       await applyRunePage(creds, perkIds, primaryStyleId, subStyleId);
 
