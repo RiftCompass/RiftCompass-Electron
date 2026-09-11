@@ -11,16 +11,25 @@
 // el jugador se fía de él.
 
 import { lcuRequest, type LcuCredentials } from "./lcu";
+import { settingsGet } from "./settings";
 
-// Todos los sets nuestros llevan este prefijo en el título. Es lo único que
-// distingue los nuestros de los que el jugador se haya hecho a mano, y la LCU
-// obliga a reescribir la lista entera de sets en cada guardado: sin una marca
-// clara, actualizar el nuestro significaría borrarle los suyos.
-const PREFIJO = "RiftCompass";
+// El nuestro se reconoce por su `uid` fijo: la LCU obliga a reescribir la
+// lista entera de sets en cada guardado y, sin una marca clara, actualizar el
+// nuestro significaría borrarle al jugador los suyos. Las versiones
+// anteriores lo marcaban con este prefijo en el título; se sigue
+// reconociendo para limpiarlas.
+const PREFIJO_ANTIGUO = "RiftCompass";
 
-// Grieta del Invocador y ARAM. `associatedMaps` vacío significa "todos", pero
-// entonces el set aparece también en modos donde esta build no tiene sentido.
-const MAPAS = [11, 12];
+// Hay UN solo set nuestro, sin campeón ni mapa asociados, que se reescribe en
+// cada selección con la build del campeón elegido. No es por comodidad: la
+// tienda del juego abre el desplegable por el primer set SIN campeón asociado
+// (probado el 2026-09-11 con cinco sets a la vez: ni el `sortrank` en ninguna
+// dirección, ni el orden de la lista, ni el `uid`, ni el título alfabético
+// adelantaron a uno global). Con un set por campeón el jugador tenía que ir
+// al desplegable a buscar el nuestro cada partida. Es lo mismo que hace
+// iTero. El precio: si juega sin la app, en la tienda sigue el set de la
+// última partida con ella.
+const UID = "00000000-0000-0000-0000-000000000000";
 
 interface ItemSet {
   uid?: string;
@@ -45,37 +54,59 @@ export interface BuildParaSet {
   championId: number;
   championName: string;
   role: string;
-  /** En orden de compra: el primero es el primer objeto principal. */
+  /** La compra de salida. Puede ir vacía: entonces no hay bloque. */
+  startingItemIds: number[];
+  /** En orden de compra: el primero es el primer objeto terminado. */
   itemIds: number[];
-  /** De dónde sale la build, tal como debe leerse en la tienda. */
-  origen: string;
+  /** Alternativas frecuentes fuera del orden principal. Puede ir vacía. */
+  situationalItemIds: number[];
+  /** Título del set en la tienda: "RiftCompass · Jinx Bot", o el nombre de la build guardada. */
+  titulo: string;
 }
 
-// Un solo bloque con los objetos en orden. Se probó partirlo en un bloque por
-// posición ("1.º", "2.º"...) y en la tienda queda ilegible: seis cabeceras para
-// seis objetos. Dentro de un bloque el cliente respeta el orden que se le da,
-// que es justo lo que hace falta.
+// Los títulos de los bloques los ve el jugador en la tienda, así que van en
+// su idioma. El proceso principal no tiene el catálogo de textos del
+// renderer, y por tres palabras no compensa traerlo.
+const BLOQUES: Record<string, { salida: string; orden: string; situacionales: string }> = {
+  en: { salida: "Starting items", orden: "Recommended order", situacionales: "Situational" },
+  es: { salida: "Salida", orden: "Orden recomendado", situacionales: "Situacionales" },
+  fr: { salida: "Départ", orden: "Ordre recommandé", situacionales: "Situationnels" },
+  de: { salida: "Start", orden: "Empfohlene Reihenfolge", situacionales: "Situativ" },
+};
+
+// Dentro de un bloque el cliente respeta el orden que se le da, que es justo
+// lo que hace falta para el orden de compra. Se probó partirlo en un bloque
+// por posición ("1.º", "2.º"...) y en la tienda queda ilegible: seis
+// cabeceras para seis objetos.
+function esNuestro(set: ItemSet): boolean {
+  return set.uid === UID || set.title.startsWith(PREFIJO_ANTIGUO);
+}
+
 function construirSet(build: BuildParaSet): ItemSet {
+  const textos = BLOQUES[settingsGet().locale] ?? BLOQUES.en;
+  const bloque = (type: string, ids: number[]) => ({ type, items: ids.map((id) => ({ id: String(id), count: 1 })) });
+  const blocks = [
+    ...(build.startingItemIds.length > 0 ? [bloque(textos.salida, build.startingItemIds)] : []),
+    bloque(textos.orden, build.itemIds),
+    ...(build.situationalItemIds.length > 0 ? [bloque(textos.situacionales, build.situationalItemIds)] : []),
+  ];
   return {
-    title: `${PREFIJO} · ${build.championName} ${build.role} · ${build.origen}`,
+    uid: UID,
+    title: build.titulo,
     type: "custom",
     map: "any",
     mode: "any",
-    sortrank: 1,
+    sortrank: 0,
     startedFrom: "blank",
-    associatedMaps: MAPAS,
-    associatedChampions: [build.championId],
-    blocks: [
-      {
-        type: "Orden recomendado",
-        items: build.itemIds.map((id) => ({ id: String(id), count: 1 })),
-      },
-    ],
+    associatedMaps: [],
+    associatedChampions: [],
+    blocks,
   };
 }
 
-// Deja en el cliente UN set nuestro para este campeón, respetando los del
-// jugador y los nuestros de otros campeones.
+// Deja en el cliente nuestro único set con esta build, el primero de la
+// lista (entre los globales manda el orden de la lista: el de prueba que iba
+// delante del de iTero salió delante) y respetando los del jugador.
 //
 // Devuelve false, sin tocar nada, cuando no hay orden de compra que enseñar:
 // es el caso normal mientras el rastreador aún no tiene muestra de ese
@@ -93,10 +124,8 @@ export async function aplicarItemSet(creds: LcuCredentials, build: BuildParaSet)
   const documento = ((await lcuRequest(creds, "GET", ruta)) ?? {}) as ItemSetsDocument;
   const existentes = documento.itemSets ?? [];
 
-  const nuestroDeEsteCampeon = (s: ItemSet) =>
-    s.title.startsWith(PREFIJO) && (s.associatedChampions ?? []).includes(build.championId);
-
-  const itemSets = [...existentes.filter((s) => !nuestroDeEsteCampeon(s)), construirSet(build)];
+  const delJugador = existentes.filter((s) => !esNuestro(s));
+  const itemSets = [construirSet(build), ...delJugador];
 
   // La LCU reescribe el documento entero: hay que devolverle también el
   // accountId y una marca de tiempo, o descarta el guardado sin decir nada.
@@ -108,8 +137,9 @@ export async function aplicarItemSet(creds: LcuCredentials, build: BuildParaSet)
   return true;
 }
 
-// Para "quitar lo que RiftCompass haya dejado puesto": borra los nuestros de
-// todos los campeones y deja intactos los del jugador.
+// Para "quitar lo que RiftCompass haya dejado puesto": borra el nuestro (y
+// cualquiera de versiones anteriores, que eran uno por campeón) y deja
+// intactos los del jugador.
 export async function borrarNuestrosItemSets(creds: LcuCredentials): Promise<number> {
   const summoner = (await lcuRequest(creds, "GET", "/lol-summoner/v1/current-summoner")) as {
     summonerId?: number;
@@ -120,7 +150,7 @@ export async function borrarNuestrosItemSets(creds: LcuCredentials): Promise<num
   const ruta = `/lol-item-sets/v1/item-sets/${summoner.summonerId}/sets`;
   const documento = ((await lcuRequest(creds, "GET", ruta)) ?? {}) as ItemSetsDocument;
   const existentes = documento.itemSets ?? [];
-  const quedan = existentes.filter((s) => !s.title.startsWith(PREFIJO));
+  const quedan = existentes.filter((s) => !esNuestro(s));
   const borrados = existentes.length - quedan.length;
   if (borrados === 0) return 0;
 
