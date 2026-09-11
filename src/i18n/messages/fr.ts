@@ -802,6 +802,7 @@ export const fr: Messages = {
     voidGrubsTimer: "Larves du néant",
     objectiveUp: "Disponible !",
     laneGold: "Or par ligne",
+    csPerMinLabel: "CS/min",
     enemySpells: "Sorts ennemis",
     calibrationClick: "Cliquez sur votre icône de sort {ability}",
     recommendedBuild: "Build recommandée",

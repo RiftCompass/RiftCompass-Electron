@@ -596,6 +596,17 @@ export function OverlayView() {
     return () => clearInterval(id);
   }, [phase, tabHeld]);
 
+  // El Tab es la tecla que enseña el overlay, y si la ventana tiene el foco
+  // el navegador lo trata como "siguiente control": el foco paseaba por los
+  // botones de hechizos con su marco rosa. Aquí no hay nada que navegar.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Tab") e.preventDefault();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // A fresh game means every previous cooldown is stale — clear them
   // instead of carrying yesterday's Flash timer into today's match.
   useEffect(() => {
@@ -1131,17 +1142,15 @@ export function OverlayView() {
           onMouseDown={csPerMinDrag.onMouseDown}
           style={{
             ...(csPerMinDrag.dragPos ? { position: "fixed", left: csPerMinDrag.dragPos.x, top: csPerMinDrag.dragPos.y } : { position: "fixed", top: 130, right: 12 }),
-            width: 200,
+            width: "auto",
             cursor: "grab",
             ...cardStyle,
+            padding: "8px 12px",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            {localRankIcon ? (
-              <img src={localRankIcon} alt="" style={{ width: 20, height: 20 }} />
-            ) : (
-              <span />
-            )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {localRankIcon ? <img src={localRankIcon} alt="" style={{ width: 20, height: 20 }} /> : null}
+            <span style={headingStyle}>{t("Overlay.csPerMinLabel")}</span>
             <span style={{ fontSize: 12, fontWeight: 600, color: localCsPerMin >= localCsTarget ? GOOD : BAD }}>
               <span style={{ fontWeight: 700, marginRight: 3 }}>{localCsPerMin >= localCsTarget ? "▲" : "▼"}</span>
               {localCsPerMin} <span style={{ color: MUTED, fontWeight: 400 }}>/ {localCsTarget}</span>
@@ -1173,7 +1182,7 @@ export function OverlayView() {
             ...cardStyle,
           }}
         >
-          <span style={headingStyle}>{t("Overlay.laneGold")}</span>
+          <span style={{ ...headingStyle, textAlign: "center" }}>{t("Overlay.laneGold")}</span>
           <div style={{ display: "flex", flexDirection: "column", marginTop: 4 }}>
             {laneRows.map((row, index) => {
               if (!row.mine && !row.theirs) return null;
@@ -1197,7 +1206,7 @@ export function OverlayView() {
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 60 }}>
                     {icon ? <img src={icon} alt="" style={{ width: 12, height: 12, opacity: 0.6, marginBottom: 2 }} /> : null}
                     <span style={{ fontSize: 12, fontWeight: 700, color: diff === null ? MUTED : diff > 0 ? GOOD : diff < 0 ? BAD : MUTED }}>
-                      {diff === null ? "—" : `~${diff > 0 ? "+" : ""}${diff}`}
+                      {diff === null ? "—" : `${diff > 0 ? "+" : ""}${diff}`}
                     </span>
                   </div>
                   <LaneChampion champ={row.theirs ? championInfoFor(champions, row.theirs) : undefined} align="left" />
@@ -1229,17 +1238,17 @@ export function OverlayView() {
           }}
         >
           <span style={headingStyle}>{t("Overlay.enemySpells")}</span>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {enemyPlayers.map((p) => {
               const key = `${p.team}-${p.championName}`;
               const champ = championInfoFor(champions, p);
               const spells = [p.summonerSpells?.summonerSpellOne, p.summonerSpells?.summonerSpellTwo] as const;
               return (
-                <div key={key} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: 5, overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.06)" }}>
+                <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 7, overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.06)" }}>
                     {champ ? <img src={champ.iconUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
                   </div>
-                  <div style={{ display: "flex", gap: 4 }}>
+                  <div style={{ display: "flex", gap: 6 }}>
                     {spells.map((spell, i) => {
                       if (!spell) return null;
                       const spellKey = summonerSpellKey(spell);
@@ -1266,16 +1275,22 @@ export function OverlayView() {
                               }));
                             }}
                             title={spell.displayName}
+                            // Sin foco de teclado: la ventana recibe el Tab que
+                            // enseña el overlay y el navegador lo usaba para
+                            // pasear el foco por estos botones (visto el
+                            // 2026-09-11 como un marco rosa saltando).
+                            tabIndex={-1}
                             style={{
                               position: "relative",
-                              width: 18,
-                              height: 18,
+                              width: 30,
+                              height: 30,
                               padding: 0,
                               border: "none",
-                              borderRadius: 4,
+                              borderRadius: 6,
                               overflow: "hidden",
                               cursor: "pointer",
                               background: "transparent",
+                              outline: "none",
                             }}
                           >
                             <img
@@ -1291,18 +1306,15 @@ export function OverlayView() {
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
-                                  fontSize: TYPE.label,
+                                  fontSize: 11,
                                   fontWeight: 700,
                                   color: "#fff",
                                   textShadow: "0 1px 2px rgba(0,0,0,0.8)",
                                 }}
                               >
                                 {/* Minutos y segundos, no un "300" de tres
-                                    digitos dentro de un icono de 18px. Y con
-                                    "~" porque el calculo ignora celeridad,
-                                    botas de Ionia y perspicacia cosmica: casi
-                                    nunca es exacto. */}
-                                {`~${formatCountdown(remaining)}`}
+                                    digitos dentro del icono. */}
+                                {formatCountdown(remaining)}
                               </span>
                             ) : null}
                           </button>
