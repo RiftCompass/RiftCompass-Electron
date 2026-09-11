@@ -43,8 +43,20 @@ export async function fetchProfile(
   tagLine: string,
   options: { force?: boolean } = {},
 ): Promise<ProfileApiResponse | FetchProfileError> {
+  // El refresco forzado va por el proceso principal, que es quien tiene la
+  // sesión: la web solo fuerza con ella (y sin ella sirve el perfil
+  // cacheado sin error, así que aquí se pasa siempre por el puente).
+  if (options.force) {
+    const r = await window.riftcompass.fetchProfileForced(platform, gameName, tagLine);
+    if ("error" in r) return { error: "network" };
+    const data = (r.body ?? {}) as Record<string, any>;
+    if (r.status < 200 || r.status >= 300) {
+      return { error: data.error ?? "unknown", status: data.status ?? r.status, retryAfterSeconds: data.retryAfterSeconds };
+    }
+    return data as ProfileApiResponse;
+  }
+
   const slug = `${encodeURIComponent(gameName)}-${encodeURIComponent(tagLine)}`;
-  const query = options.force ? "?force=true" : "";
   try {
     // A saturated Riot API quota can leave riftcompass.com's own function
     // hanging on an upstream retry instead of returning a real 429 quickly.
@@ -53,7 +65,7 @@ export async function fetchProfile(
     // generous for a normal response but still short enough that a real
     // hang surfaces as a "network" error with a retry button, not a stuck
     // spinner.
-    const res = await fetch(`${API_BASE_URL}/api/v1/profile/${platform}/${slug}${query}`, { signal: AbortSignal.timeout(15000) });
+    const res = await fetch(`${API_BASE_URL}/api/v1/profile/${platform}/${slug}`, { signal: AbortSignal.timeout(15000) });
     const data = await res.json();
     if (!res.ok) return { error: data.error ?? "unknown", status: data.status ?? res.status, retryAfterSeconds: data.retryAfterSeconds };
     return data as ProfileApiResponse;
