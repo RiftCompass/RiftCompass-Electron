@@ -271,3 +271,15 @@ Notas practicas para la proxima prueba:
   para manejar el cliente de League. Conviene minimizarla antes de montar la
   partida.
 
+
+## Acceso a console.overwolf.com pedido — 2026-09-11
+
+`console.overwolf.com` sigue sin cargar con la cuenta whitelisteada
+("Something went wrong. Please try again." tras el login con Google,
+comprobado de nuevo este día). Sin la consola no hay `OW_CLI_API_KEY` ni
+`OW_BUILD_KEY`, y sin ellas no se puede firmar el paquete de `ow-electron`.
+Se respondió al hilo "Welcome to the Overwolf Developers community!"
+(developers@overwolf.com) pidiendo que activen el acceso a la consola o
+registren la app "RiftCompass" ahí, explicando que el overlay ya funciona en
+desarrollo y que el certificado de firma de código propio está en trámite.
+Falta su respuesta.
