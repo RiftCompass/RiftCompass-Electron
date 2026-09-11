@@ -113,7 +113,7 @@ export const es: Messages = {
     axis: { farm: "Farmeo", vision: "Visión", kda: "KDA", killParticipation: "Participación en kills", damage: "Daño" },
     rankTrend: "Tendencia de rango",
     notTrackedYet: "Todavía sin seguimiento en el tiempo.",
-    momentumSubtitle: "Racha de victorias/derrotas en {queue}, no LP exacto",
+    momentumSubtitle: "Victorias y derrotas en tus partidas recientes de {queue}",
     rankTrendQueueSolo: "Solo/Dúo",
     rankTrendQueueFlex: "Flexible",
     rankTrendQueueLabel: "Cola clasificatoria",
