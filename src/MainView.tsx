@@ -2033,25 +2033,34 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (user: AccountUser) => void }) 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setError(null);
+    setErrorCode(null);
     const result = await window.riftcompass.login(email, password);
     setBusy(false);
     if (result.ok) {
       onLoggedIn(result.user);
       return;
     }
-    setError(t(errorKey(result.error)));
+    const known = ["invalidCredentials", "emailNotVerified", "tooManyAttempts", "network"];
+    setErrorCode(known.includes(result.error) ? result.error : "unknown");
   }
 
-  function errorKey(code: string): string {
-    const known = ["invalidCredentials", "emailNotVerified", "tooManyAttempts", "network"];
-    return `Auth.errors.${known.includes(code) ? code : "unknown"}`;
-  }
+  // Signing up, resetting a password and re-sending the verification email
+  // all live on the web (server actions, not /api/v1), so the form links
+  // out to them instead of describing where they are.
+  const webLink = (path: string, label: string) => (
+    <button
+      type="button"
+      onClick={() => window.riftcompass.openExternal(`${API_BASE_URL}${path}`)}
+      style={{ background: "none", border: "none", padding: 0, color: COLORS.rose, fontSize: 12, cursor: "pointer" }}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2072,10 +2081,19 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (user: AccountUser) => void }) 
         placeholder={t("Auth.passwordLabel")}
         style={inputStyle}
       />
-      {error ? <span style={{ fontSize: 12, color: COLORS.destructive }}>{error}</span> : null}
+      {errorCode ? (
+        <span style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, color: COLORS.destructive }}>
+          {t(`Auth.errors.${errorCode}`)}
+          {errorCode === "emailNotVerified" ? webLink("/verify-email", t("Auth.resendVerification")) : null}
+        </span>
+      ) : null}
       <button type="submit" disabled={busy} style={{ ...smallButtonStyle, alignSelf: "flex-start", opacity: busy ? 0.6 : 1 }}>
         {busy ? t("Auth.loggingIn") : t("Auth.loginButton")}
       </button>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
+        {webLink("/forgot-password", t("Auth.forgotPassword"))}
+        {webLink("/signup", t("Auth.noAccount"))}
+      </div>
     </form>
   );
 }
