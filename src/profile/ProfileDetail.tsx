@@ -802,10 +802,11 @@ function MomentumBody({ matches, queueLabel }: { matches: RecentMatchSummary[]; 
 function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMatchSummary[]; puuid: string; platform: string }) {
   const { t, locale } = useI18n();
   const now = new Date();
-  // null = the current month, rendered from `matches` the profile fetch
-  // already brought back — free, no extra Riot call. Any other month needs
-  // a real fetch (/api/v1/activity-calendar), same as the web page's own
-  // month navigation.
+  // null = the current month. Se pinta al momento con las partidas recientes
+  // del perfil y, en cuanto llega, con el mes entero de
+  // /api/v1/activity-calendar: solo con las recientes, los días anteriores
+  // a esas 14 partidas salían vacíos sin serlo. Cualquier otro mes solo
+  // existe por esa llamada, igual que en la web.
   const [viewedMonth, setViewedMonth] = useState<{ year: number; monthIndex: number } | null>(null);
   const [monthState, setMonthState] = useState<
     { kind: "idle" } | { kind: "loading" } | ({ kind: "error" } & FetchProfileError) | { kind: "ok"; days: DayActivity[] }
@@ -816,12 +817,9 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
   const targetMonthIndex = viewedMonth?.monthIndex ?? now.getMonth();
 
   useEffect(() => {
-    if (isCurrentMonth) {
-      setMonthState({ kind: "idle" });
-      return;
-    }
     let cancelled = false;
-    setMonthState({ kind: "loading" });
+    // El mes en curso ya tiene algo que enseñar mientras carga; los demás no.
+    setMonthState(isCurrentMonth ? { kind: "idle" } : { kind: "loading" });
     fetchActivityCalendarMonth(platform, puuid, targetYear, targetMonthIndex + 1).then((result) => {
       if (cancelled) return;
       if (Array.isArray(result)) setMonthState({ kind: "ok", days: result });
@@ -832,7 +830,7 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
     };
   }, [isCurrentMonth, platform, puuid, targetYear, targetMonthIndex]);
 
-  const grid = isCurrentMonth ? buildActivityGrid(matches) : monthState.kind === "ok" ? monthState.days : [];
+  const grid = monthState.kind === "ok" ? monthState.days : isCurrentMonth ? buildActivityGrid(matches) : [];
   const firstDate = new Date(targetYear, targetMonthIndex, 1);
   const leadingBlanks = firstDate.getDay();
   // Local Y-M-D, not `new Date().toISOString()` (that's UTC — same
@@ -897,7 +895,9 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
       </div>
       {monthState.kind === "loading" ? (
         <p style={{ fontSize: 12, color: COLORS.muted, margin: "10px 0 0" }}>{t("ProfileSearch.loading")}</p>
-      ) : monthState.kind === "error" ? (
+      ) : monthState.kind === "error" && !isCurrentMonth ? (
+        // El mes en curso tiene las partidas recientes de respaldo: si su
+        // carga falla se enseñan esas, sin mensaje.
         <p style={{ fontSize: 12, color: COLORS.rose, margin: "10px 0 0" }}>
           {t(`ProfileSearch.errors.${errorMessageKey(monthState.error, monthState.status)}`)}
         </p>
