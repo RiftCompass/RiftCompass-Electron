@@ -56,6 +56,11 @@ interface EntradaOrdenObjetos {
   games: number;
 }
 
+interface EntradaPlanObjetos {
+  itemId: number;
+  games: number;
+}
+
 // Una opción de build que el jugador puede aplicar. Las fuentes (la recomendada
 // y las suyas guardadas) se normalizan a esto para que aplicar sea un solo
 // camino y no uno por fuente.
@@ -71,10 +76,14 @@ interface OpcionBuild {
   subStyleId: number;
   spellLow: number;
   spellHigh: number;
+  /** La compra de salida. Vacía en las guardadas: solo guardan la build. */
+  startingItemIds: number[];
   /** En orden de compra. Vacío cuando no se conoce, y entonces no se escribe item set. */
   itemIds: number[];
-  /** Lo que dirá el título del set en la tienda: la muestra de los objetos, o el nombre de la build guardada. */
-  origenSet: string;
+  /** Alternativas frecuentes. Vacía en las guardadas. */
+  situationalItemIds: number[];
+  /** Título del set en la tienda: la recomendada lleva el nombre de la app, una guardada el suyo. */
+  tituloSet: string;
 }
 
 const tarjeta = cardStyle;
@@ -92,7 +101,9 @@ export function ChampSelectView() {
   const [recomendada, setRecomendada] = useState<{
     runes: RunasRecomendadas | null;
     spells: HechizosRecomendados | null;
+    startingItems: EntradaPlanObjetos[];
     itemOrder: EntradaOrdenObjetos[];
+    situationalItems: EntradaPlanObjetos[];
   } | null>(null);
   const [guardadas, setGuardadas] = useState<SavedChampionBuild[]>([]);
   const [aplicando, setAplicando] = useState<string | null>(null);
@@ -111,6 +122,11 @@ export function ChampSelectView() {
   // decide con el botón. Sin esto el efecto volvería a dispararse en cuanto
   // `aplicando` vuelve a null y quedaría martilleando el cliente de League.
   const [autoIntentado, setAutoIntentado] = useState(false);
+  // El ajuste "Build recomendada" de la app: null hasta leerlo, y hasta
+  // entonces no se aplica nada solo. Es el mismo ajuste que ya gobernaba el
+  // auto-aplicado del overlay, que se quitó de allí para que no hubiera dos
+  // ventanas aplicando a la vez.
+  const [autoAplicar, setAutoAplicar] = useState<boolean | null>(null);
 
   useEffect(() => {
     window.riftcompass.onLcuIdentity(setIdentity);
@@ -134,6 +150,10 @@ export function ChampSelectView() {
   }, [champions]);
 
   useEffect(() => {
+    window.riftcompass
+      .getSettings()
+      .then((s) => setAutoAplicar(s.overlayModules.autoBuild))
+      .catch(() => setAutoAplicar(false));
     window.riftcompass
       .getSavedChampionBuilds()
       .then(setGuardadas)
@@ -178,7 +198,13 @@ export function ChampSelectView() {
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d) => {
         if (cancelado) return;
-        setRecomendada({ runes: d.runes ?? null, spells: d.spells ?? null, itemOrder: d.itemOrder ?? [] });
+        setRecomendada({
+          runes: d.runes ?? null,
+          spells: d.spells ?? null,
+          startingItems: d.startingItems ?? [],
+          itemOrder: d.itemOrder ?? [],
+          situationalItems: d.situationalItems ?? [],
+        });
       })
       .catch(() => {
         if (!cancelado) setRecomendada(null);
@@ -212,11 +238,10 @@ export function ChampSelectView() {
         subStyleId: recomendada.runes.subStyleId,
         spellLow: recomendada.spells.spellLow,
         spellHigh: recomendada.spells.spellHigh,
+        startingItemIds: recomendada.startingItems.map((e) => e.itemId),
         itemIds: recomendada.itemOrder.map((e) => e.itemId),
-        // La del objeto peor respaldado, que es la que sostiene el orden entero.
-        origenSet: t("ChampSelect.fromSample", {
-          games: String(recomendada.itemOrder.reduce((min, e) => Math.min(min, e.games), Infinity)),
-        }),
+        situationalItemIds: recomendada.situationalItems.map((e) => e.itemId),
+        tituloSet: `RiftCompass · ${campeon.name} ${t(`Profile.positions.${rol.toLowerCase()}`)}`,
       });
     }
 
@@ -245,13 +270,15 @@ export function ChampSelectView() {
         subStyleId: b.runes.subStyleId,
         spellLow: b.spells.spellLow,
         spellHigh: b.spells.spellHigh,
+        startingItemIds: [],
         itemIds: b.items.map((i) => Number(i)).filter((n) => Number.isFinite(n) && n > 0),
-        origenSet: b.name,
+        situationalItemIds: [],
+        tituloSet: b.name,
       });
     }
 
     return lista;
-  }, [campeon, recomendada, guardadas, t]);
+  }, [campeon, rol, recomendada, guardadas, t]);
 
   async function aplicar(opcion: OpcionBuild) {
     if (!campeon || !campeonId) return;
@@ -264,8 +291,10 @@ export function ChampSelectView() {
               championId: campeonId,
               championName: campeon.internalId,
               role: rol,
+              startingItemIds: opcion.startingItemIds,
               itemIds: opcion.itemIds,
-              origen: opcion.origenSet,
+              situationalItemIds: opcion.situationalItemIds,
+              titulo: opcion.tituloSet,
             }
           : undefined;
       const r = await window.riftcompass.applyRecommendedBuild(
@@ -285,25 +314,23 @@ export function ChampSelectView() {
     }
   }
 
-  // Auto-aplicar la recomendada en cuanto la hay, sin esperar un clic: es lo
-  // que pidió Julio ("la app importará automáticamente la build con más
-  // winrate") y lo que hace iTero. El overlay ya lo hacía, pero bajo
-  // `ow-electron` el overlay no existe durante champ select (nace al inyectarse
-  // en la partida), así que en la práctica no se aplicaba nada: probado en una
-  // partida real el 2026-09-10, ni item set ni página de runas.
+  // Auto-aplicar la recomendada en cuanto la hay, sin esperar un clic, como
+  // hace iTero. Esta ventana es la única que lo hace: el overlay también lo
+  // hacía y, cuando los dos coincidían (bajo el motor de Overwolf el overlay
+  // puede seguir vivo de una partida anterior), se pisaban la página de runas.
   //
   // `aplicando/aplicada` hacen de guarda: `aplicar` pone `aplicando` de forma
   // síncrona, así que esto no puede dispararse dos veces para el mismo pick, y
   // el efecto que limpia al cambiar de campeón lo re-arma para el siguiente.
   // Los botones siguen ahí para cambiar de build o reintentar.
   useEffect(() => {
-    if (autoIntentado || aplicando !== null || aplicada !== null) return;
+    if (!autoAplicar || autoIntentado || aplicando !== null || aplicada !== null) return;
     const recomendadaLista = opciones.find((o) => o.origen === "recomendada");
     if (!recomendadaLista) return;
     setAutoIntentado(true);
     void aplicar(recomendadaLista);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opciones, aplicando, aplicada, autoIntentado]);
+  }, [opciones, aplicando, aplicada, autoIntentado, autoAplicar]);
 
   return (
     <div
