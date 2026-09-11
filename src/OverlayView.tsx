@@ -92,6 +92,11 @@ interface ItemOrderEntry {
   games: number;
 }
 
+interface ItemPlanEntry {
+  itemId: number;
+  games: number;
+}
+
 interface RecommendedBuild {
   runes: RecommendedRunes | null;
   spells: RecommendedSpells | null;
@@ -101,6 +106,8 @@ interface RecommendedBuild {
   // deja puesto como item set en la tienda del cliente. Vacío mientras el
   // rastreador no tenga muestra de este campeón en este rol.
   itemOrder: ItemOrderEntry[];
+  startingItems: ItemPlanEntry[];
+  situationalItems: ItemPlanEntry[];
 }
 
 interface SkillOrderEntry {
@@ -651,6 +658,8 @@ export function OverlayView() {
           spells: data.spells ?? null,
           items: data.items ?? null,
           itemOrder: data.itemOrder ?? [],
+          startingItems: data.startingItems ?? [],
+          situationalItems: data.situationalItems ?? [],
         }),
       )
       .catch(() => setRecommendedBuild(null));
@@ -755,7 +764,7 @@ export function OverlayView() {
     if (!recommendedBuild?.runes || !recommendedBuild.spells) return;
     setApplyBuildState("working");
     try {
-      const { runes, spells, itemOrder } = recommendedBuild;
+      const { runes, spells, itemOrder, startingItems, situationalItems } = recommendedBuild;
 
       // El item set solo se manda si hay orden de compra Y sabemos de qué
       // campeón y rol es: sin eso el cliente guardaría un set sin dueño, que
@@ -767,10 +776,10 @@ export function OverlayView() {
               championId,
               championName: localPick.championName,
               role: localPick.role.toUpperCase(),
+              startingItemIds: startingItems.map((e) => e.itemId),
               itemIds: itemOrder.map((e) => e.itemId),
-              // La muestra del objeto peor respaldado: es la que honestamente
-              // sostiene la build entera, no la del primero.
-              origen: t("ChampSelect.fromSample", { games: String(Math.min(...itemOrder.map((e) => e.games))) }),
+              situationalItemIds: situationalItems.map((e) => e.itemId),
+              titulo: `RiftCompass · ${champions.byInternalId[localPick.championName]?.name ?? localPick.championName} ${t(`Profile.positions.${localPick.role.toLowerCase()}`)}`,
             }
           : undefined;
 
@@ -788,24 +797,10 @@ export function OverlayView() {
     }
   }
 
-  // iTero-style auto-apply: as soon as a recommended build is available for
-  // the champion just picked, apply its runes/spells without waiting for a
-  // click. `applyBuildState !== "idle"` is the dedupe guard — it flips to
-  // "working" synchronously inside the handler, so this can't double-fire
-  // for the same pick, and the effect above already resets it back to
-  // "idle" on a genuine champion/cellId change, which re-arms this for the
-  // next pick. The manual button (below) stays as a retry path (LCU race,
-  // page limit) and to re-apply later if the recommendation itself changes
-  // (e.g. a matchup-specific build replacing the blended fallback once the
-  // lane opponent is revealed) — this effect only fires once per pick, not
-  // on every recommendedBuild update.
-  useEffect(() => {
-    if (!overlayModules.autoBuild) return;
-    if (applyBuildState !== "idle") return;
-    if (!recommendedBuild?.runes || !recommendedBuild.spells) return;
-    handleApplyRecommendedBuild();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overlayModules.autoBuild, recommendedBuild, applyBuildState]);
+  // El auto-aplicado vive en la ventana de champ select (ChampSelectView),
+  // no aquí. Lo hacían las dos a la vez, y como las dos borran y vuelven a
+  // crear la misma página de runas, una de las dos fallaba ("rune page
+  // create returned no id", 2026-09-11). Aquí queda el botón como reintento.
 
   // Local player's CS/min against the real target for their own rank
   // band — same benchmark table the web profile's roadmap uses

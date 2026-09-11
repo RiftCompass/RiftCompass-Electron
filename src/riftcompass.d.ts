@@ -226,9 +226,9 @@ export type SaveChampionBuildResult =
   | { ok: false; error: string };
 
 // La build de objetos que se deja puesta en la tienda del cliente como item
-// set. `itemIds` va EN ORDEN DE COMPRA (el primero es el primer objeto
-// principal), que es el dato que hace util al set; `games` es la muestra que lo
-// respalda, para poder ensenarla y no pedirle fe al jugador.
+// set: con que salir, que completar y en que orden, y las alternativas.
+// `itemIds` va EN ORDEN DE COMPRA (el primero es el primer objeto terminado),
+// que es el dato que hace util al set.
 // Mismo contrato que BuildParaSet en electron/itemSet.ts.
 // Maestria del jugador con un campeon, leida del cliente de League. `points`
 // es el acumulado de siempre y `level` el nivel de maestria; se guardan los dos
@@ -244,9 +244,11 @@ export interface RecommendedItemSet {
   championId: number;
   championName: string;
   role: string;
+  startingItemIds: number[];
   itemIds: number[];
-  /** De dónde sale la build, para el título del set en la tienda ("9 partidas", o el nombre de la build guardada). */
-  origen: string;
+  situationalItemIds: number[];
+  /** Título del set en la tienda: "RiftCompass · Jinx Bot", o el nombre de la build guardada. */
+  titulo: string;
 }
 
 

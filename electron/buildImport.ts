@@ -100,7 +100,9 @@ export async function applyRunePage(creds: LcuCredentials, perkIds: number[], pr
     subStyleId,
     selectedPerkIds: perkIds,
   })) as { id?: number };
-  if (typeof created.id !== "number") throw new Error("rune page create returned no id");
+  // Con la respuesta entera: sin ella, "no id" no distingue el límite de
+  // páginas de una runa que ya no existe en el parche.
+  if (typeof created.id !== "number") throw new Error(`rune page create returned no id: ${JSON.stringify(created)}`);
   await lcuRequest(creds, "PUT", "/lol-perks/v1/currentpage", created.id);
 }
 
