@@ -740,6 +740,7 @@ export const fr: Messages = {
     pickChampion: "Choisissez un champion pour voir ses builds.",
     noResults: "Aucun champion de ce nom.",
     dataFromPatch: "Données de build du patch {patch} ; le patch actuel ({current}) n'a pas encore assez d'échantillons.",
+    dataFromPatches: "Données de builds des patchs {patches} : le patch actuel ({current}) n'a pas encore assez de parties à lui seul, le précédent est donc inclus.",
     popularBuild: "Build la plus jouée",
     popularBuildSource: "Parties suivies, patch {patch}",
     noBuildData: "Aucune partie suivie pour ce champion à ce poste et ce rang pour l'instant. Essayez un autre rang ou revenez quand l'échantillon aura grandi.",
