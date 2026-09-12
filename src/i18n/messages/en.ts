@@ -731,6 +731,11 @@ export const en = {
     dominantTagWarning: "Every champion in this pool is {tag}. Consider adding variety.",
     difficultyLabel: "Average difficulty",
   },
+  DataQuality: {
+    summary: "{games} tracked games, patch {patch}, updated {updated}.",
+    summaryNoUpdate: "{games} tracked games, patch {patch}.",
+    howWeCount: "How we count",
+  },
   Matchups: {
     intro: "Pick a champion, a position and a rank: on the left, how that champion does against each lane opponent; on the right, who does best against it. Real 1v1 lane results from RiftCompass's own tracked ranked games, not full team matchups.",
     methodologyNote: "Matchups with fewer than {min} tracked games are listed apart and not ranked: a 3-game 100% is luck, not a counter.",

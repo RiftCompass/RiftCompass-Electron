@@ -719,6 +719,11 @@ export const de: Messages = {
     dominantTagWarning: "Jeder Champion in diesem Pool ist {tag}. Erwäge, mehr Vielfalt hinzuzufügen.",
     difficultyLabel: "Durchschnittliche Schwierigkeit",
   },
+  DataQuality: {
+    summary: "{games} erfasste Spiele, Patch {patch}, aktualisiert {updated}.",
+    summaryNoUpdate: "{games} erfasste Spiele, Patch {patch}.",
+    howWeCount: "Wie wir zählen",
+  },
   Matchups: {
     intro: "Wähle Champion, Position und Rang: links, wie dieser Champion gegen jeden Lane-Gegner abschneidet; rechts, wer ihn am besten schlägt. Echte 1v1-Lane-Ergebnisse aus den von RiftCompass erfassten Ranglistenspielen, keine vollständigen Team-Matchups.",
     methodologyNote: "Matchups mit weniger als {min} erfassten Spielen werden gesondert und ohne Rangfolge gelistet: 100% aus 3 Spielen sind Glück, kein Counter.",
