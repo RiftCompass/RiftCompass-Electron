@@ -35,6 +35,11 @@ export const es: Messages = {
     positions: { top: "Top", jungle: "Jungla", middle: "Mid", bottom: "Bot", utility: "Support" },
   },
   SavedProfiles: {
+    mainProposal: "¿{name} eres tú? Márcalo como tu perfil principal.",
+    mainProposalYes: "Sí",
+    mainProposalNo: "Ahora no",
+    setMain: "Hacer mi perfil principal",
+    unsetMain: "Perfil principal (clic para quitarlo)",
     title: "Perfiles guardados",
     filterPlaceholder: "Filtrar…",
     noSavedProfiles: "Todavía no hay perfiles guardados.",

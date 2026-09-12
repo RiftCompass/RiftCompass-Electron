@@ -241,6 +241,12 @@ export function accountSetProfileFolder(profileId: string, folderId: string): Pr
   return folderApiCall("PATCH", `/api/v1/saved-profiles/${profileId}`, { folderId });
 }
 
+// "My main profile": same PATCH, `isMain` instead of `folderId` (the server
+// clears any previous main when setting a new one).
+export function accountSetMainProfile(profileId: string, isMain: boolean): Promise<unknown> {
+  return folderApiCall("PATCH", `/api/v1/saved-profiles/${profileId}`, { isMain });
+}
+
 // El refresco forzado de un perfil (`?force=true`) solo lo acepta la web
 // con sesión de la app, para que nadie gaste cuota de Riot a nombre de otro.
 // El token vive aquí y no en el renderer, así que la petición se hace aquí y
