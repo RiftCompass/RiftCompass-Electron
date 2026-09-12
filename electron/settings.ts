@@ -50,20 +50,18 @@ export interface AbilityBarCalibration {
   e: ScreenPoint;
 }
 
-export type OverlayPanelKey = "gold" | "objectives" | "csPerMin" | "enemySpells";
+export type OverlayPanelKey = "gold" | "objectives" | "csPerMin";
 
 export interface OverlayPanelPositions {
   gold: ScreenPoint | null;
   objectives: ScreenPoint | null;
   csPerMin: ScreenPoint | null;
-  enemySpells: ScreenPoint | null;
 }
 
 const DEFAULT_PANEL_POSITIONS: OverlayPanelPositions = {
   gold: null,
   objectives: null,
   csPerMin: null,
-  enemySpells: null,
 };
 
 interface PersistedSettings {
@@ -151,7 +149,8 @@ function readPersisted(): PersistedSettings {
     gold: parseScreenPoint(rawPositions?.gold),
     objectives: parseScreenPoint(rawPositions?.objectives),
     csPerMin: parseScreenPoint(rawPositions?.csPerMin),
-    enemySpells: parseScreenPoint(rawPositions?.enemySpells),
+    // Un `enemySpells` guardado por versiones anteriores se ignora: ese
+    // panel se retiro el 2026-09-12 por las reglas de Riot.
   };
 
   return { overlayModules, locale, autoLaunchConfigured, flashSide, abilityBarCalibration, overlayPanelPositions };
@@ -247,7 +246,7 @@ export function settingsSetAbilityBarCalibration(calibration: AbilityBarCalibrat
 export function settingsSetOverlayPanelPosition(panel: string, position: ScreenPoint): AppSettings {
   const persisted = readPersisted();
   const overlayPanelPositions = { ...persisted.overlayPanelPositions };
-  if (panel === "gold" || panel === "objectives" || panel === "csPerMin" || panel === "enemySpells") {
+  if (panel === "gold" || panel === "objectives" || panel === "csPerMin") {
     overlayPanelPositions[panel] = position;
   }
   writePersisted({ ...persisted, overlayPanelPositions });
