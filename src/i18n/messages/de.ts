@@ -498,6 +498,8 @@ export const de: Messages = {
     },
     showTurrets: "Türme anzeigen",
     hideTurrets: "Türme ausblenden",
+    fullscreen: "Vollbild",
+    exitFullscreen: "Vollbild beenden",
     zoomIn: "Vergrößern",
     zoomOut: "Verkleinern",
     notesTitle: "Notizen",

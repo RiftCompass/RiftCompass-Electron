@@ -510,6 +510,8 @@ export const en = {
     },
     showTurrets: "Show turrets",
     hideTurrets: "Hide turrets",
+    fullscreen: "Full screen",
+    exitFullscreen: "Exit full screen",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
     notesTitle: "Notes",
