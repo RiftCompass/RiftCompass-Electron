@@ -52,6 +52,7 @@ export const es: Messages = {
     newFolder: "Nueva carpeta",
     folderNamePlaceholder: "Nombre de la carpeta",
     folderErrors: {
+      emailNotVerified: "Verifica tu email para guardar. Abre el enlace que te enviamos o reenvíalo desde tu página de cuenta en riftcompass.com.",
       invalidName: "Ponle un nombre a la carpeta.",
       nameTooLong: "El nombre de la carpeta es demasiado largo.",
       nameOffensive: "Ese nombre de carpeta no está permitido.",
@@ -331,6 +332,7 @@ export const es: Messages = {
     usernameSaving: "Guardando…",
     usernameSaved: "Guardado.",
     usernameErrors: {
+      emailNotVerified: "Verifica tu email para guardar. Abre el enlace que te enviamos o reenvíalo desde tu página de cuenta en riftcompass.com.",
       invalidUsername: "3-24 caracteres: solo letras, números, - y _.",
       usernameTaken: "Ese nombre de usuario ya está en uso.",
       nameOffensive: "Ese nombre de usuario no está permitido.",
@@ -338,6 +340,7 @@ export const es: Messages = {
       unknown: "Algo ha salido mal. Inténtalo de nuevo.",
     },
     manageOnWeb: "Gestiona la foto y más en riftcompass.com",
+    emailNotVerifiedHint: "Tu email aún no está verificado: puedes usarlo todo, pero guardar espera hasta que abras el enlace que te enviamos. Reenvíalo desde tu página de cuenta en la web.",
     overlaySection: "Overlay en partida",
     overlayHotkeyHint: "Muestra u oculta el overlay sobre League con Ctrl+Alt+R.",
     overlayCsPerMinute: "CS/min",
@@ -372,7 +375,7 @@ export const es: Messages = {
     resendVerification: "Reenviar el email de verificación",
     errors: {
       invalidCredentials: "Email o contraseña incorrectos.",
-      emailNotVerified: "Verifica tu email antes de iniciar sesión. Revisa tu bandeja de entrada para encontrar el enlace.",
+      emailNotVerified: "Tu email aún no está verificado. Puedes iniciar sesión, pero guardar espera hasta que abras el enlace que te enviamos.",
       tooManyAttempts: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
       network: "No se ha podido contactar con riftcompass.com. Comprueba tu conexión.",
       unknown: "Algo ha ido mal. Inténtalo de nuevo.",
@@ -393,6 +396,7 @@ export const es: Messages = {
     saveTierListCancel: "Cancelar",
     saveTierListSuccess: "Tier list guardada.",
     saveTierListErrors: {
+      emailNotVerified: "Verifica tu email para guardar. Abre el enlace que te enviamos o reenvíalo desde tu página de cuenta en riftcompass.com.",
       notAuthenticated: "Inicia sesión para guardar tier lists.",
       nameRequired: "Ponle un nombre a la tier list.",
       nameTooLong: "El nombre es demasiado largo.",
@@ -443,6 +447,7 @@ export const es: Messages = {
     saveDraftCancel: "Cancelar",
     saveDraftSuccess: "Draft guardado.",
     saveDraftErrors: {
+      emailNotVerified: "Verifica tu email para guardar. Abre el enlace que te enviamos o reenvíalo desde tu página de cuenta en riftcompass.com.",
       notAuthenticated: "Inicia sesión para guardar drafts.",
       nameRequired: "Ponle un nombre al draft.",
       nameTooLong: "El nombre es demasiado largo.",
@@ -493,6 +498,7 @@ export const es: Messages = {
     saveMapCancel: "Cancelar",
     saveMapSuccess: "Mapa guardado.",
     saveMapErrors: {
+      emailNotVerified: "Verifica tu email para guardar. Abre el enlace que te enviamos o reenvíalo desde tu página de cuenta en riftcompass.com.",
       notAuthenticated: "Inicia sesión para guardar mapas.",
       nameRequired: "Ponle un nombre al mapa.",
       nameTooLong: "El nombre es demasiado largo.",
@@ -531,6 +537,7 @@ export const es: Messages = {
     saveBuildCancel: "Cancelar",
     saveBuildSuccess: "Build guardada.",
     saveBuildErrors: {
+      emailNotVerified: "Verifica tu email para guardar. Abre el enlace que te enviamos o reenvíalo desde tu página de cuenta en riftcompass.com.",
       notAuthenticated: "Inicia sesión para guardar builds.",
       nameRequired: "Ponle un nombre a la build.",
       nameTooLong: "El nombre es demasiado largo.",
@@ -789,6 +796,7 @@ export const es: Messages = {
     notesPlaceholder: "Cuándo usar esta build, qué cambiar, ...",
     clear: "Limpiar",
     errors: {
+      emailNotVerified: "Verifica tu email para guardar. Abre el enlace que te enviamos o reenvíalo desde tu página de cuenta en riftcompass.com.",
       notAuthenticated: "Inicia sesión para guardar builds.",
       nameRequired: "Ponle un nombre a la build.",
       nameTooLong: "Ese nombre es demasiado largo.",

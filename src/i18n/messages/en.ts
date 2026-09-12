@@ -64,6 +64,7 @@ export const en = {
     newFolder: "New folder",
     folderNamePlaceholder: "Folder name",
     folderErrors: {
+      emailNotVerified: "Verify your email to save. Open the link we emailed you, or resend it from your account page on riftcompass.com.",
       invalidName: "Give the folder a name.",
       nameTooLong: "Folder name is too long.",
       nameOffensive: "That folder name is not allowed.",
@@ -343,6 +344,7 @@ export const en = {
     usernameSaving: "Saving…",
     usernameSaved: "Saved.",
     usernameErrors: {
+      emailNotVerified: "Verify your email to save. Open the link we emailed you, or resend it from your account page on riftcompass.com.",
       invalidUsername: "3-24 characters: letters, numbers, - and _ only.",
       usernameTaken: "That username is already taken.",
       nameOffensive: "That username is not allowed.",
@@ -350,6 +352,7 @@ export const en = {
       unknown: "Something went wrong. Try again.",
     },
     manageOnWeb: "Manage photo & more on riftcompass.com",
+    emailNotVerifiedHint: "Your email isn't verified yet: you can use everything, but saving waits until you open the link we emailed you. Resend it from your account page on the web.",
     overlaySection: "In-game overlay",
     overlayHotkeyHint: "Toggle the overlay HUD on top of League with Ctrl+Alt+R.",
     overlayCsPerMinute: "CS/min",
@@ -384,7 +387,7 @@ export const en = {
     resendVerification: "Resend the verification email",
     errors: {
       invalidCredentials: "Wrong email or password.",
-      emailNotVerified: "Verify your email before logging in. Check your inbox for the link.",
+      emailNotVerified: "Your email isn't verified yet. You can log in, but saving waits until you open the link we emailed you.",
       tooManyAttempts: "Too many attempts. Wait a few minutes and try again.",
       network: "Couldn't reach riftcompass.com. Check your connection.",
       unknown: "Something went wrong. Try again.",
@@ -405,6 +408,7 @@ export const en = {
     saveTierListCancel: "Cancel",
     saveTierListSuccess: "Tier list saved.",
     saveTierListErrors: {
+      emailNotVerified: "Verify your email to save. Open the link we emailed you, or resend it from your account page on riftcompass.com.",
       notAuthenticated: "Log in to save tier lists.",
       nameRequired: "Give the tier list a name.",
       nameTooLong: "Name is too long.",
@@ -455,6 +459,7 @@ export const en = {
     saveDraftCancel: "Cancel",
     saveDraftSuccess: "Draft saved.",
     saveDraftErrors: {
+      emailNotVerified: "Verify your email to save. Open the link we emailed you, or resend it from your account page on riftcompass.com.",
       notAuthenticated: "Log in to save drafts.",
       nameRequired: "Give the draft a name.",
       nameTooLong: "That name is too long.",
@@ -505,6 +510,7 @@ export const en = {
     saveMapCancel: "Cancel",
     saveMapSuccess: "Map saved.",
     saveMapErrors: {
+      emailNotVerified: "Verify your email to save. Open the link we emailed you, or resend it from your account page on riftcompass.com.",
       notAuthenticated: "Log in to save maps.",
       nameRequired: "Give the map a name.",
       nameTooLong: "That name is too long.",
@@ -543,6 +549,7 @@ export const en = {
     saveBuildCancel: "Cancel",
     saveBuildSuccess: "Build saved.",
     saveBuildErrors: {
+      emailNotVerified: "Verify your email to save. Open the link we emailed you, or resend it from your account page on riftcompass.com.",
       notAuthenticated: "Log in to save builds.",
       nameRequired: "Give the build a name.",
       nameTooLong: "That name is too long.",
@@ -801,6 +808,7 @@ export const en = {
     notesPlaceholder: "When to run this build, what to swap out, ...",
     clear: "Clear",
     errors: {
+      emailNotVerified: "Verify your email to save. Open the link we emailed you, or resend it from your account page on riftcompass.com.",
       notAuthenticated: "Sign in to save builds.",
       nameRequired: "Give the build a name.",
       nameTooLong: "That name is too long.",
