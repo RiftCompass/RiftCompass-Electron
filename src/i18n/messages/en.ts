@@ -47,6 +47,11 @@ export const en = {
     positions: { top: "Top", jungle: "Jungle", middle: "Mid", bottom: "Bottom", utility: "Support" },
   },
   SavedProfiles: {
+    mainProposal: "Is {name} you? Mark it as your main profile.",
+    mainProposalYes: "Yes",
+    mainProposalNo: "Not now",
+    setMain: "Make this my main profile",
+    unsetMain: "Main profile (click to unmark)",
     title: "Saved profiles",
     filterPlaceholder: "Filter…",
     noSavedProfiles: "No saved profiles yet.",

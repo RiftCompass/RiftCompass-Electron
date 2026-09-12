@@ -204,6 +204,9 @@ export function registerIpcHandlers(): void {
     CMD.AccountSetProfileFolder,
     (_e, { profileId, folderId }: { profileId: string; folderId: string }) => account.accountSetProfileFolder(profileId, folderId),
   );
+  ipcMain.handle(CMD.AccountSetMainProfile, (_e, { profileId, isMain }: { profileId: string; isMain: boolean }) =>
+    account.accountSetMainProfile(profileId, isMain),
+  );
   ipcMain.handle(CMD.AccountGetSavedTierLists, () => account.accountGetSavedTierLists());
   ipcMain.handle(CMD.AccountCreateTierList, (_e, { name, board }: { name: string; board: Record<string, string[]> }) =>
     account.accountCreateTierList(name, board),

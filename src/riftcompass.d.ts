@@ -99,6 +99,8 @@ export interface SavedProfileWithRank {
   gameName: string;
   tagLine: string;
   folderId: string;
+  /** The account owner's own profile (one per account at most). Absent from responses older than 2026-09-12. */
+  isMain?: boolean;
   rank: SavedProfileRank | null;
 }
 
@@ -312,6 +314,7 @@ export interface RiftCompassApi {
   renameProfileFolder: (id: string, name: string) => Promise<FolderActionResult>;
   deleteProfileFolder: (id: string) => Promise<FolderActionResult>;
   setSavedProfileFolder: (profileId: string, folderId: string) => Promise<FolderActionResult>;
+  setMainSavedProfile: (profileId: string, isMain: boolean) => Promise<FolderActionResult>;
   getSavedTierLists: () => Promise<SavedTierList[]>;
   createTierList: (name: string, board: Record<string, string[]>) => Promise<SaveTierListResult>;
   deleteTierList: (id: string) => Promise<SaveTierListResult>;

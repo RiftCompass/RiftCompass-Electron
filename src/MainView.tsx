@@ -14,6 +14,7 @@ import {
   FolderPlus,
   PencilSimple,
   MagnifyingGlass,
+  Star,
   Gear as SettingsIcon,
   TrashSimple,
   User,
@@ -690,7 +691,7 @@ export function MainView() {
 
           {user ? (
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, marginTop: 2, padding: "0 2px" }}>
-              <SavedProfilesPanel onOpenProfile={openProfile} textFilter={profileFilter} />
+              <SavedProfilesPanel onOpenProfile={openProfile} textFilter={profileFilter} identity={localIdentity} />
             </div>
           ) : (
             <div style={{ flex: 1 }} />
@@ -843,7 +844,16 @@ type SortMode = "elo" | "winrate";
 // a hardcoded id (its actual id is a per-account UUID). This component
 // owns the whole feature: fetching folders+profiles, the filter/sort icon
 // buttons next to the section title, and the grouped/flat list itself.
-function SavedProfilesPanel({ onOpenProfile, textFilter }: { onOpenProfile: (target: ProfileTarget) => void; textFilter: string }) {
+function SavedProfilesPanel({
+  onOpenProfile,
+  textFilter,
+  identity,
+}: {
+  onOpenProfile: (target: ProfileTarget) => void;
+  textFilter: string;
+  /** The player the League client is logged in as, to propose marking their saved profile as the main one. */
+  identity: LcuIdentity | null;
+}) {
   const { t } = useI18n();
   const [profiles, setProfiles] = useState<SavedProfileWithRank[] | null>(null);
   const [folders, setFolders] = useState<SavedProfileFolder[]>([]);
@@ -893,6 +903,29 @@ function SavedProfilesPanel({ onOpenProfile, textFilter }: { onOpenProfile: (tar
       setGroupFilter((cur) => (cur === id ? "all" : cur));
     }
   }
+  function handleSetMain(profileId: string, isMain: boolean) {
+    setProfiles((prev) => prev?.map((p) => ({ ...p, isMain: p.id === profileId ? isMain : isMain ? false : p.isMain })) ?? prev);
+    void window.riftcompass.setMainSavedProfile(profileId, isMain).then((r) => {
+      if (r.ok) {
+        setFolders(r.folders);
+        setProfiles(r.profiles);
+      }
+    });
+  }
+
+  // The League client's own player, saved but not marked as the main
+  // profile yet: propose it once (dismissable for the session).
+  const [mainProposalDismissed, setMainProposalDismissed] = useState(false);
+  const proposedMain =
+    identity && profiles && !mainProposalDismissed && !profiles.some((p) => p.isMain)
+      ? profiles.find(
+          (p) =>
+            p.platform === identity.platform &&
+            p.gameName.toLowerCase() === identity.gameName.toLowerCase() &&
+            p.tagLine.toLowerCase() === identity.tagLine.toLowerCase(),
+        )
+      : undefined;
+
   function handleAssign(profileId: string, folderId: string) {
     // Optimistic — same responsiveness as the old local-storage version had,
     // reconciled with the server's own copy once the request lands.
@@ -1017,9 +1050,35 @@ function SavedProfilesPanel({ onOpenProfile, textFilter }: { onOpenProfile: (tar
         groups={folders}
         currentGroupId={p.folderId}
         onAssign={handleAssign}
+        onSetMain={handleSetMain}
       />
     );
   }
+
+  const mainProposal = proposedMain ? (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        borderRadius: 8,
+        border: `1px solid ${COLORS.rose}55`,
+        background: `${COLORS.rose}14`,
+        padding: "7px 10px",
+        fontSize: 12,
+        lineHeight: 1.4,
+      }}
+    >
+      <Star size={14} color={COLORS.rose} weight="fill" style={{ flexShrink: 0 }} />
+      <span style={{ flex: 1, minWidth: 0 }}>{t("SavedProfiles.mainProposal", { name: proposedMain.gameName })}</span>
+      <button onClick={() => handleSetMain(proposedMain.id, true)} style={{ ...smallButtonStyle, flexShrink: 0 }}>
+        {t("SavedProfiles.mainProposalYes")}
+      </button>
+      <button onClick={() => setMainProposalDismissed(true)} style={{ ...smallButtonStyle, flexShrink: 0 }}>
+        {t("SavedProfiles.mainProposalNo")}
+      </button>
+    </div>
+  ) : null;
 
   // Flat view: one specific folder is selected — no point showing every
   // other folder's (empty, from this view's perspective) section header.
@@ -1028,6 +1087,7 @@ function SavedProfilesPanel({ onOpenProfile, textFilter }: { onOpenProfile: (tar
     return (
       <>
         {header}
+        {mainProposal}
         {visible.length === 0 ? (
           <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("SavedProfiles.noFilterMatches")}</p>
         ) : (
@@ -1044,6 +1104,7 @@ function SavedProfilesPanel({ onOpenProfile, textFilter }: { onOpenProfile: (tar
   return (
     <>
       {header}
+      {mainProposal}
       {textFiltered.length === 0 ? (
         <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("SavedProfiles.noFilterMatches")}</p>
       ) : (
@@ -1389,6 +1450,7 @@ function SavedProfileRow({
   groups,
   currentGroupId,
   onAssign,
+  onSetMain,
 }: {
   profile: SavedProfileWithRank;
   position: number | null;
@@ -1396,6 +1458,7 @@ function SavedProfileRow({
   groups: SavedProfileFolder[];
   currentGroupId: string;
   onAssign: (profileId: string, groupId: string) => void;
+  onSetMain: (profileId: string, isMain: boolean) => void;
 }) {
   const { t } = useI18n();
   const rank = profile.rank;
@@ -1453,6 +1516,15 @@ function SavedProfileRow({
             {rank && rank.lpTrend.length >= 2 ? <InlineLpSparkline values={rank.lpTrend} /> : null}
           </div>
         </div>
+      </button>
+      {/* "My main profile": filled star on the one that is, hollow on the
+          rest; one click swaps it (the server keeps a single main). */}
+      <button
+        onClick={() => onSetMain(profile.id, !profile.isMain)}
+        title={profile.isMain ? t("SavedProfiles.unsetMain") : t("SavedProfiles.setMain")}
+        style={{ background: "none", border: "none", padding: 2, cursor: "pointer", display: "flex", flexShrink: 0 }}
+      >
+        <Star size={14} color={profile.isMain ? COLORS.gold : COLORS.muted} weight={profile.isMain ? "fill" : "regular"} />
       </button>
       {rank?.recentResult ? (
         // The single-letter win/loss badge (kept for a compact row)

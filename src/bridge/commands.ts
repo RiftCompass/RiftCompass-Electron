@@ -57,6 +57,7 @@ export const CMD = {
   AccountDeleteProfileFolder: "account_delete_profile_folder",
   /** invoke. args: { profileId, folderId } */
   AccountSetProfileFolder: "account_set_profile_folder",
+  AccountSetMainProfile: "account_set_main_profile",
   /** invoke. args: { username } */
   AccountUpdateUsername: "account_update_username",
   /** invoke, no args. returns SavedTierList[] */
