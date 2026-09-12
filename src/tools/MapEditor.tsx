@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  ArrowsIn,
+  ArrowsOut,
   ArrowRight,
   Circle,
   Eraser,
@@ -954,6 +956,24 @@ export function MapEditor() {
   function handleZoomOut() {
     setZoom((z) => Math.max(MIN_ZOOM, Math.round((z - ZOOM_STEP) * 100) / 100));
   }
+  // Pantalla completa del editor entero (barra, mapa y notas) con la
+  // Fullscreen API del propio Chromium, igual que en la web; Escape o el
+  // mismo botón salen, y el estado sigue al del documento.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(document.fullscreenElement === rootRef.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  function handleToggleFullscreen() {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void rootRef.current?.requestFullscreen?.();
+    }
+  }
+
   function handleZoomReset() {
     setZoom(1);
   }
@@ -1020,7 +1040,10 @@ export function MapEditor() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div
+      ref={rootRef}
+      style={{ display: "flex", flexDirection: "column", gap: 14, ...(isFullscreen ? { overflow: "auto", background: THEME.background, padding: 16 } : {}) }}
+    >
       <div
         style={{
           display: "flex",
@@ -1147,6 +1170,10 @@ export function MapEditor() {
               <Plus size={13} />
             </IconButton>
           </div>
+          <button onClick={handleToggleFullscreen} style={{ ...pillButtonStyle(false, false), display: "flex", alignItems: "center", gap: 6 }}>
+            {isFullscreen ? <ArrowsIn size={13} /> : <ArrowsOut size={13} />}
+            {isFullscreen ? t("MapEditor.exitFullscreen") : t("MapEditor.fullscreen")}
+          </button>
           <button onClick={handleUndo} disabled={strokes.length === 0} style={pillButtonStyle(false, strokes.length === 0)}>
             {t("MapEditor.undo")}
           </button>
