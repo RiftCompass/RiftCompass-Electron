@@ -36,11 +36,16 @@ export function ChampionPoolBuilder() {
     fetchChampionMap().then((m) => setChampions(Object.values(m.byInternalId)));
   }, []);
 
+  // Solo datos del parche actual, como en la web: sin `?patch=` la API
+  // cae al último parche con muestra, y aquí es preferible no enseñar
+  // nada a enseñar un winrate de otro parche sin avisar.
   const [winrates, setWinrates] = useState<ChampionWinrate[]>([]);
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/v1/champion-winrates`)
       .then((r) => r.json())
-      .then((data: { winrates: ChampionWinrate[] }) => setWinrates(data.winrates ?? []))
+      .then((data: { winrates: ChampionWinrate[]; patch?: string; latestPatch?: string }) =>
+        setWinrates(data.patch === data.latestPatch ? (data.winrates ?? []) : []),
+      )
       .catch(() => setWinrates([]));
   }, []);
   const winrateByChampion = useMemo(
