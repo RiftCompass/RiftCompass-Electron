@@ -28,6 +28,7 @@ export const fr: Messages = {
     jungleXp: { title: "Calculateur d'XP de jungle", description: "Découvrez l'XP que donne chaque camp de jungle à votre niveau, et calculez le total d'un clear." },
     championPool: { title: "Champion Pool Builder", description: "Constituez une pool ciblée par rôle : picks principaux, picks polyvalents et un pocket pick." },
     metaTierList: { title: "Meta Tier List", description: "Champions classés selon leur taux de victoire réel issu des parties suivies par RiftCompass, et non d'une source tierce." },
+    matchups: { title: "Matchups de voie", description: "Comment un champion s'en sort face à chaque adversaire de voie, et qui le bat le mieux, d'après des parties réelles." },
     championBuilds: { title: "Builds de champion", description: "Les runes, sorts, objets et ordre de compétences les plus joués de chaque champion, plus vos propres builds enregistrées." },
   },
   Profile: {
@@ -717,6 +718,20 @@ export const fr: Messages = {
     classesLabel: "Classes couvertes",
     dominantTagWarning: "Tous les champions de ce pool sont {tag}. Pensez à ajouter de la variété.",
     difficultyLabel: "Difficulté moyenne",
+  },
+  Matchups: {
+    intro: "Choisissez un champion, une position et un rang : à gauche, comment ce champion s'en sort face à chaque adversaire de voie ; à droite, qui le bat le mieux. Résultats réels de voie en 1v1 issus des parties classées suivies par RiftCompass, pas des matchups d'équipe complète.",
+    methodologyNote: "Les matchups avec moins de {min} parties suivies sont listés à part et non classés : un 100% sur 3 parties, c'est de la chance, pas un counter.",
+    rank: "Rang",
+    championPlaceholder: "Choisissez un champion...",
+    noChampionMatches: "Aucun champion avec ce nom.",
+    pickChampion: "Choisissez un champion pour voir ses matchups.",
+    openChampionBuilds: "Ouvrir dans Builds de champion",
+    asChampionTitle: "{champion} contre...",
+    againstChampionTitle: "Qui bat {champion}",
+    noData: "Pas encore de matchups de voie suivis pour ce champion à cette position et ce rang.",
+    thinSample: "Moins de {min} parties, non classés :",
+    games: "{games} parties",
   },
   MetaTierList: {
     intro: "Champions classés par taux de victoire réel, à partir de parties classées solo/duo réellement échantillonnées et suivies par RiftCompass, pas une source tierce, et pas inventé pour les rôles/champions dont nous n'avons pas encore de données.",

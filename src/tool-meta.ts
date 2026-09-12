@@ -1,6 +1,7 @@
 import {
   Brain,
   Coins,
+  Crosshair,
   Crown,
   Scroll,
   Stack,
@@ -32,6 +33,7 @@ export type ToolId =
   | "jungleXp"
   | "championPool"
   | "metaTierList"
+  | "matchups"
   | "championBuilds";
 
 export interface ToolMeta {
@@ -62,6 +64,8 @@ export const TOOLS: ToolMeta[] = [
   { id: "jungleXp", icon: Tree, accent: "#2f9d68", native: true, introKey: "JungleXpCalculator.intro" },
   { id: "championPool", icon: Stack, accent: "#6366d4", native: true },
   { id: "metaTierList", icon: Crown, accent: "#9aa5b1", native: true, introKey: "MetaTierList.intro" },
+  // Same hue as the web's --gem-lime, the thirteenth tool's own color.
+  { id: "matchups", icon: Crosshair, accent: "#8fbf3a", native: true, introKey: "Matchups.intro" },
   // Same hue as the web's --gem-cyan, the twelfth tool's own color.
   { id: "championBuilds", icon: Scroll, accent: "#2f8fd0", native: true, introKey: "ChampionBuilds.intro" },
 ];

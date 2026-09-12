@@ -37,6 +37,7 @@ import { ChampionPoolBuilder } from "./tools/ChampionPoolBuilder";
 import { TierListBuilder } from "./tools/TierListBuilder";
 import { MapEditor } from "./tools/MapEditor";
 import { MetaTierList } from "./tools/MetaTierList";
+import { Matchups } from "./tools/Matchups";
 import { ChampionBuilds } from "./tools/ChampionBuilds";
 import { COLORS, FONT_HEADING, TYPE, inputStyle, pillStyle } from "./theme";
 import { WindowControls } from "./WindowControls";
@@ -64,6 +65,7 @@ const NATIVE_VIEWS: Record<ToolId, React.ComponentType> = {
   tierList: TierListBuilder,
   map: MapEditor,
   metaTierList: MetaTierList,
+  matchups: Matchups,
   championBuilds: ChampionBuilds,
 };
 
@@ -142,6 +144,12 @@ const TOOL_SPLASH_ACCENTS: Record<ToolId, SplashAccent[]> = {
     { championId: "Orianna", opacity: 26, style: { top: -30, left: -60, width: 540, height: 340, transform: "rotate(1deg)" } },
     { championId: "Camille", opacity: 20, style: { bottom: -30, left: -90, width: 480, height: 320, transform: "rotate(2deg)" } },
     { championId: "Aatrox", opacity: 16, style: { top: "50%", right: -70, width: 360, height: 250, transform: "translateY(-50%) rotate(-2deg)" } },
+  ],
+  // Jax and Fiora, the two "wins the 1v1" champions, same pair as the web's
+  // matchups page.
+  matchups: [
+    { championId: "Jax", opacity: 24, style: { top: -30, left: -60, width: 540, height: 340, transform: "rotate(1deg)" } },
+    { championId: "Fiora", opacity: 18, style: { top: "50%", right: -70, width: 360, height: 250, transform: "translateY(-50%) rotate(2deg)" } },
   ],
   championBuilds: [
     { championId: "Ahri", opacity: 24, style: { top: -30, right: -60, width: 540, height: 340, transform: "rotate(2deg)" } },
