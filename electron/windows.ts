@@ -59,10 +59,35 @@ function lockToOwnRenderer(win: BrowserWindow): void {
   });
 }
 
+// Un renderer que falla al cargar no avisa a nadie por si solo: la ventana se
+// queda en blanco (o, en el overlay, invisible) y el proceso principal no se
+// entera. Visto el 2026-09-11 con un `es.ts` de traducciones a medio
+// escribir: inyeccion perfecta y overlay vacio durante horas. Todo lo que
+// pueda decir por que se queda en blanco sale por el registro del proceso
+// principal, con el nombre de la vista para saber que ventana es.
+function reportRendererFailures(win: BrowserWindow, view: string): void {
+  const wc = win.webContents;
+  wc.on("did-fail-load", (_event, code, description, url, isMainFrame) => {
+    if (!isMainFrame || code === -3) return; // -3 = ERR_ABORTED, una navegacion sustituida por otra
+    console.error(`[renderer:${view}] no cargo (${code} ${description}) ${url}`);
+  });
+  wc.on("preload-error", (_event, preloadPath, error) => {
+    console.error(`[renderer:${view}] fallo el preload ${preloadPath}:`, error);
+  });
+  wc.on("render-process-gone", (_event, details) => {
+    console.error(`[renderer:${view}] el proceso del renderer murio: ${details.reason} (exit ${details.exitCode})`);
+  });
+  wc.on("console-message", (details) => {
+    if (details.level !== "error") return;
+    console.error(`[renderer:${view}] ${details.message} (${details.sourceId}:${details.lineNumber})`);
+  });
+}
+
 // Exported: overlayEngine.ts's ow-electron-injected window loads the exact
 // same renderer bundle, just via a different window-creation API.
 export function loadRenderer(win: BrowserWindow, query?: string): void {
   lockToOwnRenderer(win);
+  reportRendererFailures(win, query?.replace(/^view=/, "") ?? "main");
   if (RENDERER_URL) {
     win.loadURL(query ? `${RENDERER_URL}/?${query}` : RENDERER_URL);
   } else {
