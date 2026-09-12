@@ -90,6 +90,18 @@ interface SkillLevelChoice {
   wins: number;
 }
 
+interface ItemPlanEntry {
+  itemId: number;
+  games: number;
+  winRate: number;
+}
+
+interface ItemPlan {
+  startingItems: ItemPlanEntry[];
+  itemOrder: { slot: number; itemId: number; games: number }[];
+  situationalItems: ItemPlanEntry[];
+}
+
 interface BuildBoard {
   /** Etiqueta: "16.18", "16.18 + 16.17" o un "16.17" anterior. */
   patch: string;
@@ -97,6 +109,8 @@ interface BuildBoard {
   dataPatches?: string[];
   /** Partidas y última escritura del crawler detrás del tablero (aditivo, 2026-09-12). */
   dataQuality?: DataQuality;
+  /** Compra de salida, orden de compra y situacionales (aditivo, 2026-09-12); lo mismo que la ficha de la web. */
+  itemPlan?: ItemPlan;
   currentPatch: string;
   runePages: PopularRunePage[];
   spellPairs: PopularSpellPair[];
@@ -618,6 +632,8 @@ export function ChampionBuilds() {
                   </div>
                 ) : null}
 
+                {board.itemPlan ? <ItemPlanView plan={board.itemPlan} version={version} catalog={catalog} /> : null}
+
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                   {user ? (
                     <>
@@ -817,6 +833,69 @@ export function ChampionBuilds() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Qué comprar primero y en qué orden, debajo de los cores ("qué se lleva al
+// final"): salida, terminados en orden de compra y situacionales, cada uno
+// con su muestra en el tooltip. Puerto del ItemPlanView de la ficha web.
+const PLAN_SUBTITLE: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: 0.6,
+  textTransform: "uppercase" as const,
+  color: COLORS.muted,
+  margin: 0,
+};
+
+function ItemPlanView({ plan, version, catalog }: { plan: ItemPlan; version: string; catalog: ItemCatalog | null }) {
+  const { t } = useI18n();
+  if (plan.startingItems.length === 0 && plan.itemOrder.length === 0) return null;
+  const icon = (itemId: number, label: string) => (
+    <img
+      src={itemIconUrl(version, String(itemId))}
+      alt={catalog?.byId[String(itemId)]?.name ?? String(itemId)}
+      title={`${catalog?.byId[String(itemId)]?.name ?? itemId} · ${label}`}
+      style={{ width: 26, height: 26, borderRadius: 6 }}
+    />
+  );
+  const sample = (e: ItemPlanEntry) => t("ChampionBuilds.itemSample", { games: e.games, rate: Math.round(e.winRate * 100) });
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {plan.startingItems.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <p style={PLAN_SUBTITLE}>{t("ChampionBuilds.startingItems")}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            {plan.startingItems.map((e) => (
+              <span key={e.itemId}>{icon(e.itemId, sample(e))}</span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {plan.itemOrder.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <p style={PLAN_SUBTITLE}>{t("ChampionBuilds.buildOrder")}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
+            {plan.itemOrder.map((e, i) => (
+              <span key={e.slot} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                {i > 0 ? <span style={{ fontSize: 11, color: COLORS.muted }}>→</span> : null}
+                {icon(e.itemId, t("ChampionBuilds.games", { games: e.games }))}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {plan.situationalItems.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <p style={PLAN_SUBTITLE}>{t("ChampionBuilds.situationalItems")}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            {plan.situationalItems.map((e) => (
+              <span key={e.itemId}>{icon(e.itemId, sample(e))}</span>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
