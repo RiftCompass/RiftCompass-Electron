@@ -184,7 +184,13 @@ async function createInGameOverlayWindow(overlayApi: IOverwolfOverlayApi): Promi
       preload: PRELOAD,
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      // Igual que las otras tres ventanas (windows.ts): el preload es el
+      // mismo bundle sin `require`, y ni Overwolf ni su app de ejemplo piden
+      // un renderer sin sandbox. Estuvo en `false` sin motivo desde que se
+      // escribio el motor (2026-09-02); cambiado el 2026-09-12 sin partida
+      // delante: si el overlay dejara de pintarse, esto es lo primero que
+      // hay que revertir para descartarlo.
+      sandbox: true,
     },
   };
 
