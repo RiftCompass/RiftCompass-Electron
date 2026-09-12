@@ -42,8 +42,9 @@ export interface ToolMeta {
   // Translation key for the sentence under the tool's own title. The web
   // puts its `<Tool>.intro` there while this app was printing the short
   // card blurb from the tools grid, so the same tool introduced itself with
-  // two different sentences. Set per tool as each one is checked against the
-  // web; without it the blurb is still used.
+  // two different sentences. Every tool with an `.intro` in the catalog is
+  // wired here (2026-09-12); the personality test and the champion pool
+  // have no intro on the web either, so they keep the blurb on purpose.
   introKey?: string;
 }
 
@@ -51,10 +52,10 @@ export interface ToolMeta {
 // order in the web repo (src/lib/tool-routes.ts), which is what that
 // site's /tools grid actually iterates over.
 export const TOOLS: ToolMeta[] = [
-  { id: "tierList", icon: ListNumbers, accent: "#ffc857", native: true },
+  { id: "tierList", icon: ListNumbers, accent: "#ffc857", native: true, introKey: "TierList.intro" },
   { id: "cooldowns", icon: Timer, accent: "#4d7fe8", native: true, introKey: "Cooldowns.intro" },
-  { id: "draft", icon: Sword, accent: "#d6394a", native: true },
-  { id: "map", icon: MapIcon, accent: "#e63977", native: true },
+  { id: "draft", icon: Sword, accent: "#d6394a", native: true, introKey: "Draft.intro" },
+  { id: "map", icon: MapIcon, accent: "#e63977", native: true, introKey: "MapEditor.intro" },
   { id: "goldCalculator", icon: Coins, accent: "#e0873f", native: true, introKey: "GoldCalculator.intro" },
   { id: "waveTimer", icon: Waves, accent: "#2bb8ad", native: true, introKey: "WaveTimer.intro" },
   { id: "personalityTest", icon: Brain, accent: "#7839ac", native: true },
