@@ -52,6 +52,7 @@ export const de: Messages = {
     newFolder: "Neuer Ordner",
     folderNamePlaceholder: "Ordnername",
     folderErrors: {
+      emailNotVerified: "Bestätige deine E-Mail, um zu speichern. Öffne den Link, den wir dir geschickt haben, oder fordere ihn auf deiner Kontoseite auf riftcompass.com erneut an.",
       invalidName: "Gib dem Ordner einen Namen.",
       nameTooLong: "Der Ordnername ist zu lang.",
       nameOffensive: "Dieser Ordnername ist nicht erlaubt.",
@@ -331,6 +332,7 @@ export const de: Messages = {
     usernameSaving: "Wird gespeichert…",
     usernameSaved: "Gespeichert.",
     usernameErrors: {
+      emailNotVerified: "Bestätige deine E-Mail, um zu speichern. Öffne den Link, den wir dir geschickt haben, oder fordere ihn auf deiner Kontoseite auf riftcompass.com erneut an.",
       invalidUsername: "3-24 Zeichen: nur Buchstaben, Zahlen, - und _.",
       usernameTaken: "Dieser Benutzername ist bereits vergeben.",
       nameOffensive: "Dieser Benutzername ist nicht erlaubt.",
@@ -338,6 +340,7 @@ export const de: Messages = {
       unknown: "Etwas ist schiefgelaufen. Versuch es erneut.",
     },
     manageOnWeb: "Foto und mehr auf riftcompass.com verwalten",
+    emailNotVerifiedHint: "Deine E-Mail ist noch nicht bestätigt: Du kannst alles nutzen, aber Speichern wartet, bis du den Link aus unserer E-Mail öffnest. Fordere ihn auf deiner Kontoseite im Web erneut an.",
     overlaySection: "Overlay im Spiel",
     overlayHotkeyHint: "Blende das Overlay über League mit Strg+Alt+R ein oder aus.",
     overlayCsPerMinute: "CS/min",
@@ -372,7 +375,7 @@ export const de: Messages = {
     resendVerification: "Bestätigungs-E-Mail erneut senden",
     errors: {
       invalidCredentials: "Falsche E-Mail-Adresse oder falsches Passwort.",
-      emailNotVerified: "Bestätige deine E-Mail-Adresse, bevor du dich anmeldest. Der Link wartet in deinem Postfach.",
+      emailNotVerified: "Deine E-Mail ist noch nicht bestätigt. Du kannst dich anmelden, aber Speichern wartet, bis du den Link aus unserer E-Mail öffnest.",
       tooManyAttempts: "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut.",
       network: "riftcompass.com konnte nicht erreicht werden. Prüfe deine Verbindung.",
       unknown: "Etwas ist schiefgelaufen. Versuche es erneut.",
@@ -393,6 +396,7 @@ export const de: Messages = {
     saveTierListCancel: "Abbrechen",
     saveTierListSuccess: "Tier List gespeichert.",
     saveTierListErrors: {
+      emailNotVerified: "Bestätige deine E-Mail, um zu speichern. Öffne den Link, den wir dir geschickt haben, oder fordere ihn auf deiner Kontoseite auf riftcompass.com erneut an.",
       notAuthenticated: "Melde dich an, um Tier Lists zu speichern.",
       nameRequired: "Gib der Tier List einen Namen.",
       nameTooLong: "Der Name ist zu lang.",
@@ -443,6 +447,7 @@ export const de: Messages = {
     saveDraftCancel: "Abbrechen",
     saveDraftSuccess: "Draft gespeichert.",
     saveDraftErrors: {
+      emailNotVerified: "Bestätige deine E-Mail, um zu speichern. Öffne den Link, den wir dir geschickt haben, oder fordere ihn auf deiner Kontoseite auf riftcompass.com erneut an.",
       notAuthenticated: "Melde dich an, um Drafts zu speichern.",
       nameRequired: "Gib dem Draft einen Namen.",
       nameTooLong: "Der Name ist zu lang.",
@@ -493,6 +498,7 @@ export const de: Messages = {
     saveMapCancel: "Abbrechen",
     saveMapSuccess: "Karte gespeichert.",
     saveMapErrors: {
+      emailNotVerified: "Bestätige deine E-Mail, um zu speichern. Öffne den Link, den wir dir geschickt haben, oder fordere ihn auf deiner Kontoseite auf riftcompass.com erneut an.",
       notAuthenticated: "Melde dich an, um Karten zu speichern.",
       nameRequired: "Gib der Karte einen Namen.",
       nameTooLong: "Der Name ist zu lang.",
@@ -531,6 +537,7 @@ export const de: Messages = {
     saveBuildCancel: "Abbrechen",
     saveBuildSuccess: "Build gespeichert.",
     saveBuildErrors: {
+      emailNotVerified: "Bestätige deine E-Mail, um zu speichern. Öffne den Link, den wir dir geschickt haben, oder fordere ihn auf deiner Kontoseite auf riftcompass.com erneut an.",
       notAuthenticated: "Melde dich an, um Builds zu speichern.",
       nameRequired: "Gib der Build einen Namen.",
       nameTooLong: "Der Name ist zu lang.",
@@ -789,6 +796,7 @@ export const de: Messages = {
     notesPlaceholder: "Wann diese Build passt, was du tauschst, ...",
     clear: "Leeren",
     errors: {
+      emailNotVerified: "Bestätige deine E-Mail, um zu speichern. Öffne den Link, den wir dir geschickt haben, oder fordere ihn auf deiner Kontoseite auf riftcompass.com erneut an.",
       notAuthenticated: "Melde dich an, um Builds zu speichern.",
       nameRequired: "Gib der Build einen Namen.",
       nameTooLong: "Dieser Name ist zu lang.",

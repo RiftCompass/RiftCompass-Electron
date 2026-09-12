@@ -77,6 +77,8 @@ export interface AccountUser {
   email: string;
   username: string | null;
   avatarUrl: string | null;
+  /** Falso hasta abrir el enlace del correo: se puede entrar, pero no guardar (la API contesta 403 emailNotVerified). Ausente en sesiones guardadas antes del 2026-09-12. */
+  emailVerified?: boolean;
 }
 
 export type LoginResult = { ok: true; user: AccountUser } | { ok: false; error: string };
