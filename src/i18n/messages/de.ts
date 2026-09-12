@@ -198,6 +198,11 @@ export const de: Messages = {
     },
   },
   Roadmap: {
+    trend: {
+      up: "besser als {when}",
+      down: "schlechter als {when}",
+      flat: "gleich wie {when}",
+    },
     title: "Deine Verbesserungs-Roadmap",
     subtitle: "Du gegen deine Lane-Gegner in deinen letzten {games} Spielen auf der Kluft der Beschwörer, {roleGames} davon als {role}. Noch nicht über die Zeit verfolgt.",
     notReady: "Noch nicht genug Spiele auf der Kluft der Beschwörer für eine Diagnose: {games} von {required} nötig (ARAM und andere Modi zählen nicht).",

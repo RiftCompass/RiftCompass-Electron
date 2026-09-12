@@ -198,6 +198,11 @@ export const fr: Messages = {
     },
   },
   Roadmap: {
+    trend: {
+      up: "mieux que {when}",
+      down: "moins bien que {when}",
+      flat: "pareil que {when}",
+    },
     title: "Votre feuille de route de progression",
     subtitle: "Toi face à tes adversaires de lane sur tes {games} dernières parties de la Faille de l'invocateur, dont {roleGames} en {role}. Pas encore suivi dans le temps.",
     notReady: "Pas assez de parties sur la Faille de l'invocateur pour établir un diagnostic : {games} sur {required} nécessaires (ARAM et autres modes ne comptent pas).",

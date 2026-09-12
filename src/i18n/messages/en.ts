@@ -210,6 +210,11 @@ export const en = {
     },
   },
   Roadmap: {
+    trend: {
+      up: "better than {when}",
+      down: "worse than {when}",
+      flat: "same as {when}",
+    },
     title: "Your improvement roadmap",
     subtitle: "You vs. your lane opponents over your last {games} Summoner's Rift games, {roleGames} of them as {role}. Not tracked over time yet.",
     notReady: "Not enough Summoner's Rift games to diagnose yet: {games} of {required} needed (ARAM and other modes don't count).",
