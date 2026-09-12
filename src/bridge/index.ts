@@ -242,6 +242,8 @@ const api: RiftCompassApi = {
     tryInvoke(CMD.AccountDeleteProfileFolder, { id }, () => ({ ok: false as const, error: NO_BACKEND })),
   setSavedProfileFolder: (profileId: string, folderId: string): Promise<FolderActionResult> =>
     tryInvoke(CMD.AccountSetProfileFolder, { profileId, folderId }, () => ({ ok: false as const, error: NO_BACKEND })),
+  setMainSavedProfile: (profileId: string, isMain: boolean): Promise<FolderActionResult> =>
+    tryInvoke(CMD.AccountSetMainProfile, { profileId, isMain }, () => ({ ok: false as const, error: NO_BACKEND })),
   getSavedTierLists: (): Promise<SavedTierList[]> => tryInvoke(CMD.AccountGetSavedTierLists, undefined, () => []),
   createTierList: (name: string, board: Record<string, string[]>): Promise<SaveTierListResult> =>
     tryInvoke(CMD.AccountCreateTierList, { name, board }, () => ({ ok: false as const, error: NO_BACKEND })),

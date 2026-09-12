@@ -35,6 +35,11 @@ export const de: Messages = {
     positions: { top: "Top", jungle: "Jungle", middle: "Mid", bottom: "Bottom", utility: "Support" },
   },
   SavedProfiles: {
+    mainProposal: "Bist du {name}? Markiere es als dein Hauptprofil.",
+    mainProposalYes: "Ja",
+    mainProposalNo: "Jetzt nicht",
+    setMain: "Zu meinem Hauptprofil machen",
+    unsetMain: "Hauptprofil (klicken zum Entfernen)",
     title: "Gespeicherte Profile",
     filterPlaceholder: "Filtern…",
     noSavedProfiles: "Noch keine gespeicherten Profile.",
