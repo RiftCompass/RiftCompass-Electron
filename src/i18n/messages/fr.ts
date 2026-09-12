@@ -719,6 +719,11 @@ export const fr: Messages = {
     dominantTagWarning: "Tous les champions de ce pool sont {tag}. Pensez à ajouter de la variété.",
     difficultyLabel: "Difficulté moyenne",
   },
+  DataQuality: {
+    summary: "{games} parties suivies, patch {patch}, mis à jour {updated}.",
+    summaryNoUpdate: "{games} parties suivies, patch {patch}.",
+    howWeCount: "Comment nous comptons",
+  },
   Matchups: {
     intro: "Choisissez un champion, une position et un rang : à gauche, comment ce champion s'en sort face à chaque adversaire de voie ; à droite, qui le bat le mieux. Résultats réels de voie en 1v1 issus des parties classées suivies par RiftCompass, pas des matchups d'équipe complète.",
     methodologyNote: "Les matchups avec moins de {min} parties suivies sont listés à part et non classés : un 100% sur 3 parties, c'est de la chance, pas un counter.",

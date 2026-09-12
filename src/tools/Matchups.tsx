@@ -10,6 +10,7 @@ import { useI18n } from "../i18n";
 import { useOpenTool, useRequestedChampion } from "../tool-navigation";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../theme";
 import { LoadError } from "./LoadError";
+import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 
 // Ported from the web's /tools/matchups: one champion in one position seen
 // from both sides, straight from /api/v1/champion-matchups. Left, how the
@@ -28,6 +29,7 @@ interface MatchupsResponse {
   minGames: number;
   asChampion: MatchupRow[];
   againstChampion: MatchupRow[];
+  dataQuality?: DataQuality;
 }
 
 const cardStyle = makeCardStyle({ borderRadius: 12, padding: 16 });
@@ -211,6 +213,7 @@ export function Matchups() {
             {table(data.asChampion, "asChampionTitle")}
             {table(data.againstChampion, "againstChampionTitle")}
           </div>
+          <DataQualityNote quality={data.dataQuality} patches={data.dataPatches} />
         </>
       )}
     </div>

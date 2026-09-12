@@ -719,6 +719,11 @@ export const es: Messages = {
     dominantTagWarning: "Todos los campeones de esta pool son {tag}. Considera añadir variedad.",
     difficultyLabel: "Dificultad media",
   },
+  DataQuality: {
+    summary: "{games} partidas registradas, parche {patch}, actualizado {updated}.",
+    summaryNoUpdate: "{games} partidas registradas, parche {patch}.",
+    howWeCount: "Cómo contamos",
+  },
   Matchups: {
     intro: "Elige un campeón, una posición y un rango: a la izquierda, cómo le va a ese campeón contra cada rival de línea; a la derecha, quién le gana mejor. Resultados reales de línea 1v1 de las partidas clasificatorias que rastrea RiftCompass, no matchups de equipo completo.",
     methodologyNote: "Los matchups con menos de {min} partidas rastreadas se listan aparte y sin clasificar: un 100% con 3 partidas es suerte, no un counter.",
