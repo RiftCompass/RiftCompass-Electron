@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CaretDown, CaretUp, X } from "@phosphor-icons/react";
 import { ChampionCombobox } from "../ChampionCombobox";
-import { fetchChampionMap, type ChampionInfo } from "../ddragon";
+import { fetchChampionMap, toDDragonId, type ChampionInfo } from "../ddragon";
 import {
   MAX_POOL_SIZE,
   POOL_ROLES,
@@ -14,13 +14,14 @@ import {
 import { type PersonalityRole } from "../lib/personality-test";
 import { useI18n } from "../i18n";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle } from "../theme";
+import { API_BASE_URL } from "../shared/api";
+import { RealWinrateBadge, type ChampionWinrate } from "../RealWinrateBadge";
 
-// Ported from the web app's src/components/tools/champion-pool-builder.tsx.
-// The web version also shows real winrate badges from riftcompass.com's own
-// crawler database — left out here since that data lives behind the site's
-// DB, not Data Dragon, and this app doesn't scrape the site for it. Just
-// the honest, fully-computable-offline part: tag/difficulty analysis and
-// recommendations.
+// Ported from the web app's src/components/tools/champion-pool-builder.tsx,
+// real winrate badges included (2026-09-12): they come from the same public
+// /api/v1/champion-winrates the personality test and the meta tier list
+// already read, so the two apps show the same number next to the same
+// champion. Tag/difficulty analysis and recommendations stay offline.
 const STORAGE_KEY = "riftcompass-overlay:champion-pool:v1";
 
 export function ChampionPoolBuilder() {
@@ -34,6 +35,18 @@ export function ChampionPoolBuilder() {
   useEffect(() => {
     fetchChampionMap().then((m) => setChampions(Object.values(m.byInternalId)));
   }, []);
+
+  const [winrates, setWinrates] = useState<ChampionWinrate[]>([]);
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/v1/champion-winrates`)
+      .then((r) => r.json())
+      .then((data: { winrates: ChampionWinrate[] }) => setWinrates(data.winrates ?? []))
+      .catch(() => setWinrates([]));
+  }, []);
+  const winrateByChampion = useMemo(
+    () => new Map(winrates.filter((w) => w.role === role).map((w) => [toDDragonId(w.championName), w])),
+    [winrates, role],
+  );
 
   useEffect(() => {
     try {
@@ -190,7 +203,10 @@ export function ChampionPoolBuilder() {
                     <>
                       <img src={champion.iconUrl} alt={champion.name} style={{ width: 42, height: 42, borderRadius: 8, flexShrink: 0 }} />
                       <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
-                        <span style={{ fontSize: 14, fontWeight: 500 }}>{champion.name}</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                          <span style={{ fontSize: 14, fontWeight: 500 }}>{champion.name}</span>
+                          <RealWinrateBadge winrate={winrateByChampion.get(champion.internalId)} label="ChampionPoolBuilder" />
+                        </span>
                         <span style={{ fontSize: 11, color: COLORS.muted }}>{champion.tags.join(" / ")}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
@@ -238,7 +254,10 @@ export function ChampionPoolBuilder() {
                       >
                         <img src={rec.champion.iconUrl} alt={rec.champion.name} style={{ width: 38, height: 38, borderRadius: 7, flexShrink: 0 }} />
                         <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
-                          <span style={{ fontSize: 13, fontWeight: 500 }}>{rec.champion.name}</span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                            <span style={{ fontSize: 13, fontWeight: 500 }}>{rec.champion.name}</span>
+                            <RealWinrateBadge winrate={winrateByChampion.get(rec.champion.internalId)} label="ChampionPoolBuilder" />
+                          </span>
                           <span style={{ fontSize: 11, color: COLORS.muted }}>{rec.reason}</span>
                         </div>
                         <button onClick={() => handleAddSpecific(rec.champion.internalId)} style={smallButtonStyle(false)}>

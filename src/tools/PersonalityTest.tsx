@@ -13,17 +13,12 @@ import { positionIconUrl } from "../lib/profile-analysis";
 import { useI18n } from "../i18n";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle } from "../theme";
 import { API_BASE_URL } from "../shared/api";
+import { RealWinrateBadge, type ChampionWinrate } from "../RealWinrateBadge";
 
-// Real winrate from RiftCompass's own crawler, same public endpoint
-// MetaTierList.tsx already uses — shown as extra context next to each
-// recommendation, matching the web app's own personality-test.tsx change.
-// Matching itself stays pure personality fit; this never affects it.
-interface ChampionWinrate {
-  championName: string;
-  role: string;
-  games: number;
-  winRate: number;
-}
+// Real winrate from RiftCompass's own crawler, shown as extra context next
+// to each recommendation (shared with ChampionPoolBuilder.tsx via
+// RealWinrateBadge.tsx). Matching itself stays pure personality fit; this
+// never affects it.
 
 // Ported from the web app's src/components/tools/personality-test.tsx — same
 // 12-question quiz, same real-stat distance matching, this app's own UI.
@@ -253,7 +248,7 @@ function Results({
                 <span style={{ fontSize: 13, fontWeight: 500 }}>{m.champion.name}</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: COLORS.muted }}>
                   {m.champion.tags.join(" / ")}
-                  <RealWinrateBadge winrate={winrateByChampion.get(m.champion.internalId)} t={t} />
+                  <RealWinrateBadge winrate={winrateByChampion.get(m.champion.internalId)} label="PersonalityTest" />
                 </span>
               </div>
               <span style={{ marginLeft: "auto", flexShrink: 0, fontFamily: FONT_HEADING, fontSize: i === 0 ? 18 : 15, color: i === 0 ? COLORS.gold : COLORS.rose }}>
@@ -268,32 +263,6 @@ function Results({
         {t("PersonalityTest.retake")}
       </button>
     </div>
-  );
-}
-
-function RealWinrateBadge({
-  winrate,
-  t,
-}: {
-  winrate: ChampionWinrate | undefined;
-  t: ReturnType<typeof useI18n>["t"];
-}) {
-  if (!winrate) return null;
-  return (
-    <span
-      style={{
-        flexShrink: 0,
-        borderRadius: 999,
-        padding: "1px 5px",
-        fontSize: 10,
-        fontWeight: 400,
-        color: COLORS.rose,
-        background: `${COLORS.rose}1a`,
-      }}
-      title={t("PersonalityTest.realWinrateTooltip")}
-    >
-      {t("PersonalityTest.realWinrate", { rate: Math.round(winrate.winRate * 100), games: winrate.games })}
-    </span>
   );
 }
 

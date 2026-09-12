@@ -690,6 +690,8 @@ export const de: Messages = {
     },
   },
   ChampionPoolBuilder: {
+    realWinrate: "{rate}% echte WR ({games} Spiele)",
+    realWinrateTooltip: "Echte Winrate aus RiftCompass' eigenen erfassten Partien. Die Stichprobe ist noch klein und wächst weiter.",
     searchNoResults: "Keine Champions gefunden.",
     poolTitle: "Dein Pool",
     poolIntro: "Core Picks, die du am meisten spielst, Flex Picks zur Absicherung und ein Pocket Pick.",
