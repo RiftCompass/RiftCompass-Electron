@@ -11,6 +11,13 @@ import * as path from "node:path";
 import { protect, unprotect } from "./dpapi";
 import { BACKEND_ORIGIN as API_BASE_URL } from "./backend";
 
+// Every call to riftcompass.com says which app build is asking
+// (`X-RiftCompass-Client: electron/<version>`, A6): the API only promises
+// additive changes, and this is how the server can tell, if it ever has to,
+// which builds are still out there. The renderer's own fetches get the same
+// header from main.ts (webRequest), so the two paths never disagree.
+export const CLIENT_HEADER = { "X-RiftCompass-Client": `electron/${app.getVersion()}` } as const;
+
 export interface AccountUser {
   id: string;
   email: string;
@@ -89,7 +96,7 @@ async function postJson(url: string, body: unknown, token?: string): Promise<Res
   try {
     return await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { ...CLIENT_HEADER, "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify(body),
     });
   } catch {
@@ -119,7 +126,7 @@ export async function accountLogout(): Promise<void> {
     try {
       await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${stored.token}` },
+        headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` },
         signal: AbortSignal.timeout(8000),
       });
     } catch {
@@ -139,7 +146,7 @@ export async function accountGetSession(): Promise<AccountUser | null> {
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/v1/me`, { headers: { Authorization: `Bearer ${stored.token}` } });
+    res = await fetch(`${API_BASE_URL}/api/v1/me`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` } });
   } catch {
     return stored.user;
   }
@@ -166,7 +173,7 @@ export async function accountUpdateUsername(username: string): Promise<unknown> 
   try {
     res = await fetch(`${API_BASE_URL}/api/v1/username`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${stored.token}` },
+      headers: { ...CLIENT_HEADER, "Content-Type": "application/json", Authorization: `Bearer ${stored.token}` },
       body: JSON.stringify({ username }),
     });
   } catch {
@@ -187,7 +194,7 @@ export async function accountGetSavedProfiles(): Promise<unknown> {
   if (!stored) return empty;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/saved-profiles`, { headers: { Authorization: `Bearer ${stored.token}` } });
+    const res = await fetch(`${API_BASE_URL}/api/v1/saved-profiles`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` } });
     if (!res.ok) return empty;
     return await res.json();
   } catch {
@@ -205,7 +212,7 @@ async function folderApiCall(method: string, urlPath: string, body?: unknown): P
   try {
     res = await fetch(`${API_BASE_URL}${urlPath}`, {
       method,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${stored.token}` },
+      headers: { ...CLIENT_HEADER, "Content-Type": "application/json", Authorization: `Bearer ${stored.token}` },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
   } catch {
@@ -274,7 +281,7 @@ async function getList(urlPath: string, key: string): Promise<unknown[]> {
   const stored = loadPersistedSession();
   if (!stored) return [];
   try {
-    const res = await fetch(`${API_BASE_URL}${urlPath}`, { headers: { Authorization: `Bearer ${stored.token}` } });
+    const res = await fetch(`${API_BASE_URL}${urlPath}`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` } });
     if (!res.ok) return [];
     const data = await readJson(res);
     return data?.[key] ?? [];
@@ -293,7 +300,7 @@ async function listResult(method: string, urlPath: string, body: unknown, key: s
   try {
     res = await fetch(`${API_BASE_URL}${urlPath}`, {
       method,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${stored.token}` },
+      headers: { ...CLIENT_HEADER, "Content-Type": "application/json", Authorization: `Bearer ${stored.token}` },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
   } catch {
@@ -327,7 +334,7 @@ export async function accountGetSavedMap(id: string): Promise<unknown> {
   if (!stored) return err("notAuthenticated");
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/v1/saved-maps/${id}`, { headers: { Authorization: `Bearer ${stored.token}` } });
+    res = await fetch(`${API_BASE_URL}/api/v1/saved-maps/${id}`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` } });
   } catch {
     return err("network");
   }
