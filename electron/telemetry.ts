@@ -7,9 +7,11 @@ import * as Sentry from "@sentry/electron/main";
 import { SENTRY_DSN } from "../src/shared/telemetry";
 
 export function initTelemetry(): void {
-  if (!SENTRY_DSN) return;
+  // Only the packaged app reports: development runs go to the terminal of
+  // `npm run dev`, and src/telemetry.ts applies the same rule to the renderer.
+  if (!SENTRY_DSN || !app.isPackaged) return;
   Sentry.init({
     dsn: SENTRY_DSN,
-    environment: app.isPackaged ? "production" : "development",
+    environment: "production",
   });
 }

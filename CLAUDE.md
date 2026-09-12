@@ -69,7 +69,7 @@ host=github.com
 
 ## Telemetría
 
-`@sentry/electron` en ambos procesos (`electron/telemetry.ts`, `src/telemetry.ts`), DSN en `src/shared/telemetry.ts` (proyecto "electron", org `riftcompass`, región UE; DSN vacío = no-op). Para probar desde DevTools hay que lanzar el error dentro de un `setTimeout`: un error evaluado directo en la consola no pasa por `window.onerror`.
+`@sentry/electron` en ambos procesos (`electron/telemetry.ts`, `src/telemetry.ts`), DSN en `src/shared/telemetry.ts` (proyecto "electron", org `riftcompass`, región UE; DSN vacío = no-op). **Solo reporta la app empaquetada** (`app.isPackaged` en main, `import.meta.env.DEV` en el renderer): en `npm run dev` no se inicializa, porque el hot reload de Vite generaba cientos de falsos `useI18n must be used within I18nProvider` desde este PC (2026-09-12). Para probar desde DevTools hay que lanzar el error dentro de un `setTimeout`: un error evaluado directo en la consola no pasa por `window.onerror`.
 
 ## Gotchas
 
