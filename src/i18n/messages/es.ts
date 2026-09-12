@@ -740,6 +740,7 @@ export const es: Messages = {
     pickChampion: "Elige un campeón para ver sus builds.",
     noResults: "Ningún campeón con ese nombre.",
     dataFromPatch: "Datos de builds del parche {patch}; el parche actual ({current}) aún no tiene muestra suficiente.",
+    dataFromPatches: "Datos de las builds de los parches {patches}: el parche actual ({current}) aún no tiene partidas suficientes por sí solo, así que se suma el anterior.",
     popularBuild: "Build más jugada",
     popularBuildSource: "Partidas rastreadas, parche {patch}",
     noBuildData: "Todavía no hay partidas rastreadas de este campeón en esta posición y rango. Prueba otro rango o vuelve cuando haya más muestra.",

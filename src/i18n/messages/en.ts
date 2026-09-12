@@ -752,6 +752,7 @@ export const en = {
     pickChampion: "Pick a champion to see its builds.",
     noResults: "No champion with that name.",
     dataFromPatch: "Build data from patch {patch}; the current patch ({current}) doesn't have enough samples yet.",
+    dataFromPatches: "Build data from patches {patches}: the current patch ({current}) doesn't have enough games on its own yet, so the previous one is included.",
     popularBuild: "Most played build",
     popularBuildSource: "Tracked games, patch {patch}",
     noBuildData: "No tracked games for this champion in this position and rank yet. Try another rank, or check back as more games get sampled.",
