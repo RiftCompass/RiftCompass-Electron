@@ -40,6 +40,7 @@ export const en = {
     jungleXp: { title: "Jungle XP Calculator", description: "See how much XP each jungle camp gives at your level, and tally up a clear." },
     championPool: { title: "Champion Pool Builder", description: "Build a focused pool per role: core picks, flex picks, and a pocket pick." },
     metaTierList: { title: "Meta Tier List", description: "Champions ranked by real win rate from RiftCompass's own tracked matches, not a third-party source." },
+    matchups: { title: "Lane Matchups", description: "How a champion does against every lane opponent, and who does best against it, from real tracked games." },
     championBuilds: { title: "Champion Builds", description: "Every champion's most-played runes, spells, items and skill order, plus your own saved builds." },
   },
   Profile: {
@@ -729,6 +730,20 @@ export const en = {
     classesLabel: "Classes covered",
     dominantTagWarning: "Every champion in this pool is {tag}. Consider adding variety.",
     difficultyLabel: "Average difficulty",
+  },
+  Matchups: {
+    intro: "Pick a champion, a position and a rank: on the left, how that champion does against each lane opponent; on the right, who does best against it. Real 1v1 lane results from RiftCompass's own tracked ranked games, not full team matchups.",
+    methodologyNote: "Matchups with fewer than {min} tracked games are listed apart and not ranked: a 3-game 100% is luck, not a counter.",
+    rank: "Rank",
+    championPlaceholder: "Pick a champion...",
+    noChampionMatches: "No champion with that name.",
+    pickChampion: "Pick a champion to see its matchups.",
+    openChampionBuilds: "Open in Champion Builds",
+    asChampionTitle: "{champion} against...",
+    againstChampionTitle: "Who beats {champion}",
+    noData: "No tracked lane matchups for this champion in this position and rank yet.",
+    thinSample: "Under {min} games, not ranked:",
+    games: "{games} games",
   },
   MetaTierList: {
     intro: "Champions ranked by real win rate, from ranked solo/duo matches RiftCompass has actually sampled and tracked, not a third-party source, and not fabricated for roles/champions we don't have data for yet.",

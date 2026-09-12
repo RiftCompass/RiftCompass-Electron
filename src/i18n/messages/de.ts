@@ -28,6 +28,7 @@ export const de: Messages = {
     jungleXp: { title: "Jungle-XP-Rechner", description: "Sieh, wie viel XP jedes Jungle-Lager auf deiner Stufe bringt, und rechne einen Clear zusammen." },
     championPool: { title: "Champion Pool Builder", description: "Baue einen fokussierten Pool pro Rolle: Core-Picks, Flex-Picks und einen Pocket-Pick." },
     metaTierList: { title: "Meta Tier List", description: "Champions gerankt nach echter Winrate aus RiftCompass' eigenen erfassten Matches, nicht aus einer Drittquelle." },
+    matchups: { title: "Lane-Matchups", description: "Wie ein Champion gegen jeden Lane-Gegner abschneidet und wer ihn am besten schlägt, aus echten erfassten Spielen." },
     championBuilds: { title: "Champion-Builds", description: "Die meistgespielten Runen, Beschwörerzauber, Items und Skill-Reihenfolgen jedes Champions, dazu deine eigenen gespeicherten Builds." },
   },
   Profile: {
@@ -717,6 +718,20 @@ export const de: Messages = {
     classesLabel: "Abgedeckte Klassen",
     dominantTagWarning: "Jeder Champion in diesem Pool ist {tag}. Erwäge, mehr Vielfalt hinzuzufügen.",
     difficultyLabel: "Durchschnittliche Schwierigkeit",
+  },
+  Matchups: {
+    intro: "Wähle Champion, Position und Rang: links, wie dieser Champion gegen jeden Lane-Gegner abschneidet; rechts, wer ihn am besten schlägt. Echte 1v1-Lane-Ergebnisse aus den von RiftCompass erfassten Ranglistenspielen, keine vollständigen Team-Matchups.",
+    methodologyNote: "Matchups mit weniger als {min} erfassten Spielen werden gesondert und ohne Rangfolge gelistet: 100% aus 3 Spielen sind Glück, kein Counter.",
+    rank: "Rang",
+    championPlaceholder: "Champion wählen...",
+    noChampionMatches: "Kein Champion mit diesem Namen.",
+    pickChampion: "Wähle einen Champion, um seine Matchups zu sehen.",
+    openChampionBuilds: "In Champion-Builds öffnen",
+    asChampionTitle: "{champion} gegen...",
+    againstChampionTitle: "Wer schlägt {champion}",
+    noData: "Für diesen Champion gibt es in dieser Position und diesem Rang noch keine erfassten Lane-Matchups.",
+    thinSample: "Unter {min} Spielen, ohne Rangfolge:",
+    games: "{games} Spiele",
   },
   MetaTierList: {
     intro: "Champions gerankt nach echter Winrate, aus Ranked-Solo/Duo-Matches, die RiftCompass tatsächlich erfasst und ausgewertet hat, keine Drittanbieter-Quelle und nicht erfunden für Rollen/Champions, zu denen wir noch keine Daten haben.",
