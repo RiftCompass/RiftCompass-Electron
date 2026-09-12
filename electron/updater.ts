@@ -22,6 +22,13 @@ export function startAutoUpdater(): void {
   // applied on the next app quit — no restart prompt to click through.
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  // Solo releases publicadas y hacia adelante: un borrador o una prerelease
+  // (que es como se prueba un release antes de publicarlo) no llega nunca a
+  // los usuarios, y una release vieja no puede sustituir a una nueva. Son
+  // los valores por defecto, pero se fijan aqui para que no dependan de la
+  // version de electron-updater ni del sufijo del numero de version.
+  autoUpdater.allowPrerelease = false;
+  autoUpdater.allowDowngrade = false;
 
   autoUpdater.on("error", (err) => console.error("auto-updater error:", err));
   autoUpdater.on("update-available", (info) => console.log("update available:", info.version));

@@ -35,7 +35,7 @@ export interface ScreenPoint {
   y: number;
 }
 
-export type OverlayPanelKey = "gold" | "objectives" | "csPerMin" | "enemySpells";
+export type OverlayPanelKey = "gold" | "objectives" | "csPerMin";
 
 // Where the player dragged each draggable overlay panel to, normalized
 // (0-1 of the overlay window, same convention as AbilityBarCalibration) —
@@ -45,7 +45,6 @@ export interface OverlayPanelPositions {
   gold: ScreenPoint | null;
   objectives: ScreenPoint | null;
   csPerMin: ScreenPoint | null;
-  enemySpells: ScreenPoint | null;
 }
 
 export interface LcuIdentity {

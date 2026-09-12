@@ -376,6 +376,8 @@ export const en = {
     autoLaunchLabel: "Launch RiftCompass when Windows starts",
     autoLaunchDescription: "Keeps the League client scouting and build-import features ready as soon as you log in.",
     languageSection: "Language",
+    aboutSection: "About",
+    riotDisclaimer: "RiftCompass isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
   },
   Auth: {
     emailLabel: "Email",
@@ -831,7 +833,6 @@ export const en = {
     objectiveUp: "Up!",
     laneGold: "Gold by lane",
     csPerMinLabel: "CS/min",
-    enemySpells: "Enemy spells",
     calibrationClick: "Click your {ability} ability icon",
     recommendedBuild: "Recommended build",
     buildMatchupSpecific: "{games} games vs this opponent",

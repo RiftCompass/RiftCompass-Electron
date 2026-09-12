@@ -283,3 +283,86 @@ Se respondió al hilo "Welcome to the Overwolf Developers community!"
 registren la app "RiftCompass" ahí, explicando que el overlay ya funciona en
 desarrollo y que el certificado de firma de código propio está en trámite.
 Falta su respuesta.
+
+
+## Game Compliance de Overwolf, leída y aplicada — 2026-09-12
+
+Fuentes (las del correo de whitelisting):
+<https://dev.overwolf.com/ow-electron/guides/game-compliance/overview>,
+<https://dev.overwolf.com/ow-electron/guides/game-compliance/riot-games/>,
+<https://dev.overwolf.com/ow-electron/guides/game-compliance/league-of-legends>
+y <https://dev.overwolf.com/ow-electron/guides/game-compliance/riot-in-game-ads>.
+
+### Qué obliga y qué prohíbe (resumen literal)
+
+**General (todas las apps)**
+
+- Aportar valor al jugador respetando al creador del juego; no interferir en
+  la partida, la competición ni la intención del desarrollador; no fomentar
+  el *queue dodging* ni la discriminación de jugadores; cumplir el EULA/ToS
+  del juego.
+- Identidad visual propia y marca reconocible: el jugador tiene que ver
+  "dónde acaba el juego y dónde empieza la app". No copiar fuentes, colores
+  ni disposición de la interfaz de Riot.
+- Canal de soporte para los usuarios.
+- No tapar la interfaz del juego (minimapa, marcador, barra de habilidades,
+  menús); overlays fáciles de cerrar.
+- Anuncios: nunca durante el juego activo (solo pantallas de carga,
+  postpartida o menús), sin tapar controles, con frecuencia razonable y
+  siempre cerrables.
+- Sin whitelisting por el App Proposal la app se considera no conforme (ya
+  hecho el 2026-09-10).
+
+**Riot Games (todas sus apps)**
+
+- Aprobación formal por el proceso de terceros de developer.riotgames.com
+  (ya hecha). Las apps "privadas" se rechazan; las públicas necesitan la
+  aprobación de Riot y la de Overwolf.
+- **Aviso obligatorio, con este texto exacto y visible para el usuario**:
+  *"[App] isn't endorsed by Riot Games and doesn't reflect the views or
+  opinions of Riot Games or anyone officially involved in producing or
+  managing Riot Games properties. Riot Games and all associated properties
+  are trademarks or registered trademarks of Riot Games, Inc."*
+- Prohibido usar logotipos oficiales de Riot.
+
+**League of Legends**
+
+- Prohibidas las notificaciones de *power spikes* (p. ej. "el rival ha
+  llegado a nivel 6") y las directivas de acción según el estado de la
+  partida (p. ej. "ve a gankear").
+- **Prohibido mostrar temporizadores de habilidades del enemigo, de hechizos
+  de invocador del enemigo y, "estrictamente", de definitivas.**
+- Champion Select en clasificatoria solo/dúo: los nombres de invocador que
+  no sean del propio grupo se sustituyen por "Ally #" (Ally 1, Ally 2…), de
+  forma consistente entre clientes; el propio nombre y los del grupo se ven;
+  los nombres reales vuelven en la pantalla de carga.
+- Sin historial del modo Brawl, sin datos de "League Classic", y las runas
+  menores ya no vienen por la API.
+
+**Anuncios dentro de partidas de Riot** (para el día de la monetización)
+
+1. Un overlay con anuncios solo se abre porque el usuario lo pide (tecla o
+   botón); la app puede arrancar sola, la ventana con anuncios no.
+2. Un overlay grande con anuncios durante el juego oscurece el fondo y tiene
+   un atajo claro para volver; los paneles compactos están exentos.
+3. No tapar minimapa, marcador, barra de habilidades ni menús.
+4. Nada de anuncios flotantes: siempre dentro de una pantalla con contenido
+   real que el usuario abrió a propósito.
+5. Sin llamadas a suscribirse o mejorar dentro de la partida, ni con opt-in.
+6. Identidad visual distinta de la de Riot.
+
+### Contraste con RiftCompass y qué se cambió
+
+| Regla | Estado en la app | Acción |
+| --- | --- | --- |
+| Temporizadores de hechizos rivales | **Incumplida**: el overlay tenía el panel "Hechizos rivales", con cuenta atrás al clicar cada hechizo (base de Data Dragon). | **Retirado el 2026-09-12** (`src/OverlayView.tsx`, `electron/settings.ts`, tipos y textos). Un `enemySpells` guardado en `settings.json` de versiones anteriores se ignora. |
+| Aviso de Riot con texto literal | La web ya lo lleva en el pie de todas las páginas; la app no lo enseñaba en ningún sitio. | Añadida la sección "Acerca de" al final de Ajustes con el texto exacto (en inglés) y su traducción en es/fr/de (`Settings.riotDisclaimer`). |
+| Notificaciones de power spike / directivas | No existen: el orden de habilidades recomendado es sobre el propio campeón, y las cuentas atrás de objetivos (dragón, heraldo, barón, larvas) son tiempos de aparición públicos, no del estado del rival. | Nada. No añadir nunca avisos tipo "el rival tiene nivel 6" ni "gankea ahora". |
+| Anonimato en champ select | La ventana de draft solo enseña campeones y posiciones, nunca nombres de invocador de nadie que no sea el propio jugador (`src/champselect/`). | Nada. Si algún día se enseñan nombres de aliados, ocultar los que no sean del grupo como "Ally #". |
+| Logos de Riot | No hay ninguno: iconos de campeones/objetos/runas de Data Dragon y de objetivos de Community Dragon, que son recursos del juego, no la marca. | Nada. |
+| Marca propia y no tapar la interfaz | Paneles con el estilo de RiftCompass (tipografía y paleta propias), arrastrables, y los de oro/CS solo mientras se pulsa Tab; el resaltado de habilidad recomendada se pinta sobre el icono real calibrado por el jugador, no sobre un control. | Nada por ahora; revisar la esquina por defecto de cada panel si Overwolf pide algo en la revisión de la tienda. |
+| Anuncios | No hay. | Cuando se active la monetización, seguir las seis reglas de arriba además de la guía de la web. |
+| Overlay "solo en carga, postpartida y pausas" (página general) | La página general dice eso para todos los juegos, pero la sección de Riot regula explícitamente overlays durante la partida (reglas 2 y 3 de anuncios) y las apps de referencia (Porofessor, Blitz, iTero) enseñan paneles en partida. | Se entiende que para League mandan las reglas específicas de Riot; si Overwolf objetara en la revisión, el candidato a recortar es el panel de oro por carril. |
+
+Lo que la web ya cumplía por su cuenta: aviso en el pie (`Footer.disclaimer`)
+y en el Aviso Legal; sin logos de Riot; sin anuncios.

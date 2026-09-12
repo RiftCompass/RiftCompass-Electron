@@ -301,35 +301,10 @@ function csPerMinute(p: LiveGamePlayer, gameTimeSeconds: number): number | null 
   return Math.round((p.scores.creepScore / (gameTimeSeconds / 60)) * 10) / 10;
 }
 
-// Base cooldowns (Summoner's Rift, no CDR items/runes) for the manual
-// enemy-spell tracker below — Live Client Data reports when a spell exists
-// on a player but never when it's actually cast or its real remaining
-// cooldown, so this is a player-started countdown from the moment they
-// click "used", not a live-detected one. Riot doesn't expose Data
-// Dragon's key/cooldown lookup by display name directly, so this maps the
-// two by hand; matches the current (patch-stable) Summoner's Rift kit —
-// not ARAM's Mark or Nexus-siege's To the King!, which never show up here
-// since this panel only renders in CLASSIC games.
-// Por la clave interna de Data Dragon, que es lo que trae `rawDisplayName`
-// ("GeneratedTip_SummonerSpell_SummonerFlash_DisplayName") en cualquier
-// idioma del cliente. Antes iba por `displayName` en inglés y con el cliente
-// en español ("Destello") no salía ni un icono (visto el 2026-09-11).
-const SUMMONER_SPELL_INFO: Record<string, { cooldownSeconds: number }> = {
-  SummonerFlash: { cooldownSeconds: 300 },
-  SummonerDot: { cooldownSeconds: 180 },
-  SummonerExhaust: { cooldownSeconds: 210 },
-  SummonerBarrier: { cooldownSeconds: 180 },
-  SummonerBoost: { cooldownSeconds: 210 },
-  SummonerHeal: { cooldownSeconds: 240 },
-  SummonerHaste: { cooldownSeconds: 210 },
-  SummonerTeleport: { cooldownSeconds: 360 },
-  SummonerSmite: { cooldownSeconds: 90 },
-  SummonerMana: { cooldownSeconds: 240 },
-};
-
-function summonerSpellKey(spell: LiveGameSpell): string | undefined {
-  return /SummonerSpell_(\w+)_DisplayName/.exec(spell.rawDisplayName ?? "")?.[1];
-}
+// No hay rastreador de hechizos rivales a proposito: las reglas de Riot para
+// apps de Overwolf prohiben ensenar temporizadores de hechizos de invocador
+// o de habilidades del enemigo (docs/overwolf-registration.md, "Game
+// Compliance"). Lo hubo hasta el 2026-09-12.
 
 // Suma el coste real de lo que cada jugador lleva construido. Es una
 // subestimacion (no cuenta el oro ya gastado en wards, pociones u objetos
@@ -531,19 +506,9 @@ export function OverlayView() {
   // the overlay window, same convention as AbilityBarCalibration) so it
   // stays valid across resolutions — null until the player drags it once,
   // meaning "use the default corner".
-  const [panelPositions, setPanelPositions] = useState<OverlayPanelPositions>({ gold: null, objectives: null, csPerMin: null, enemySpells: null });
-  // Manual enemy summoner-spell cooldowns: the player clicks a spell the
-  // moment they see the enemy use it, starting a
-  // countdown from its base cooldown — see SUMMONER_SPELL_INFO above for
-  // why this can't be detected automatically. Keyed by "team-championName"
-  // (unique per game outside blind pick / bot lobbies, the only modes
-  // where a team could field the same champion twice); value is the
-  // timestamp (Date.now()-based) the spell becomes available again, or
-  // null/absent while it's up.
-  const [enemyCooldowns, setEnemyCooldowns] = useState<Record<string, { one: number | null; two: number | null }>>({});
-  // Ticks once a second, only while there's actually something to
-  // recompute a countdown against — no point running a timer during champ
-  // select or while Tab isn't held and the panel is invisible.
+  const [panelPositions, setPanelPositions] = useState<OverlayPanelPositions>({ gold: null, objectives: null, csPerMin: null });
+  // Ticks once a second while there is a live game, so the objective
+  // timers advance between one poll and the next.
   const [now, setNow] = useState(() => Date.now());
   // Cuándo llegó el último dato de la partida: el sondeo es cada dos
   // segundos y los temporizadores saltaban de dos en dos. Con esto el reloj
@@ -597,8 +562,8 @@ export function OverlayView() {
   }, [phase, tabHeld]);
 
   // El Tab es la tecla que enseña el overlay, y si la ventana tiene el foco
-  // el navegador lo trata como "siguiente control": el foco paseaba por los
-  // botones de hechizos con su marco rosa. Aquí no hay nada que navegar.
+  // el navegador lo trata como "siguiente control" y pasea el foco por los
+  // botones del overlay con su marco rosa. Aquí no hay nada que navegar.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Tab") e.preventDefault();
@@ -606,12 +571,6 @@ export function OverlayView() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
-
-  // A fresh game means every previous cooldown is stale — clear them
-  // instead of carrying yesterday's Flash timer into today's match.
-  useEffect(() => {
-    if (phase !== "InProgress") setEnemyCooldowns({});
-  }, [phase]);
 
   // Fetched once, lazily, only when it's actually needed (champ select or
   // an in-progress game) — no point spending the ~500KB champion.json
@@ -857,7 +816,6 @@ export function OverlayView() {
   const localRankIcon = localRankTier ? rankEmblemUrl(localRankTier) : null;
 
   const laneRows = liveGame ? buildLaneRows(myTeam, theirTeam, champions, liveGame.allPlayers, localLiveGamePlayer?.team) : [];
-  const enemyPlayers = liveGame && localLiveGamePlayer ? liveGame.allPlayers.filter((p) => p.team !== localLiveGamePlayer.team) : [];
 
   const goldDrag = useDraggablePanel(panelPositions.gold, (pos) => {
     setPanelPositions((prev) => ({ ...prev, gold: pos }));
@@ -870,10 +828,6 @@ export function OverlayView() {
   const csPerMinDrag = useDraggablePanel(panelPositions.csPerMin, (pos) => {
     setPanelPositions((prev) => ({ ...prev, csPerMin: pos }));
     window.riftcompass.setOverlayPanelPosition("csPerMin", pos).catch(() => {});
-  });
-  const enemySpellsDrag = useDraggablePanel(panelPositions.enemySpells, (pos) => {
-    setPanelPositions((prev) => ({ ...prev, enemySpells: pos }));
-    window.riftcompass.setOverlayPanelPosition("enemySpells", pos).catch(() => {});
   });
 
   return (
@@ -1210,118 +1164,6 @@ export function OverlayView() {
                     </span>
                   </div>
                   <LaneChampion champ={row.theirs ? championInfoFor(champions, row.theirs) : undefined} align="left" />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Enemy summoner-spell tracker: champion icon + their two spells,
-          clickable to start a manual cooldown countdown (see
-          SUMMONER_SPELL_INFO above). Own draggable panel, default
-          bottom-left, only while Tab is held. */}
-      {phase === "InProgress" && liveGame && tabHeld && enemyPlayers.length > 0 ? (
-        <div
-          onMouseEnter={enemySpellsDrag.onMouseEnter}
-          onMouseLeave={enemySpellsDrag.onMouseLeave}
-          onMouseDown={enemySpellsDrag.onMouseDown}
-          style={{
-            ...(enemySpellsDrag.dragPos
-              ? { position: "fixed", left: enemySpellsDrag.dragPos.x, top: enemySpellsDrag.dragPos.y }
-              : { position: "fixed", bottom: 12, left: 12 }),
-            width: "auto",
-            cursor: "grab",
-            ...cardStyle,
-            gap: 6,
-            padding: "8px 10px",
-          }}
-        >
-          <span style={headingStyle}>{t("Overlay.enemySpells")}</span>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {enemyPlayers.map((p) => {
-              const key = `${p.team}-${p.championName}`;
-              const champ = championInfoFor(champions, p);
-              const spells = [p.summonerSpells?.summonerSpellOne, p.summonerSpells?.summonerSpellTwo] as const;
-              return (
-                <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 7, overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.06)" }}>
-                    {champ ? <img src={champ.iconUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {spells.map((spell, i) => {
-                      if (!spell) return null;
-                      const spellKey = summonerSpellKey(spell);
-                      const info = spellKey ? SUMMONER_SPELL_INFO[spellKey] : undefined;
-                      const slot = i === 0 ? "one" : "two";
-                      if (!info) {
-                        return (
-                          <span key={i} style={{ fontSize: 9, color: MUTED, alignSelf: "center" }}>
-                            {spell.displayName}
-                          </span>
-                        );
-                      }
-                      const endsAt = enemyCooldowns[key]?.[slot] ?? null;
-                      const remaining = endsAt !== null ? Math.ceil((endsAt - now) / 1000) : 0;
-                      const onCooldown = remaining > 0;
-                      return (
-                        <Interactive key={i}>
-                          <button
-                            onClick={() => {
-                              if (onCooldown) return;
-                              setEnemyCooldowns((prev) => ({
-                                ...prev,
-                                [key]: { ...prev[key], [slot]: Date.now() + info.cooldownSeconds * 1000 },
-                              }));
-                            }}
-                            title={spell.displayName}
-                            // Sin foco de teclado: la ventana recibe el Tab que
-                            // enseña el overlay y el navegador lo usaba para
-                            // pasear el foco por estos botones (visto el
-                            // 2026-09-11 como un marco rosa saltando).
-                            tabIndex={-1}
-                            style={{
-                              position: "relative",
-                              width: 30,
-                              height: 30,
-                              padding: 0,
-                              border: "none",
-                              borderRadius: 6,
-                              overflow: "hidden",
-                              cursor: "pointer",
-                              background: "transparent",
-                              outline: "none",
-                            }}
-                          >
-                            <img
-                              src={`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/spell/${spellKey}.png`}
-                              alt={spell.displayName}
-                              style={{ width: "100%", height: "100%", objectFit: "cover", opacity: onCooldown ? 0.35 : 1 }}
-                            />
-                            {onCooldown ? (
-                              <span
-                                style={{
-                                  position: "absolute",
-                                  inset: 0,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  color: "#fff",
-                                  textShadow: "0 1px 2px rgba(0,0,0,0.8)",
-                                }}
-                              >
-                                {/* Minutos y segundos, no un "300" de tres
-                                    digitos dentro del icono. */}
-                                {formatCountdown(remaining)}
-                              </span>
-                            ) : null}
-                          </button>
-                        </Interactive>
-                      );
-                    })}
-                  </div>
                 </div>
               );
             })}

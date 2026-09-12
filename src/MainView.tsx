@@ -1928,6 +1928,14 @@ function Settings({
           ))}
         </div>
       </section>
+
+      {/* Aviso que Riot exige a las apps de terceros, con su texto literal
+          (docs/overwolf-registration.md, "Game Compliance"): tiene que
+          estar donde el jugador pueda verlo dentro de la propia app. */}
+      <section style={sectionStyle}>
+        <h2 style={sectionTitleStyle}>{t("Settings.aboutSection")}</h2>
+        <p style={{ margin: 0, fontSize: TYPE.label, lineHeight: 1.5, color: COLORS.muted }}>{t("Settings.riotDisclaimer")}</p>
+      </section>
     </div>
   );
 }

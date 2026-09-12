@@ -364,6 +364,8 @@ export const fr: Messages = {
     autoLaunchLabel: "Lancer RiftCompass au démarrage de Windows",
     autoLaunchDescription: "Garde le scouting du client League et l'import de build prêts dès la connexion.",
     languageSection: "Langue",
+    aboutSection: "À propos",
+    riotDisclaimer: "RiftCompass n'est pas approuvé par Riot Games et ne reflète pas les opinions de Riot Games ou de toute personne officiellement impliquée dans la production ou la gestion des propriétés de Riot Games. Riot Games et toutes les propriétés associées sont des marques commerciales ou déposées de Riot Games, Inc.",
   },
   Auth: {
     emailLabel: "E-mail",
@@ -819,7 +821,6 @@ export const fr: Messages = {
     objectiveUp: "Disponible !",
     laneGold: "Or par ligne",
     csPerMinLabel: "CS/min",
-    enemySpells: "Sorts ennemis",
     calibrationClick: "Cliquez sur votre icône de sort {ability}",
     recommendedBuild: "Build recommandée",
     buildMatchupSpecific: "{games} parties contre cet adversaire",
