@@ -28,6 +28,7 @@ export const es: Messages = {
     jungleXp: { title: "Calculadora de XP de Jungla", description: "Consulta cuánta XP da cada campamento de la jungla a tu nivel y suma el total de una ruta de clear." },
     championPool: { title: "Champion Pool Builder", description: "Crea una pool enfocada por posición: picks principales, picks flexibles y un pocket pick." },
     metaTierList: { title: "Meta Tier List", description: "Campeones clasificados por winrate real de las partidas propias que RiftCompass ha rastreado, no de una fuente externa." },
+    matchups: { title: "Matchups de línea", description: "Cómo le va a un campeón contra cada rival de línea y quién le gana mejor, con partidas reales rastreadas." },
     championBuilds: { title: "Builds de campeón", description: "Las runas, hechizos, objetos y orden de habilidades más jugados de cada campeón, más tus propias builds guardadas." },
   },
   Profile: {
@@ -717,6 +718,20 @@ export const es: Messages = {
     classesLabel: "Clases cubiertas",
     dominantTagWarning: "Todos los campeones de esta pool son {tag}. Considera añadir variedad.",
     difficultyLabel: "Dificultad media",
+  },
+  Matchups: {
+    intro: "Elige un campeón, una posición y un rango: a la izquierda, cómo le va a ese campeón contra cada rival de línea; a la derecha, quién le gana mejor. Resultados reales de línea 1v1 de las partidas clasificatorias que rastrea RiftCompass, no matchups de equipo completo.",
+    methodologyNote: "Los matchups con menos de {min} partidas rastreadas se listan aparte y sin clasificar: un 100% con 3 partidas es suerte, no un counter.",
+    rank: "Rango",
+    championPlaceholder: "Elige un campeón...",
+    noChampionMatches: "No hay ningún campeón con ese nombre.",
+    pickChampion: "Elige un campeón para ver sus matchups.",
+    openChampionBuilds: "Abrir en Builds de campeón",
+    asChampionTitle: "{champion} contra...",
+    againstChampionTitle: "Quién gana a {champion}",
+    noData: "Aún no hay matchups de línea rastreados para este campeón en esta posición y rango.",
+    thinSample: "Menos de {min} partidas, sin clasificar:",
+    games: "{games} partidas",
   },
   MetaTierList: {
     intro: "Campeones clasificados por winrate real, de partidas de ranked solo/dúo que RiftCompass ha muestreado y registrado de verdad, no una fuente de terceros, y sin inventar datos para posiciones/campeones de los que todavía no tenemos.",
