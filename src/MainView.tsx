@@ -2035,6 +2035,12 @@ function ProfileSection({
           {t("Settings.accountLogout")}
         </button>
       </div>
+      {/* Desde el 2026-09-12 se puede entrar sin verificar el correo, pero no
+          guardar: se dice aquí, junto al enlace a la web donde está el botón
+          de reenviar el correo. */}
+      {user.emailVerified === false ? (
+        <span style={{ fontSize: 12, color: COLORS.gold, lineHeight: 1.5 }}>{t("Settings.emailNotVerifiedHint")}</span>
+      ) : null}
       <button
         onClick={() => window.riftcompass.openExternal(`${API_BASE_URL}/account`)}
         style={{ display: "flex", alignItems: "center", gap: 6, alignSelf: "flex-start", background: "none", border: "none", color: COLORS.rose, fontSize: 12, cursor: "pointer", padding: 0 }}
