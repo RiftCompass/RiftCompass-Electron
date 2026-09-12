@@ -90,7 +90,10 @@ interface SkillLevelChoice {
 }
 
 interface BuildBoard {
+  /** Etiqueta: "16.18", "16.18 + 16.17" o un "16.17" anterior. */
   patch: string;
+  /** Los parches en sí (la web los manda desde el 2026-09-12; antes solo `patch`). */
+  dataPatches?: string[];
   currentPatch: string;
   runePages: PopularRunePage[];
   spellPairs: PopularSpellPair[];
@@ -504,7 +507,11 @@ export function ChampionBuilds() {
             ))}
           </div>
 
-          {board && board.patch !== board.currentPatch ? (
+          {board && (board.dataPatches?.length ?? 1) > 1 ? (
+            <p style={{ fontSize: 13, color: COLORS.gold, margin: 0 }}>
+              {t("ChampionBuilds.dataFromPatches", { patches: board.patch, current: board.currentPatch })}
+            </p>
+          ) : board && board.patch !== board.currentPatch ? (
             <p style={{ fontSize: 13, color: COLORS.gold, margin: 0 }}>
               {t("ChampionBuilds.dataFromPatch", { patch: board.patch, current: board.currentPatch })}
             </p>

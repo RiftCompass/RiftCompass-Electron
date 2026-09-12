@@ -740,6 +740,7 @@ export const de: Messages = {
     pickChampion: "Wähle einen Champion, um seine Builds zu sehen.",
     noResults: "Kein Champion mit diesem Namen.",
     dataFromPatch: "Build-Daten aus Patch {patch}; der aktuelle Patch ({current}) hat noch nicht genug Daten.",
+    dataFromPatches: "Build-Daten aus den Patches {patches}: Der aktuelle Patch ({current}) hat allein noch nicht genug Spiele, daher wird der vorherige einbezogen.",
     popularBuild: "Meistgespielte Build",
     popularBuildSource: "Erfasste Spiele, Patch {patch}",
     noBuildData: "Für diesen Champion gibt es auf dieser Position und in diesem Rang noch keine erfassten Spiele. Probiere einen anderen Rang oder schau später wieder vorbei.",
