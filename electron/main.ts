@@ -4,6 +4,7 @@
 
 import { app, globalShortcut, session } from "electron";
 import { BACKEND_ORIGIN } from "./backend";
+import { CLIENT_HEADER } from "./account";
 import * as gameConnection from "./gameConnection";
 import * as settings from "./settings";
 import { createTray } from "./tray";
@@ -52,6 +53,13 @@ function applyContentSecurityPolicy(): void {
       isDev ? ` ws://localhost:${VITE_PORT} http://localhost:${VITE_PORT}` : ""
     }`,
   ].join("; ");
+
+  // The renderer fetches /api/v1/* itself for public data; tag those calls
+  // with the app version like account.ts does for main's own (A6). Added
+  // here, below the page's CORS decision, so it never triggers a preflight.
+  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: [`${BACKEND_ORIGIN}/*`] }, (details, callback) => {
+    callback({ requestHeaders: { ...details.requestHeaders, ...CLIENT_HEADER } });
+  });
 
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
