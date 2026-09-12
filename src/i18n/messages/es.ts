@@ -198,6 +198,11 @@ export const es: Messages = {
     },
   },
   Roadmap: {
+    trend: {
+      up: "mejor que {when}",
+      down: "peor que {when}",
+      flat: "igual que {when}",
+    },
     title: "Tu roadmap de mejora",
     subtitle: "Tú frente a tus rivales de línea en tus últimas {games} partidas de la Grieta del Invocador, {roleGames} de ellas como {role}. Todavía sin seguimiento en el tiempo.",
     notReady: "Aún no hay partidas suficientes en la Grieta del Invocador para un diagnóstico: {games} de {required} necesarias (ARAM y otros modos no cuentan).",
