@@ -76,7 +76,7 @@ function defaultSettings(): AppSettings {
     locale: detectLocale(),
     flashSide: "left",
     abilityBarCalibration: null,
-    overlayPanelPositions: { gold: null, objectives: null, csPerMin: null, enemySpells: null },
+    overlayPanelPositions: { gold: null, objectives: null, csPerMin: null },
   };
 }
 
@@ -97,7 +97,7 @@ function loadLocalSettings(): AppSettings {
       // native overlay window (browser dev mode has none) — never
       // fabricate a position.
       abilityBarCalibration: null,
-      overlayPanelPositions: { gold: null, objectives: null, csPerMin: null, enemySpells: null },
+      overlayPanelPositions: { gold: null, objectives: null, csPerMin: null },
     };
   } catch {
     return defaultSettings();
