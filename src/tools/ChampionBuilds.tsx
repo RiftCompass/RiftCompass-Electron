@@ -36,6 +36,7 @@ import { useI18n } from "../i18n";
 import { useOpenAccountPanel } from "../account-panel";
 import { useRequestedChampion } from "../tool-navigation";
 import { LoadError } from "./LoadError";
+import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 import { COLORS, FONT_HEADING, cardStyle, inputStyle, pillStyle } from "../theme";
 
 // The desktop half of the web's champion pages (/champions/<champion>):
@@ -94,6 +95,8 @@ interface BuildBoard {
   patch: string;
   /** Los parches en sí (la web los manda desde el 2026-09-12; antes solo `patch`). */
   dataPatches?: string[];
+  /** Partidas y última escritura del crawler detrás del tablero (aditivo, 2026-09-12). */
+  dataQuality?: DataQuality;
   currentPatch: string;
   runePages: PopularRunePage[];
   spellPairs: PopularSpellPair[];
@@ -526,6 +529,7 @@ export function ChampionBuilds() {
                 </span>
               ) : null}
             </div>
+            {board ? <DataQualityNote quality={board.dataQuality} patches={board.dataPatches ?? [board.patch]} /> : null}
 
             {!board ? (
               boardStatus === "error" ? (

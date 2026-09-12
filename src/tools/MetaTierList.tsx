@@ -10,6 +10,7 @@ import { useI18n } from "../i18n";
 import { useOpenTool } from "../tool-navigation";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../theme";
 import { LoadError } from "./LoadError";
+import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 
 // Ported from the web app's /tools/meta-tier-list page and
 // src/lib/crawler/meta-tier-list.ts's tierChampionsByWinrate — same
@@ -67,6 +68,7 @@ export function MetaTierList() {
   // Which patch the data actually comes from: the API falls back to the
   // newest patch with enough samples while the current one fills up.
   const [dataPatch, setDataPatch] = useState<{ patch: string; latestPatch: string } | null>(null);
+  const [dataQuality, setDataQuality] = useState<DataQuality | undefined>(undefined);
 
   useEffect(() => {
     // Without Data Dragon the chips fall back to text (see below); the
@@ -88,9 +90,10 @@ export function MetaTierList() {
     const url = `${API_BASE_URL}/api/v1/champion-winrates?rank=${rank}`;
     fetch(url)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((data: { winrates: ChampionWinrate[]; patch?: string; latestPatch?: string }) => {
+      .then((data: { winrates: ChampionWinrate[]; patch?: string; latestPatch?: string; dataQuality?: DataQuality }) => {
         if (cancelled) return;
         setWinrates(data.winrates);
+        setDataQuality(data.dataQuality);
         if (data.patch && data.latestPatch) setDataPatch({ patch: data.patch, latestPatch: data.latestPatch });
         setLoadStatus("ready");
       })
@@ -182,6 +185,7 @@ export function MetaTierList() {
           {t("MetaTierList.dataFromPatch", { patch: dataPatch.patch, current: dataPatch.latestPatch })}
         </p>
       ) : null}
+      {dataPatch && winrates ? <DataQualityNote quality={dataQuality} patches={[dataPatch.patch]} /> : null}
 
       {winrates === null ? (
         loadStatus === "error" ? (
