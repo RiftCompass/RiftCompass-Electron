@@ -47,7 +47,7 @@ import {
   type DiagnosticNode,
   type RoleStats,
 } from "../lib/profile-analysis";
-import type { ProfileApiResponse, RecentMatchSummary, RiotLeagueEntry } from "../lib/profile-types";
+import type { ProfileApiResponse, RecentMatchSummary, RiotLeagueEntry, RoadmapSnapshot } from "../lib/profile-types";
 import type { SavedProfileWithRank } from "../riftcompass";
 import {
   parseRiotId,
@@ -378,7 +378,7 @@ function ProfileDetail({
     );
   }
 
-  const { profile, ddragonVersion, rankTier, topMasteryChampionId, lpHistory, flexLpHistory } = state.data;
+  const { profile, ddragonVersion, rankTier, topMasteryChampionId, lpHistory, flexLpHistory, roadmapHistory } = state.data;
 
   // Same semantics as the web's SaveProfileButton: one toggle endpoint,
   // canonical names from the fetched profile (not the raw search input),
@@ -552,7 +552,7 @@ function ProfileDetail({
           by side (same as the web): they are of a similar height, whereas
           pairing either with the much taller roadmap left a hole under
           the shorter one and the page scrolling twice as far. */}
-      <RoadmapCard matches={profile.recentMatches} tier={rankTier} />
+      <RoadmapCard matches={profile.recentMatches} tier={rankTier} history={roadmapHistory ?? []} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 12 }}>
         <ChampionOverviewCard matches={profile.recentMatches} ddragonVersion={ddragonVersion} />
@@ -1175,10 +1175,19 @@ const METRIC_ICON: Record<DiagnosticMetric, Icon> = {
 // Web's ImprovementRoadmap (src/components/improvement-roadmap.tsx): the
 // one diagnostic of the profile, you against your lane opponents, with the
 // strength/focus pills as the summary of the rows right below them.
-function RoadmapCard({ matches, tier }: { matches: RecentMatchSummary[]; tier: string | null }) {
+// The snapshot to compare today's roadmap against: the oldest one at least
+// five days old (same rule as the web's baselineSnapshot), so "since last
+// week" needs a week of history and never compares today with itself.
+function baselineSnapshot(history: RoadmapSnapshot[]): RoadmapSnapshot | null {
+  const cutoff = Date.now() - 5 * 86_400_000;
+  return history.find((s) => new Date(s.capturedAt).getTime() <= cutoff) ?? null;
+}
+
+function RoadmapCard({ matches, tier, history }: { matches: RecentMatchSummary[]; tier: string | null; history: RoadmapSnapshot[] }) {
   const { t } = useI18n();
   if (matches.length === 0) return null;
   const diagnostic = computeDiagnostic(matches, tier);
+  const baseline = baselineSnapshot(history);
 
   if (!diagnostic.ready) {
     return (
@@ -1211,7 +1220,7 @@ function RoadmapCard({ matches, tier }: { matches: RecentMatchSummary[]; tier: s
           </p>
         ) : null}
         {diagnostic.nodes.map((n) => (
-          <RoadmapRow key={n.metric} node={n} diagnostic={diagnostic} />
+          <RoadmapRow key={n.metric} node={n} diagnostic={diagnostic} baseline={baseline} />
         ))}
       </div>
     </div>
@@ -1288,11 +1297,17 @@ export function formatDiagnosticPair(node: DiagnosticNode): { value: string; ref
   return { value: `${node.value}${unit}`, reference: `${node.reference}${unit}` };
 }
 
-function RoadmapRow({ node, diagnostic }: { node: DiagnosticNode; diagnostic: Diagnostic }) {
-  const { t } = useI18n();
+function RoadmapRow({ node, diagnostic, baseline }: { node: DiagnosticNode; diagnostic: Diagnostic; baseline: RoadmapSnapshot | null }) {
+  const { t, locale } = useI18n();
   const pair = formatDiagnosticPair(node);
   const RowIcon = METRIC_ICON[node.metric];
   const referenceLabel = node.metric === "laningAdvantage" ? t("Roadmap.evenLabel") : t("Roadmap.rivalsLabel");
+  // Movement against the rivals since the baseline snapshot, in points of
+  // the ratio (1.00 = even): ±0.05 or more is worth a word, less is noise.
+  const then = baseline?.nodes.find((b) => b.metric === node.metric);
+  const delta = then ? node.ratio - then.ratio : null;
+  const trend = delta === null ? null : delta >= 0.05 ? "up" : delta <= -0.05 ? "down" : "flat";
+  const when = baseline ? formatRelativeTime(new Date(baseline.capturedAt).getTime(), locale) : "";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
@@ -1306,6 +1321,14 @@ function RoadmapRow({ node, diagnostic }: { node: DiagnosticNode; diagnostic: Di
           </span>
           {" · "}
           {referenceLabel} {pair.reference}
+          {trend ? (
+            <>
+              {" · "}
+              <span style={{ color: trend === "up" ? COLORS.goodMild : trend === "down" ? COLORS.badMild : COLORS.muted }}>
+                {t(`Roadmap.trend.${trend}`, { when })}
+              </span>
+            </>
+          ) : null}
         </span>
       </div>
       <DiagnosticBar node={node} />

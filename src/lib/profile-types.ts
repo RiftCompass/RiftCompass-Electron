@@ -110,6 +110,17 @@ export interface ProfileApiResponse {
   // resolved server-side by the same lib the web profile header and /duo
   // use. Optional so older cached responses stay valid.
   topMasteryChampionId?: string | null;
+  /** Daily snapshots of the improvement diagnostic, oldest first (additive,
+   * 2026-09-12): lets the roadmap say how each metric moved. Absent from
+   * older servers or cached responses. */
+  roadmapHistory?: RoadmapSnapshot[];
+}
+
+export interface RoadmapSnapshot {
+  capturedAt: string;
+  games: number;
+  primaryRole: string;
+  nodes: { metric: string; value: number; reference: number; ratio: number; status: "above" | "below" }[];
 }
 
 export interface ProfileApiError {
