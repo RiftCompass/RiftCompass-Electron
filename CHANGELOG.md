@@ -5,6 +5,12 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.4
+
+- El icono de RiftCompass vuelve a verse en la bandeja de Windows (junto al
+  reloj): la app instalada no llevaba el fichero del icono y la bandeja lo
+  mostraba en blanco.
+
 ## 0.3.3
 
 - Calculadora de oro: con la ventana estrecha, el panel de la build ya no se
