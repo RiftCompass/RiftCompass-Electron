@@ -9,13 +9,17 @@
 
 import type WebSocket from "ws";
 import { EVT } from "../src/bridge/commands";
-import { connectWs, findLockfile, lcuRequest, parseEventFrame, readLockfile, type LcuCredentials } from "./lcu";
+import { connectWs, findLockfile, lcuRequest, parseEventFrame, readCredentialsFromProcess, readLockfile, setManualInstallDir, type LcuCredentials } from "./lcu";
+import { currentLeagueInstallDir } from "./settings";
 import { fetchLiveGameData } from "./liveclient";
 import * as overlayTopmost from "./overlayTopmost";
 import * as tabWatch from "./tabWatch";
 import { broadcast, showChampSelect, showMainWindow, showOverlay } from "./windows";
 
 const LOCKFILE_POLL_MS = 2500;
+// Cada cuantos sondeos sin lockfile se pregunta al proceso del cliente por
+// sus argumentos (APP-1): arrancar PowerShell no es gratis, 15 s esta bien.
+const PROCESS_PROBE_EVERY = 6;
 const LIVE_GAME_POLL_MS = 3000;
 
 let creds: LcuCredentials | null = null;
@@ -35,6 +39,13 @@ let lastIdentity: unknown = null;
 // igual. Que lo pida ella al montarse quita esa carrera de raiz.
 export function champSelectSnapshot(): { phase: string | null; session: unknown } {
   return { phase: ultimaFase, session: ultimaSesionChampSelect };
+}
+
+// Sin cliente, o con el cliente en el menu o en lobby: nada que una
+// actualizacion pueda interrumpir (updater.ts).
+export function isPhaseIdle(): boolean {
+  if (creds === null) return true;
+  return ultimaFase === null || ultimaFase === "None" || ultimaFase === "Lobby" || ultimaFase === "EndOfGame";
 }
 
 export function connectionSnapshot(): { connected: boolean; identity: unknown } {
@@ -237,9 +248,16 @@ export async function run(): Promise<void> {
     // client's lockfile write isn't a single atomic event worth
     // subscribing to, and this only runs while disconnected.
     let found: LcuCredentials | null = null;
+    let polls = 0;
     while (!found) {
+      setManualInstallDir(currentLeagueInstallDir());
       const path = findLockfile();
       found = path ? readLockfile(path) : null;
+      if (!found && polls % PROCESS_PROBE_EVERY === PROCESS_PROBE_EVERY - 1) {
+        found = readCredentialsFromProcess();
+        if (found) console.log("[lcu] cliente encontrado por los argumentos del proceso (sin lockfile en las rutas conocidas)");
+      }
+      polls += 1;
       if (!found) await sleep(LOCKFILE_POLL_MS);
     }
 
@@ -255,16 +273,11 @@ export async function run(): Promise<void> {
 
     creds = found;
     broadcast(EVT.LcuConnection, "connected");
-    // League just opened — bring the app up out of the tray. Closing the
-    // window afterwards only hides it (windows.ts's close handler), so
-    // this loop keeps waiting for the next launch.
-    showMainWindow();
-    await refreshPhase(found);
-    const identity = await getLocalIdentity(found);
-    lastIdentity = identity;
-    broadcast(EVT.LcuIdentity, identity);
 
-    await new Promise<void>((resolveSocket) => {
+    // El oyente se registra ANTES de las dos peticiones de abajo (APP-7,
+    // ronda 20): el websocket ya estaba suscrito y los eventos que llegaran
+    // mientras se leia la fase y la identidad no los recibia nadie.
+    const socketClosed = new Promise<void>((resolveSocket) => {
       ws.on("message", (raw) => {
         const text = raw.toString();
         const event = parseEventFrame(text);
@@ -280,10 +293,26 @@ export async function run(): Promise<void> {
       ws.once("error", resolveSocket); // client closing mid-frame — same as a disconnect
     });
 
+    // League just opened — bring the app up out of the tray. Closing the
+    // window afterwards only hides it (windows.ts's close handler), so
+    // this loop keeps waiting for the next launch.
+    showMainWindow();
+    await refreshPhase(found);
+    const identity = await getLocalIdentity(found);
+    lastIdentity = identity;
+    broadcast(EVT.LcuIdentity, identity);
+
+    await socketClosed;
+
     // Disconnected — clear state and go back to lockfile polling.
     creds = null;
     localPuuid = null;
     lastIdentity = null;
+    // Lo que quedo de la ultima partida no vale para la siguiente conexion
+    // (APP-8, ronda 20): la ventana del draft recibia la sesion vieja al
+    // crearse hasta que llegaba la primera actualizacion real.
+    ultimaFase = null;
+    ultimaSesionChampSelect = null;
     stopLivePolling();
     stopTabWatch();
     broadcast(EVT.LcuConnection, "disconnected");

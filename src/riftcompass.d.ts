@@ -67,6 +67,8 @@ export interface AppSettings {
   autoLaunch: boolean;
   overlayModules: OverlayModules;
   locale: SupportedLocale;
+  /** Carpeta de League elegida a mano en Ajustes (null = detección automática). */
+  leagueInstallDir: string | null;
   flashSide: FlashSide;
   abilityBarCalibration: AbilityBarCalibration | null;
   overlayPanelPositions: OverlayPanelPositions;
@@ -304,6 +306,9 @@ export interface RiftCompassApi {
   setOverlayModules: (modules: Partial<OverlayModules>) => Promise<AppSettings>;
   setLocale: (locale: string) => Promise<AppSettings>;
   setFlashSide: (side: FlashSide) => Promise<AppSettings>;
+  /** Carpeta de League a mano (null la olvida); `pickLeagueInstallDir` abre el diálogo del sistema. */
+  setLeagueInstallDir: (dir: string | null) => Promise<AppSettings>;
+  pickLeagueInstallDir: () => Promise<{ dir: string | null }>;
   login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   getSession: () => Promise<AccountUser | null>;
@@ -338,6 +343,8 @@ export interface RiftCompassApi {
   createChampionBuild: (build: ChampionBuildInput) => Promise<SaveChampionBuildResult>;
   updateChampionBuild: (id: string, build: ChampionBuildInput) => Promise<SaveChampionBuildResult>;
   deleteChampionBuild: (id: string) => Promise<SaveChampionBuildResult>;
+  /** Foto de rango al acabar la partida, con la sesión de la app (la web la exige). "failed" sin sesión. */
+  requestRankSnapshot: (platform: string, puuid: string) => Promise<"changed" | "unchanged" | "failed">;
   openExternal: (url: string) => Promise<void>;
 }
 

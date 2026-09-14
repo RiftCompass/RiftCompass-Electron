@@ -58,6 +58,24 @@ async function findByTag(api, token, tag, intentos = 4) {
 // `.blockmap`, asi que quien la tenga se baja el instalador entero en vez de
 // un diferencial. Crear el borrador antes de arrancar electron-builder quita
 // la carrera: los dos publicadores lo encuentran hecho y suben a el.
+// Las notas de la version, sacadas de CHANGELOG.md (la seccion `## <version>`
+// hasta la siguiente), para que la pagina de la release en GitHub diga que
+// cambio en vez de estar vacia (EST-5, ronda 20). Sin seccion, sin cuerpo.
+export function changelogFor(version) {
+  let text;
+  try {
+    text = readFileSync("CHANGELOG.md", "utf-8");
+  } catch {
+    return "";
+  }
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((line) => new RegExp(`^## \\[?${version.replace(/\./g, "\\.")}\\]?(\\s|$)`).test(line));
+  if (start < 0) return "";
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((line) => /^## /.test(line));
+  return rest.slice(0, end < 0 ? undefined : end).join("\n").trim();
+}
+
 export async function ensureDraftRelease({ log = console.log } = {}) {
   const { owner, repo } = builderConfig();
   const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
@@ -93,7 +111,7 @@ export async function ensureDraftRelease({ log = console.log } = {}) {
   }
   const created = await gh(`${api}/releases`, token, {
     method: "POST",
-    body: JSON.stringify({ tag_name: tag, name: version, target_commitish: sha, draft: true }),
+    body: JSON.stringify({ tag_name: tag, name: version, target_commitish: sha, draft: true, body: changelogFor(version) }),
   });
   log(`  • borrador de ${tag} creado antes de publicar (${created.html_url})`);
   return { ...target, id: created.id };

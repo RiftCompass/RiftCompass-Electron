@@ -74,6 +74,7 @@ function defaultSettings(): AppSettings {
     autoLaunch: false,
     overlayModules: { csPerMinute: true, goldDiff: true, skillOrder: true, autoBuild: true },
     locale: detectLocale(),
+    leagueInstallDir: null,
     flashSide: "left",
     abilityBarCalibration: null,
     overlayPanelPositions: { gold: null, objectives: null, csPerMin: null },
@@ -93,6 +94,7 @@ function loadLocalSettings(): AppSettings {
         ? (parsed.locale as SupportedLocale)
         : base.locale,
       flashSide: parsed.flashSide === "left" || parsed.flashSide === "right" ? parsed.flashSide : base.flashSide,
+      leagueInstallDir: typeof parsed.leagueInstallDir === "string" ? parsed.leagueInstallDir : null,
       // Calibration and panel dragging genuinely can't happen without the
       // native overlay window (browser dev mode has none) — never
       // fabricate a position.
@@ -213,6 +215,11 @@ const api: RiftCompassApi = {
     }),
   setFlashSide: (side: FlashSide): Promise<AppSettings> =>
     tryInvoke(CMD.SettingsSetFlashSide, { side }, () => saveLocalSettings({ ...loadLocalSettings(), flashSide: side })),
+  setLeagueInstallDir: (dir: string | null): Promise<AppSettings> =>
+    tryInvoke(CMD.SettingsSetLeagueInstallDir, { dir }, () => saveLocalSettings({ ...loadLocalSettings(), leagueInstallDir: dir })),
+  // Sin Electron no hay dialogo de carpetas: se devuelve null, que la UI
+  // trata como "no se eligio nada".
+  pickLeagueInstallDir: (): Promise<{ dir: string | null }> => tryInvoke(CMD.SettingsPickLeagueInstallDir, undefined, () => ({ dir: null })),
   setAbilityBarCalibration: (calibration: AbilityBarCalibration): Promise<AppSettings> =>
     tryInvoke(CMD.SettingsSetAbilityBarCalibration, { calibration }, () =>
       saveLocalSettings({ ...loadLocalSettings(), abilityBarCalibration: calibration }),
@@ -276,6 +283,8 @@ const api: RiftCompassApi = {
     tryInvoke(CMD.AccountUpdateChampionBuild, { id, build }, () => ({ ok: false as const, error: NO_BACKEND })),
   deleteChampionBuild: (id: string): Promise<SaveChampionBuildResult> =>
     tryInvoke(CMD.AccountDeleteChampionBuild, { id }, () => ({ ok: false as const, error: NO_BACKEND })),
+  requestRankSnapshot: (platform: string, puuid: string) =>
+    tryInvoke(CMD.AccountRequestRankSnapshot, { platform, puuid }, () => "failed" as const),
 
   openExternal: async (url: string): Promise<void> => {
     // Same allowlist the main process enforces (see electron/ipc.ts): only

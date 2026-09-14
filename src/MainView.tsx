@@ -1859,6 +1859,7 @@ function Settings({
   const [overlayModules, setOverlayModulesState] = useState<OverlayModules | null>(null);
   const [flashSide, setFlashSideState] = useState<FlashSide | null>(null);
   const [abilityCalibrated, setAbilityCalibrated] = useState(false);
+  const [leagueDir, setLeagueDir] = useState<string | null>(null);
 
   useEffect(() => {
     window.riftcompass.getSettings().then((s) => {
@@ -1866,8 +1867,20 @@ function Settings({
       setOverlayModulesState(s.overlayModules);
       setFlashSideState(s.flashSide);
       setAbilityCalibrated(s.abilityBarCalibration !== null);
+      setLeagueDir(s.leagueInstallDir);
     });
   }, []);
+
+  // Carpeta de League a mano (APP-1, ronda 20), para quien tenga el juego
+  // fuera de las rutas que la app prueba sola.
+  async function handlePickLeagueDir() {
+    const { dir } = await window.riftcompass.pickLeagueInstallDir();
+    if (dir) setLeagueDir(dir);
+  }
+  async function handleForgetLeagueDir() {
+    const settings = await window.riftcompass.setLeagueInstallDir(null);
+    setLeagueDir(settings.leagueInstallDir);
+  }
 
   async function toggleAutoLaunch() {
     if (autoLaunch === null) return;
@@ -1989,6 +2002,20 @@ function Settings({
       </section>
 
       <section style={sectionStyle}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>{t("Settings.leagueDirLabel")}</span>
+            <span style={{ fontSize: 11, color: COLORS.muted, overflowWrap: "anywhere" }}>
+              {leagueDir ?? t("Settings.leagueDirAuto")}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+            <button onClick={handlePickLeagueDir} style={smallButtonStyle}>{t("Settings.leagueDirPick")}</button>
+            {leagueDir ? (
+              <button onClick={handleForgetLeagueDir} style={smallButtonStyle}>{t("Settings.leagueDirForget")}</button>
+            ) : null}
+          </div>
+        </div>
         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: autoLaunch === null ? "default" : "pointer" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{t("Settings.autoLaunchLabel")}</span>

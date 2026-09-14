@@ -10,6 +10,16 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { protect, unprotect } from "./dpapi";
 import { BACKEND_ORIGIN as API_BASE_URL } from "./backend";
+import { writeFileAtomic } from "./settings";
+
+// Ninguna llamada a riftcompass.com se queda colgada sin limite (APP-3,
+// ronda 20): si la web tarda (el servidor compilando, un corte de red), la
+// pantalla se quedaba en "cargando" para siempre. Es el mismo error de red
+// que ya existia (`network`), solo que llega.
+const REQUEST_TIMEOUT_MS = 15000;
+function timeout(): AbortSignal {
+  return AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+}
 
 // Every call to riftcompass.com says which app build is asking
 // (`X-RiftCompass-Client: electron/<version>`, A6): the API only promises
@@ -43,8 +53,7 @@ function persistSession(session: AccountSession): void {
   const encrypted = protect(json);
   if (!encrypted) return;
   try {
-    fs.mkdirSync(path.dirname(sessionFilePath()), { recursive: true });
-    fs.writeFileSync(sessionFilePath(), encrypted);
+    writeFileAtomic(sessionFilePath(), encrypted);
   } catch {
     // best-effort, like the settings file
   }
@@ -98,6 +107,7 @@ async function postJson(url: string, body: unknown, token?: string): Promise<Res
       method: "POST",
       headers: { ...CLIENT_HEADER, "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify(body),
+      signal: timeout(),
     });
   } catch {
     return null;
@@ -146,7 +156,7 @@ export async function accountGetSession(): Promise<AccountUser | null> {
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/v1/me`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` } });
+    res = await fetch(`${API_BASE_URL}/api/v1/me`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` }, signal: timeout() });
   } catch {
     return stored.user;
   }
@@ -159,7 +169,10 @@ export async function accountGetSession(): Promise<AccountUser | null> {
 
   const data = await readJson(res);
   if (data?.user) {
-    persistSession({ token: stored.token, user: data.user });
+    // `token` viene solo cuando al actual le quedan menos de 30 dias (SEG-9,
+    // ronda 20): se guarda y la sesion no caduca nunca por usar la app.
+    const token = typeof data.token === "string" && data.token.length > 0 ? data.token : stored.token;
+    persistSession({ token, user: data.user });
     return data.user;
   }
   return stored.user;
@@ -175,6 +188,7 @@ export async function accountUpdateUsername(username: string): Promise<unknown> 
       method: "PATCH",
       headers: { ...CLIENT_HEADER, "Content-Type": "application/json", Authorization: `Bearer ${stored.token}` },
       body: JSON.stringify({ username }),
+      signal: timeout(),
     });
   } catch {
     return err("network");
@@ -194,7 +208,7 @@ export async function accountGetSavedProfiles(): Promise<unknown> {
   if (!stored) return empty;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/saved-profiles`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` } });
+    const res = await fetch(`${API_BASE_URL}/api/v1/saved-profiles`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` }, signal: timeout() });
     if (!res.ok) return empty;
     return await res.json();
   } catch {
@@ -214,6 +228,7 @@ async function folderApiCall(method: string, urlPath: string, body?: unknown): P
       method,
       headers: { ...CLIENT_HEADER, "Content-Type": "application/json", Authorization: `Bearer ${stored.token}` },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      signal: timeout(),
     });
   } catch {
     return err("network");
@@ -268,8 +283,8 @@ export async function accountFetchProfileForced(
   const slug = `${encodeURIComponent(gameName)}-${encodeURIComponent(tagLine)}`;
   try {
     const res = await fetch(`${API_BASE_URL}/api/v1/profile/${platform}/${slug}?force=true`, {
-      headers: stored ? { Authorization: `Bearer ${stored.token}` } : {},
-      signal: AbortSignal.timeout(15000),
+      headers: { ...CLIENT_HEADER, ...(stored ? { Authorization: `Bearer ${stored.token}` } : {}) },
+      signal: timeout(),
     });
     return { status: res.status, body: await readJson(res) };
   } catch {
@@ -281,7 +296,7 @@ async function getList(urlPath: string, key: string): Promise<unknown[]> {
   const stored = loadPersistedSession();
   if (!stored) return [];
   try {
-    const res = await fetch(`${API_BASE_URL}${urlPath}`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` } });
+    const res = await fetch(`${API_BASE_URL}${urlPath}`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` }, signal: timeout() });
     if (!res.ok) return [];
     const data = await readJson(res);
     return data?.[key] ?? [];
@@ -302,6 +317,7 @@ async function listResult(method: string, urlPath: string, body: unknown, key: s
       method,
       headers: { ...CLIENT_HEADER, "Content-Type": "application/json", Authorization: `Bearer ${stored.token}` },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      signal: timeout(),
     });
   } catch {
     return err("network");
@@ -334,7 +350,7 @@ export async function accountGetSavedMap(id: string): Promise<unknown> {
   if (!stored) return err("notAuthenticated");
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/v1/saved-maps/${id}`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` } });
+    res = await fetch(`${API_BASE_URL}/api/v1/saved-maps/${id}`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` }, signal: timeout() });
   } catch {
     return err("network");
   }
@@ -365,3 +381,16 @@ export const accountUpdateChampionBuild = (id: string, build: unknown) =>
   listResult("PUT", `/api/v1/saved-champion-builds/${id}`, build, "builds");
 export const accountDeleteChampionBuild = (id: string) =>
   listResult("DELETE", `/api/v1/saved-champion-builds/${id}`, undefined, "builds");
+
+// La foto de rango al acabar la partida (POST /api/v1/rank-snapshot) exige
+// sesion de la app desde la ronda 20 (SEG-4): antes la pedia el renderer sin
+// token y cualquier web ajena podia disparar el mismo endpoint. El token
+// vive aqui, asi que la peticion tambien. Sin sesion no se pide nada.
+export async function accountRequestRankSnapshot(platform: string, puuid: string): Promise<"changed" | "unchanged" | "failed"> {
+  const stored = loadPersistedSession();
+  if (!stored) return "failed";
+  const res = await postJson(`${API_BASE_URL}/api/v1/rank-snapshot`, { platform, puuid }, stored.token);
+  if (!res || !res.ok) return "failed";
+  const data = await readJson(res);
+  return data?.changed ? "changed" : "unchanged";
+}

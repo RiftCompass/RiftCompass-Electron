@@ -10,5 +10,5 @@ export function initTelemetry(): void {
   // produced 168 "useI18n must be used within I18nProvider" events in a week
   // (a recreated context module, not a real bug), all from this machine.
   if (!SENTRY_DSN || import.meta.env.DEV) return;
-  Sentry.init({ dsn: SENTRY_DSN });
+  Sentry.init({ dsn: SENTRY_DSN, release: `riftcompass-electron@${__APP_VERSION__}` });
 }

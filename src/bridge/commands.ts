@@ -89,6 +89,12 @@ export const CMD = {
   /** invoke, no args. returns SavedChampionBuild[] */
   AccountGetSavedChampionBuilds: "account_get_saved_champion_builds",
   AccountFetchProfileForced: "account_fetch_profile_forced",
+  /** invoke. args: { platform, puuid } — foto de rango al acabar la partida, con el token de la app (SEG-4) */
+  AccountRequestRankSnapshot: "account_request_rank_snapshot",
+  /** invoke. args: { dir } — carpeta de League elegida a mano (null para olvidarla) */
+  SettingsSetLeagueInstallDir: "settings_set_league_install_dir",
+  /** invoke, no args — abre el dialogo de carpeta y devuelve la elegida (o null) */
+  SettingsPickLeagueInstallDir: "settings_pick_league_install_dir",
   /** invoke { build }. returns SaveChampionBuildResult */
   AccountCreateChampionBuild: "account_create_champion_build",
   /** invoke { id, build }. returns SaveChampionBuildResult */

@@ -14,6 +14,8 @@
 // /tools/tier-list/saved page.
 export const en = {
   Common: {
+    rateLimitedFor: "Too many requests right now. Try again in {seconds} s.",
+    rateLimited: "Too many requests right now. Wait a moment and try again.",
     networkError: "Couldn't reach riftcompass.com. Check your connection.",
     loadingSaved: "Loading your saved items…",
     settings: "Settings",
@@ -384,6 +386,10 @@ export const en = {
     calibrateAbilityBarDone: "Calibrated ✓: recalibrate",
     autoLaunchLabel: "Launch RiftCompass when Windows starts",
     autoLaunchDescription: "Keeps the League client scouting and build-import features ready as soon as you log in.",
+    leagueDirLabel: "League of Legends folder",
+    leagueDirAuto: "Detected automatically (C:, LOCALAPPDATA or Riot's own install records). Pick it by hand only if the client is never detected.",
+    leagueDirPick: "Choose folder",
+    leagueDirForget: "Forget",
     languageSection: "Language",
     aboutSection: "About",
     riotDisclaimer: "RiftCompass isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",

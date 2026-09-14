@@ -1,0 +1,31 @@
+name: CI
+
+# Lo mismo que hay que pasar en el PC antes de un commit (typecheck incluye
+# check-sensitive, tests, build del renderer y del proceso principal), en
+# cada push y PR, para que la Norma 1 y los tipos no dependan de que alguien
+# se acuerde (EST-1, ronda 20). Windows porque es la unica plataforma real de
+# la app (koffi, DPAPI).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

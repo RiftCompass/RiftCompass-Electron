@@ -1,7 +1,7 @@
 // Window creation and lifecycle: the frameless main window and the
 // transparent in-game overlay.
 
-import { BrowserWindow, screen } from "electron";
+import { app, BrowserWindow, screen } from "electron";
 import * as path from "node:path";
 import type { OverlayBrowserWindow } from "@overwolf/ow-electron-packages-types";
 
@@ -29,7 +29,10 @@ import { WINDOW_CHANNELS } from "./window-channels";
 export { WINDOW_CHANNELS };
 
 // Sibling of tsconfig.electron.json's outDir — see package.json's "main".
-const RENDERER_URL = process.env.ELECTRON_RENDERER_URL;
+// Solo en desarrollo (APP-11, ronda 20): en una build empaquetada una
+// variable de entorno no puede hacer que las ventanas, con el preload
+// privilegiado, carguen otra web.
+const RENDERER_URL = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
 // __dirname here is dist-electron/electron (tsconfig.electron.json's
 // rootDir is the project root, to let this share src/bridge/commands.ts's
 // CMD/EVT allowlist with the renderer) — dist/ sits two levels up.

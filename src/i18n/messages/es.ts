@@ -2,6 +2,8 @@ import type { Messages } from "../index";
 
 export const es: Messages = {
   Common: {
+    rateLimitedFor: "Demasiadas peticiones ahora mismo. Vuelve a intentarlo en {seconds} s.",
+    rateLimited: "Demasiadas peticiones ahora mismo. Espera un momento y vuelve a intentarlo.",
     networkError: "No se pudo conectar con riftcompass.com. Comprueba tu conexión.",
     loadingSaved: "Cargando tus guardados…",
     settings: "Ajustes",
@@ -372,6 +374,10 @@ export const es: Messages = {
     calibrateAbilityBarDone: "Calibrado ✓: recalibrar",
     autoLaunchLabel: "Iniciar RiftCompass al arrancar Windows",
     autoLaunchDescription: "Mantiene el scouting del cliente de League y la importación de build listos en cuanto inicias sesión.",
+    leagueDirLabel: "Carpeta de League of Legends",
+    leagueDirAuto: "Se detecta sola (C:, LOCALAPPDATA o el registro de instalación de Riot). Elígela a mano solo si el cliente no se detecta nunca.",
+    leagueDirPick: "Elegir carpeta",
+    leagueDirForget: "Olvidar",
     languageSection: "Idioma",
     aboutSection: "Acerca de",
     riotDisclaimer: "RiftCompass no está patrocinada por Riot Games y no refleja las opiniones de Riot Games ni de nadie implicado oficialmente en la producción o gestión de las propiedades de Riot Games. Riot Games y todas sus propiedades asociadas son marcas comerciales o marcas registradas de Riot Games, Inc.",
