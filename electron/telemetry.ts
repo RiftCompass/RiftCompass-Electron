@@ -13,5 +13,8 @@ export function initTelemetry(): void {
   Sentry.init({
     dsn: SENTRY_DSN,
     environment: "production",
+    // Con la version en cada informe (APP-9, ronda 20) se puede decir "esto
+    // solo pasa en la 0.3.0" y ver si una release arreglo un error.
+    release: `riftcompass-electron@${app.getVersion()}`,
   });
 }

@@ -9,6 +9,17 @@ import { app } from "electron";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+// Escritura atomica (APP-5, ronda 20): un apagon a mitad de writeFileSync
+// dejaba settings.json truncado y la lectura tolerante lo devolvia todo a
+// los valores por defecto sin decir nada (calibracion, posiciones de los
+// paneles). Se escribe al lado y se renombra encima, que en NTFS es atomico.
+export function writeFileAtomic(file: string, data: string | Buffer): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, data);
+  fs.renameSync(tmp, file);
+}
+
 export const SUPPORTED_LOCALES = ["en", "es", "fr", "de"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
@@ -67,6 +78,9 @@ const DEFAULT_PANEL_POSITIONS: OverlayPanelPositions = {
 interface PersistedSettings {
   overlayModules: OverlayModules;
   locale: string;
+  // Carpeta de League elegida a mano en Ajustes (APP-1), por si ni las rutas
+  // habituales ni los metadatos de Riot dan con el `lockfile`. Null = no.
+  leagueInstallDir: string | null;
   // Whether auto-launch has ever been decided (by the first-run default or
   // by the user's own toggle in Settings). The OS registration stays the
   // single source of truth for whether auto-launch IS on — this marker
@@ -82,6 +96,7 @@ export interface AppSettings {
   autoLaunch: boolean;
   overlayModules: OverlayModules;
   locale: string;
+  leagueInstallDir: string | null;
   flashSide: FlashSide;
   abilityBarCalibration: AbilityBarCalibration | null;
   overlayPanelPositions: OverlayPanelPositions;
@@ -98,6 +113,7 @@ function defaultPersisted(): PersistedSettings {
   return {
     overlayModules: DEFAULT_OVERLAY_MODULES,
     locale: systemDefaultLocale(),
+    leagueInstallDir: null,
     autoLaunchConfigured: false,
     flashSide: "left",
     abilityBarCalibration: null,
@@ -153,15 +169,16 @@ function readPersisted(): PersistedSettings {
     // panel se retiro el 2026-09-12 por las reglas de Riot.
   };
 
-  return { overlayModules, locale, autoLaunchConfigured, flashSide, abilityBarCalibration, overlayPanelPositions };
+  const leagueInstallDir = typeof parsed.leagueInstallDir === "string" && parsed.leagueInstallDir.length > 0 ? parsed.leagueInstallDir : null;
+
+  return { overlayModules, locale, leagueInstallDir, autoLaunchConfigured, flashSide, abilityBarCalibration, overlayPanelPositions };
 }
 
 function writePersisted(next: PersistedSettings): void {
   // Best-effort, like the original — a failed write just means the change
   // doesn't survive restart.
   try {
-    fs.mkdirSync(path.dirname(settingsFilePath()), { recursive: true });
-    fs.writeFileSync(settingsFilePath(), JSON.stringify(next));
+    writeFileAtomic(settingsFilePath(), JSON.stringify(next));
   } catch {
     // ignore
   }
@@ -181,6 +198,7 @@ function currentSettings(): AppSettings {
     autoLaunch: autoLaunchEnabled(),
     overlayModules: persisted.overlayModules,
     locale: persisted.locale,
+    leagueInstallDir: persisted.leagueInstallDir,
     flashSide: persisted.flashSide,
     abilityBarCalibration: persisted.abilityBarCalibration,
     overlayPanelPositions: persisted.overlayPanelPositions,
@@ -217,11 +235,32 @@ export function settingsSetAutoLaunch(enabled: boolean): AppSettings {
   return currentSettings();
 }
 
-export function settingsSetOverlayModules(modules: OverlayModulesPatch): AppSettings {
+// Lo que llega por IPC se valida aqui campo a campo (APP-6, ronda 20): el
+// proceso principal no confia en la forma que le mande el renderer, igual
+// que readPersisted no confia en lo que haya en el fichero.
+const MODULE_KEYS: (keyof OverlayModules)[] = ["csPerMinute", "goldDiff", "skillOrder", "autoBuild"];
+
+export function settingsSetOverlayModules(modules: unknown): AppSettings {
   const persisted = readPersisted();
-  const next = { ...persisted, overlayModules: { ...persisted.overlayModules, ...modules } };
-  writePersisted(next);
+  const overlayModules = { ...persisted.overlayModules };
+  if (typeof modules === "object" && modules !== null) {
+    for (const key of MODULE_KEYS) {
+      const value = (modules as Record<string, unknown>)[key];
+      if (typeof value === "boolean") overlayModules[key] = value;
+    }
+  }
+  writePersisted({ ...persisted, overlayModules });
   return currentSettings();
+}
+
+export function settingsSetLeagueInstallDir(dir: unknown): AppSettings {
+  const leagueInstallDir = typeof dir === "string" && dir.trim().length > 0 && dir.length < 1024 ? dir.trim() : null;
+  writePersisted({ ...readPersisted(), leagueInstallDir });
+  return currentSettings();
+}
+
+export function currentLeagueInstallDir(): string | null {
+  return readPersisted().leagueInstallDir;
 }
 
 export function settingsSetLocale(locale: string): AppSettings {
@@ -238,16 +277,21 @@ export function settingsSetFlashSide(side: string): AppSettings {
   return currentSettings();
 }
 
-export function settingsSetAbilityBarCalibration(calibration: AbilityBarCalibration): AppSettings {
-  writePersisted({ ...readPersisted(), abilityBarCalibration: calibration });
+export function settingsSetAbilityBarCalibration(calibration: unknown): AppSettings {
+  const raw = typeof calibration === "object" && calibration !== null ? (calibration as Record<string, unknown>) : null;
+  const q = parseScreenPoint(raw?.q);
+  const w = parseScreenPoint(raw?.w);
+  const e = parseScreenPoint(raw?.e);
+  if (q && w && e) writePersisted({ ...readPersisted(), abilityBarCalibration: { q, w, e } });
   return currentSettings();
 }
 
-export function settingsSetOverlayPanelPosition(panel: string, position: ScreenPoint): AppSettings {
+export function settingsSetOverlayPanelPosition(panel: unknown, position: unknown): AppSettings {
   const persisted = readPersisted();
   const overlayPanelPositions = { ...persisted.overlayPanelPositions };
-  if (panel === "gold" || panel === "objectives" || panel === "csPerMin") {
-    overlayPanelPositions[panel] = position;
+  const point = parseScreenPoint(position);
+  if (point && (panel === "gold" || panel === "objectives" || panel === "csPerMin")) {
+    overlayPanelPositions[panel] = point;
   }
   writePersisted({ ...persisted, overlayPanelPositions });
   return currentSettings();

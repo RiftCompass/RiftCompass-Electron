@@ -10,6 +10,7 @@ import { useI18n } from "../i18n";
 import { useOpenTool } from "../tool-navigation";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../theme";
 import { LoadError } from "./LoadError";
+import { apiGet } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 
 // Ported from the web app's /tools/meta-tier-list page and
@@ -64,6 +65,7 @@ export function MetaTierList() {
   const [rank, setRank] = useState<(typeof RANK_TIERS)[number]>("CHALLENGER");
   const [winrates, setWinrates] = useState<ChampionWinrate[] | null>(null);
   const [loadStatus, setLoadStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   // Which patch the data actually comes from: the API falls back to the
   // newest patch with enough samples while the current one fills up.
@@ -88,17 +90,19 @@ export function MetaTierList() {
     setDataPatch(null);
     setLoadStatus("loading");
     const url = `${API_BASE_URL}/api/v1/champion-winrates?rank=${rank}`;
-    fetch(url)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((data: { winrates: ChampionWinrate[]; patch?: string; latestPatch?: string; dataQuality?: DataQuality }) => {
+    setLoadError(null);
+    apiGet<{ winrates: ChampionWinrate[]; patch?: string; latestPatch?: string; dataQuality?: DataQuality }>(url)
+      .then((data) => {
         if (cancelled) return;
         setWinrates(data.winrates);
         setDataQuality(data.dataQuality);
         if (data.patch && data.latestPatch) setDataPatch({ patch: data.patch, latestPatch: data.latestPatch });
         setLoadStatus("ready");
       })
-      .catch(() => {
-        if (!cancelled) setLoadStatus("error");
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoadError(err);
+        setLoadStatus("error");
       });
     return () => {
       cancelled = true;
@@ -189,7 +193,7 @@ export function MetaTierList() {
 
       {winrates === null ? (
         loadStatus === "error" ? (
-          <LoadError onRetry={() => setLoadAttempt((n) => n + 1)} />
+          <LoadError error={loadError} onRetry={() => setLoadAttempt((n) => n + 1)} />
         ) : (
           <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
         )

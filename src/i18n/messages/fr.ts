@@ -2,6 +2,8 @@ import type { Messages } from "../index";
 
 export const fr: Messages = {
   Common: {
+    rateLimitedFor: "Trop de requêtes pour le moment. Réessaie dans {seconds} s.",
+    rateLimited: "Trop de requêtes pour le moment. Attends un instant et réessaie.",
     networkError: "Impossible de joindre riftcompass.com. Vérifiez votre connexion.",
     loadingSaved: "Chargement de vos enregistrements…",
     settings: "Paramètres",
@@ -218,7 +220,7 @@ export const fr: Messages = {
     evenPill: "À égalité avec vos adversaires",
     evenPillDescription: "Aucune stat nettement au-dessus ou en dessous des adversaires de lane affrontés. Solide sur toute la ligne.",
     csPerMin: {
-      title: "Farming (CS/min)",
+      title: "Farm (CS/min)",
       short: "farm",
       tipAbove: {
         default: "Vous farmez plus que vos adversaires de lane. Cherchez des fenêtres pour convertir cette avance en or en pression sur la map.",
@@ -372,6 +374,10 @@ export const fr: Messages = {
     calibrateAbilityBarDone: "Calibré ✓ : recalibrer",
     autoLaunchLabel: "Lancer RiftCompass au démarrage de Windows",
     autoLaunchDescription: "Garde le scouting du client League et l'import de build prêts dès la connexion.",
+    leagueDirLabel: "Dossier de League of Legends",
+    leagueDirAuto: "Détecté automatiquement (C:, LOCALAPPDATA ou le registre d'installation de Riot). Choisis-le à la main seulement si le client n'est jamais détecté.",
+    leagueDirPick: "Choisir le dossier",
+    leagueDirForget: "Oublier",
     languageSection: "Langue",
     aboutSection: "À propos",
     riotDisclaimer: "RiftCompass n'est pas approuvé par Riot Games et ne reflète pas les opinions de Riot Games ou de toute personne officiellement impliquée dans la production ou la gestion des propriétés de Riot Games. Riot Games et toutes les propriétés associées sont des marques commerciales ou déposées de Riot Games, Inc.",
@@ -667,13 +673,13 @@ export const fr: Messages = {
     },
     footnote: "Gromp, les Krugs et le Scuttler de la faille sont les camps \"OP\" (le meilleur gain d'XP par rapport à leur difficulté). Le Scuttler ne donne pas d'XP au niveau 1.",
     camps: {
-      redBrambleback: "Red Brambleback",
-      blueSentinel: "Blue Sentinel",
+      redBrambleback: "Ronce rouge",
+      blueSentinel: "Sentinelle bleue",
       gromp: "Gromp",
       krugs: "Krugs",
       murkWolves: "Murk Wolves",
       raptors: "Raptors",
-      riftScuttler: "Rift Scuttler",
+      riftScuttler: "Crabe de la Faille",
     },
   },
   PersonalityTest: {

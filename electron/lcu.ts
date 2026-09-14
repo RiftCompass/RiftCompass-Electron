@@ -9,6 +9,7 @@
 // must explicitly trust it — plain https.request via `rejectUnauthorized:
 // false`, and the websocket via the same option passed to `ws`.
 
+import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as https from "node:https";
 import * as path from "node:path";
@@ -19,13 +20,69 @@ export interface LcuCredentials {
   password: string;
 }
 
+// Donde esta instalado League, segun el propio instalador de Riot: el
+// fichero de producto en ProgramData lleva `product_install_full_path`.
+// Antes solo se miraban dos rutas fijas (C:\Riot Games y LOCALAPPDATA) y
+// quien tuviera el juego en D: o en una carpeta elegida a mano no veia nunca
+// "cliente detectado", sin ningun aviso (APP-1, ronda 20).
+function installDirFromRiotMetadata(): string | null {
+  const programData = process.env.PROGRAMDATA ?? "C:\\ProgramData";
+  const settings = path.join(programData, "Riot Games", "Metadata", "league_of_legends.live", "league_of_legends.live.product_settings.yaml");
+  let text: string;
+  try {
+    text = fs.readFileSync(settings, "utf-8");
+  } catch {
+    return null;
+  }
+  const match = /^product_install_full_path:\s*"?([^"\r\n]+)"?/m.exec(text);
+  return match ? match[1].trim() : null;
+}
+
+// Carpeta elegida a mano en Ajustes (settings.json), por si ni las rutas
+// habituales ni los metadatos de Riot dan con ella.
+let manualInstallDir: string | null = null;
+export function setManualInstallDir(dir: string | null): void {
+  manualInstallDir = dir;
+}
+
 export function findLockfile(): string | null {
   const candidates = ["C:\\Riot Games\\League of Legends\\lockfile"];
   const localAppData = process.env.LOCALAPPDATA;
   if (localAppData) {
     candidates.push(path.join(localAppData, "Riot Games", "League of Legends", "lockfile"));
   }
+  const fromRiot = installDirFromRiotMetadata();
+  if (fromRiot) candidates.push(path.join(fromRiot, "lockfile"));
+  if (manualInstallDir) candidates.push(path.join(manualInstallDir, "lockfile"));
   return candidates.find((p) => fs.existsSync(p)) ?? null;
+}
+
+// Ultimo recurso, sin rutas: el cliente en marcha lleva el puerto y la
+// contrasena en sus propios argumentos (`--app-port=`,
+// `--remoting-auth-token=`), que es lo que leen Porofessor o Blitz. Cuesta
+// arrancar un PowerShell, asi que gameConnection.ts solo lo pregunta de vez
+// en cuando y solo mientras no haya lockfile.
+export function readCredentialsFromProcess(): LcuCredentials | null {
+  if (process.platform !== "win32") return null;
+  let out: string;
+  try {
+    out = execFileSync(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "(Get-CimInstance Win32_Process -Filter \"Name='LeagueClientUx.exe'\" | Select-Object -First 1 -ExpandProperty CommandLine)",
+      ],
+      { encoding: "utf-8", timeout: 8000, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] },
+    );
+  } catch {
+    return null;
+  }
+  const port = Number(/--app-port=(\d+)/.exec(out)?.[1]);
+  const password = /--remoting-auth-token=([^\s"]+)/.exec(out)?.[1];
+  if (!Number.isInteger(port) || !password) return null;
+  return { port, password };
 }
 
 export function readLockfile(lockfilePath: string): LcuCredentials | null {

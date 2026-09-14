@@ -1,0 +1,35 @@
+name: Release
+
+# Al empujar un tag `v*` se compila el instalador en un runner limpio y se sube
+# como BORRADOR a GitHub Releases (releaseType: draft en electron-builder.yml),
+# con las notas de CHANGELOG.md. Publicarlo sigue siendo un clic (o el tren
+# nocturno del servidor con `publicar app`). El token es el de la propia
+# accion: no hace falta guardar ninguno en el PC (EST-5, ronda 20).
+#
+# Uso: subir `version` en package.json, anadir su seccion al CHANGELOG,
+# commit, `git tag v0.3.1 && git push origin main v0.3.1`.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: "true"

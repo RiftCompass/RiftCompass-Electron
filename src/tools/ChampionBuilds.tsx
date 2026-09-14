@@ -36,6 +36,7 @@ import { useI18n } from "../i18n";
 import { useOpenAccountPanel } from "../account-panel";
 import { useRequestedChampion } from "../tool-navigation";
 import { LoadError } from "./LoadError";
+import { apiGet } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 import { COLORS, FONT_HEADING, cardStyle, inputStyle, pillStyle } from "../theme";
 
@@ -201,6 +202,7 @@ export function ChampionBuilds() {
   const [rank, setRank] = useState<RankTier>("CHALLENGER");
   const [board, setBoard] = useState<BuildBoard | null>(null);
   const [boardStatus, setBoardStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [boardError, setBoardError] = useState<unknown>(null);
   const [boardAttempt, setBoardAttempt] = useState(0);
   // The champion whose first board already picked the position for us:
   // switching rank reloads the board and must not move the position again.
@@ -282,15 +284,17 @@ export function ChampionBuilds() {
     setSpellPick(0);
     setItemPick(0);
     const params = new URLSearchParams({ champion: champion.internalId, role, rank });
-    fetch(`${API_BASE_URL}/api/v1/champion-builds?${params}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((data: BuildBoard) => {
+    setBoardError(null);
+    apiGet<BuildBoard>(`${API_BASE_URL}/api/v1/champion-builds?${params}`)
+      .then((data) => {
         if (cancelled) return;
         setBoard(data);
         setBoardStatus("ready");
       })
-      .catch(() => {
-        if (!cancelled) setBoardStatus("error");
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setBoardError(err);
+        setBoardStatus("error");
       });
     return () => {
       cancelled = true;
@@ -547,7 +551,7 @@ export function ChampionBuilds() {
 
             {!board ? (
               boardStatus === "error" ? (
-                <LoadError onRetry={() => setBoardAttempt((n) => n + 1)} />
+                <LoadError error={boardError} onRetry={() => setBoardAttempt((n) => n + 1)} />
               ) : (
                 <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
               )
@@ -678,7 +682,7 @@ export function ChampionBuilds() {
             </div>
             {!board ? (
               boardStatus === "error" ? (
-                <LoadError onRetry={() => setBoardAttempt((n) => n + 1)} />
+                <LoadError error={boardError} onRetry={() => setBoardAttempt((n) => n + 1)} />
               ) : (
                 <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
               )

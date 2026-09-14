@@ -2,6 +2,8 @@ import type { Messages } from "../index";
 
 export const de: Messages = {
   Common: {
+    rateLimitedFor: "Gerade zu viele Anfragen. Versuch es in {seconds} s noch einmal.",
+    rateLimited: "Gerade zu viele Anfragen. Warte kurz und versuch es noch einmal.",
     networkError: "riftcompass.com ist nicht erreichbar. Prüfe deine Verbindung.",
     loadingSaved: "Deine Speicherstände werden geladen…",
     settings: "Einstellungen",
@@ -372,6 +374,10 @@ export const de: Messages = {
     calibrateAbilityBarDone: "Kalibriert ✓: neu kalibrieren",
     autoLaunchLabel: "RiftCompass beim Windows-Start starten",
     autoLaunchDescription: "Hält League-Client-Scouting und Build-Import direkt nach der Anmeldung bereit.",
+    leagueDirLabel: "League-of-Legends-Ordner",
+    leagueDirAuto: "Wird automatisch erkannt (C:, LOCALAPPDATA oder Riots Installationsdaten). Nur von Hand wählen, wenn der Client nie erkannt wird.",
+    leagueDirPick: "Ordner wählen",
+    leagueDirForget: "Vergessen",
     languageSection: "Sprache",
     aboutSection: "Über",
     riotDisclaimer: "RiftCompass wird nicht von Riot Games unterstützt und gibt nicht die Ansichten von Riot Games oder anderen offiziell an der Produktion oder Verwaltung von Riot-Games-Eigentum beteiligten Personen wieder. Riot Games und alle zugehörigen Eigentumsrechte sind Marken oder eingetragene Marken von Riot Games, Inc.",
@@ -673,7 +679,7 @@ export const de: Messages = {
       krugs: "Krugs",
       murkWolves: "Wölfe",
       raptors: "Raptoren",
-      riftScuttler: "Rift Scuttler",
+      riftScuttler: "Kluftkrabbler",
     },
   },
   PersonalityTest: {
