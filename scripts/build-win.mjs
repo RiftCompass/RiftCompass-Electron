@@ -44,11 +44,20 @@ function findZip(root) {
 // comprueba antes y se dice que cerrar (APP-12, ronda 20).
 const release = path.resolve("release");
 if (process.platform === "win32") {
-  const running = execFileSync(
-    "powershell",
-    ["-NoProfile", "-NonInteractive", "-Command", "Get-Process RiftCompass -ErrorAction SilentlyContinue | ForEach-Object { $_.Path }"],
-    { encoding: "utf-8", windowsHide: true },
-  )
+  // `Get-Process` sin coincidencias sale con codigo 1 aunque se silencie el
+  // error (paso en el runner de GitHub el 2026-09-14): se envuelve para que
+  // "no hay ningun proceso" sea la respuesta normal, no un fallo.
+  let listed = "";
+  try {
+    listed = execFileSync(
+      "powershell",
+      ["-NoProfile", "-NonInteractive", "-Command", "try { Get-Process RiftCompass -ErrorAction Stop | ForEach-Object { $_.Path } } catch { }; exit 0"],
+      { encoding: "utf-8", windowsHide: true },
+    );
+  } catch {
+    listed = "";
+  }
+  const running = listed
     .split(/\r?\n/)
     .filter((p) => p && p.toLowerCase().startsWith(release.toLowerCase()));
   if (running.length > 0) {
