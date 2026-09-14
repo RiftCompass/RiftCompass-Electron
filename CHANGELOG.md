@@ -5,6 +5,14 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.2
+
+- Matchups de línea rediseñados: al elegir campeón aparece un resumen de la
+  línea (winrate global, partidas y rivales con muestra) con los matchups más
+  cómodos y más difíciles, y cada rival lleva su barra de winrate con la marca
+  del 50 %, su porcentaje y sus partidas. Se puede ordenar por winrate o por
+  partidas.
+
 ## 0.3.1
 
 - La app encuentra el cliente de League aunque esté instalado fuera de `C:`
