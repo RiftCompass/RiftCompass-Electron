@@ -1,17 +1,48 @@
-# RiftCompass for Windows
+# RiftCompass desktop
 
-Desktop companion for [RiftCompass](https://riftcompass.com), the League of Legends improvement site that turns your match history into a personalized roadmap: analyze, plan, practice, measure again.
+The Windows companion app for [riftcompass.com](https://riftcompass.com): the
+same free toolkit and player profiles as the website, plus what only a desktop
+app can do with the League of Legends client running next to it: a draft
+companion in champion select (champion suggestions from real matchup data,
+runes, summoner spells and an item set imported into the client with one
+click), a post-game report, and an in-game overlay (gold per lane, objective
+timers, CS/min, skill order).
 
-The app reads the game client on your PC to show live insights during champion select and in game, and syncs everything you save (profiles, tier lists, drafts, maps, builds) with your account on riftcompass.com.
+Everything the app reads from your League client stays on your PC. The only
+server it talks to is riftcompass.com's public API.
 
-- **Website:** https://riftcompass.com
-- **Download:** the latest installer is on the [Releases](https://github.com/RiftCompass/RiftCompass-Electron/releases/latest) page. The app updates itself.
-- **Privacy:** data from the League client is processed only on your PC and never leaves it. Details in the [privacy policy](https://riftcompass.com/en/legal/privacy).
+## Install
 
-Built with Electron, React and TypeScript. Distributed through GitHub Releases with automatic updates.
+Download `RiftCompass-Setup.exe` from the
+[latest release](https://github.com/RiftCompass/RiftCompass-Electron/releases/latest)
+(or from the website). The installer isn't code-signed yet, so Windows
+SmartScreen shows a warning the first time: "More info → Run anyway". The app
+updates itself from GitHub Releases. What changed in each version is in
+[CHANGELOG.md](CHANGELOG.md).
 
-RiftCompass isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+## Build it yourself
 
-## License
+```
+npm install
+npm run dev          # Vite + Electron, against riftcompass.com
+npm run typecheck    # tsc for renderer and main process, plus the secrets check
+npm test
+npm run dist         # NSIS installer in release/
+```
 
-MIT. See [LICENSE](LICENSE). The RiftCompass name and logo are not covered by the license.
+Node 22+ and Windows. `CLAUDE.md` is the engineering guide (architecture,
+security model, League client integration, Overwolf overlay).
+
+## Reporting a problem
+
+Open an issue on this repository or write to riftcompass@gmail.com. For an
+in-game problem, say which League patch and which game mode.
+
+## Legal
+
+MIT licensed (see `LICENSE`). RiftCompass isn't endorsed by Riot Games and
+doesn't reflect the views or opinions of Riot Games or anyone officially
+involved in producing or managing Riot Games properties. Riot Games and all
+associated properties are trademarks or registered trademarks of Riot Games,
+Inc. The in-game overlay follows Riot's third-party application policy: no
+enemy timers, no enemy status notifications.

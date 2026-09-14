@@ -1,5 +1,3 @@
-import { API_BASE_URL } from "../shared/api";
-
 // Riot has no LP-history endpoint, only the current standing, so a
 // player's LP graph on riftcompass.com is exactly the standings the
 // server managed to capture (see the web repo's rank-snapshot.ts). This
@@ -14,17 +12,12 @@ export const SECOND_ATTEMPT_DELAY_MS = 5 * 60_000;
 
 export type RankSnapshotOutcome = "changed" | "unchanged" | "failed";
 
+// Va por el proceso principal (electron/account.ts) y no con fetch desde
+// aqui: la web exige la sesion de la app desde la ronda 20 (SEG-4) y el token
+// nunca cruza al renderer. Sin sesion iniciada no se registra el punto.
 export async function requestRankSnapshot(platform: string, puuid: string): Promise<RankSnapshotOutcome> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/rank-snapshot`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, puuid }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) return "failed";
-    const data = (await res.json()) as { changed?: boolean };
-    return data.changed ? "changed" : "unchanged";
+    return await window.riftcompass.requestRankSnapshot(platform, puuid);
   } catch {
     return "failed";
   }

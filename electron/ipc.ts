@@ -1,7 +1,7 @@
 // Registers every ipcMain.handle for the CMD.* allowlist in
 // src/bridge/commands.ts.
 
-import { ipcMain, shell } from "electron";
+import { dialog, ipcMain, shell } from "electron";
 import { CMD, EVT } from "../src/bridge/commands";
 import * as account from "./account";
 import { applyRunePage, applySummonerSpells, fetchLastBuild } from "./buildImport";
@@ -173,18 +173,21 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(CMD.SettingsGet, () => settings.settingsGet());
   ipcMain.handle(CMD.SettingsSetAutoLaunch, (_e, { enabled }: { enabled: boolean }) => settings.settingsSetAutoLaunch(enabled));
-  ipcMain.handle(CMD.SettingsSetOverlayModules, (_e, { modules }: { modules: settings.OverlayModulesPatch }) =>
-    settings.settingsSetOverlayModules(modules),
-  );
+  ipcMain.handle(CMD.SettingsSetOverlayModules, (_e, { modules }: { modules: unknown }) => settings.settingsSetOverlayModules(modules));
+  ipcMain.handle(CMD.SettingsSetLeagueInstallDir, (_e, { dir }: { dir: unknown }) => settings.settingsSetLeagueInstallDir(dir));
+  ipcMain.handle(CMD.SettingsPickLeagueInstallDir, async () => {
+    const result = await dialog.showOpenDialog({ properties: ["openDirectory"], title: "Carpeta de League of Legends" });
+    const dir = result.canceled ? null : (result.filePaths[0] ?? null);
+    if (dir) settings.settingsSetLeagueInstallDir(dir);
+    return { dir };
+  });
   ipcMain.handle(CMD.SettingsSetLocale, (_e, { locale }: { locale: string }) => settings.settingsSetLocale(locale));
   ipcMain.handle(CMD.SettingsSetFlashSide, (_e, { side }: { side: string }) => settings.settingsSetFlashSide(side));
-  ipcMain.handle(CMD.SettingsSetAbilityBarCalibration, (_e, { calibration }: { calibration: settings.AbilityBarCalibration }) =>
+  ipcMain.handle(CMD.SettingsSetAbilityBarCalibration, (_e, { calibration }: { calibration: unknown }) =>
     settings.settingsSetAbilityBarCalibration(calibration),
   );
-  ipcMain.handle(
-    CMD.SettingsSetOverlayPanelPosition,
-    (_e, { panel, position }: { panel: string; position: settings.ScreenPoint }) =>
-      settings.settingsSetOverlayPanelPosition(panel, position),
+  ipcMain.handle(CMD.SettingsSetOverlayPanelPosition, (_e, { panel, position }: { panel: unknown; position: unknown }) =>
+    settings.settingsSetOverlayPanelPosition(panel, position),
   );
 
   ipcMain.handle(CMD.AccountLogin, (_e, { email, password }: { email: string; password: string }) => account.accountLogin(email, password));
@@ -233,6 +236,9 @@ export function registerIpcHandlers(): void {
     CMD.AccountFetchProfileForced,
     (_e, { platform, gameName, tagLine }: { platform: string; gameName: string; tagLine: string }) =>
       account.accountFetchProfileForced(platform, gameName, tagLine),
+  );
+  ipcMain.handle(CMD.AccountRequestRankSnapshot, (_e, { platform, puuid }: { platform: string; puuid: string }) =>
+    typeof platform === "string" && typeof puuid === "string" ? account.accountRequestRankSnapshot(platform, puuid) : "failed",
   );
   ipcMain.handle(CMD.AccountCreateChampionBuild, (_e, { build }: { build: unknown }) =>
     account.accountCreateChampionBuild(build),

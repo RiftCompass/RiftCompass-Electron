@@ -10,6 +10,7 @@ import { useI18n } from "../i18n";
 import { useOpenTool, useRequestedChampion } from "../tool-navigation";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../theme";
 import { LoadError } from "./LoadError";
+import { apiGet } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 
 // Ported from the web's /tools/matchups: one champion in one position seen
@@ -44,6 +45,7 @@ export function Matchups() {
   const [rank, setRank] = useState<(typeof RANK_TIERS)[number]>("CHALLENGER");
   const [data, setData] = useState<MatchupsResponse | null>(null);
   const [loadStatus, setLoadStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
@@ -73,15 +75,17 @@ export function Matchups() {
     setData(null);
     setLoadStatus("loading");
     const url = `${API_BASE_URL}/api/v1/champion-matchups?champion=${encodeURIComponent(champion.internalId)}&role=${effectiveRole}&rank=${rank}`;
-    fetch(url)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((body: MatchupsResponse) => {
+    setLoadError(null);
+    apiGet<MatchupsResponse>(url)
+      .then((body) => {
         if (cancelled) return;
         setData(body);
         setLoadStatus("ready");
       })
-      .catch(() => {
-        if (!cancelled) setLoadStatus("error");
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoadError(err);
+        setLoadStatus("error");
       });
     return () => {
       cancelled = true;
@@ -182,7 +186,7 @@ export function Matchups() {
       {!champion || !effectiveRole ? (
         <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("Matchups.pickChampion")}</p>
       ) : loadStatus === "error" ? (
-        <LoadError onRetry={() => setLoadAttempt((n) => n + 1)} />
+        <LoadError error={loadError} onRetry={() => setLoadAttempt((n) => n + 1)} />
       ) : data === null ? (
         <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
       ) : (
