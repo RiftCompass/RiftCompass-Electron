@@ -22,7 +22,35 @@ const RANK_TIERS = ["CHALLENGER", "GRANDMASTER", "MASTER", "DIAMOND", "EMERALD",
 interface MatchupRow {
   championName: string;
   games: number;
+  wins: number;
   winRate: number;
+}
+
+type MatchupSort = "winrate" | "games";
+
+// Mismo tablero que la web (src/components/tools/matchup-board.tsx): cuatro
+// tonos de winrate, barra con la marca del 50 %, resumen de la linea y
+// orden conmutable. Un cambio alli se replica aqui.
+function winRateTone(winRate: number): "good" | "goodMild" | "badMild" | "bad" {
+  if (winRate >= 0.55) return "good";
+  if (winRate >= 0.5) return "goodMild";
+  if (winRate >= 0.45) return "badMild";
+  return "bad";
+}
+
+function sortRows(rows: MatchupRow[], sort: MatchupSort): MatchupRow[] {
+  return [...rows].sort((a, b) =>
+    sort === "games" ? b.games - a.games || b.winRate - a.winRate : b.winRate - a.winRate || b.games - a.games,
+  );
+}
+
+function WinRateBar({ winRate }: { winRate: number }) {
+  return (
+    <div style={{ position: "relative", height: 6, width: "100%", borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "clip" }} aria-hidden="true">
+      <div style={{ height: "100%", borderRadius: 999, width: `${Math.round(winRate * 100)}%`, background: COLORS[winRateTone(winRate)] }} />
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, background: "rgba(247,243,245,0.5)" }} />
+    </div>
+  );
 }
 
 interface MatchupsResponse {
@@ -47,6 +75,7 @@ export function Matchups() {
   const [loadStatus, setLoadStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
   const [loadError, setLoadError] = useState<unknown>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [sort, setSort] = useState<MatchupSort>("winrate");
 
   useEffect(() => {
     fetchChampionMap()
@@ -95,56 +124,130 @@ export function Matchups() {
   const championByInternalId = useMemo(() => new Map(champions.map((c) => [c.internalId, c])), [champions]);
   const lookup = (crawlerName: string) => championByInternalId.get(toDDragonId(crawlerName));
 
-  const table = (rows: MatchupRow[], titleKey: "asChampionTitle" | "againstChampionTitle") => {
-    const minGames = data?.minGames ?? 20;
-    const solid = rows.filter((r) => r.games >= minGames).sort((a, b) => b.winRate - a.winRate || b.games - a.games);
-    const thin = rows.filter((r) => r.games < minGames).sort((a, b) => b.games - a.games);
+  const minGames = data?.minGames ?? 20;
+  const solid = (rows: MatchupRow[]) => sortRows(rows.filter((r) => r.games >= minGames), sort);
+  const thin = (rows: MatchupRow[]) => sortRows(rows.filter((r) => r.games < minGames), "games");
+  const nameOf = (row: MatchupRow) => lookup(row.championName)?.name ?? row.championName;
+  const pick = (row: MatchupRow) => {
+    const info = lookup(row.championName);
+    if (info) setChampion(info);
+  };
+
+  const chip = (row: MatchupRow) => {
+    const info = lookup(row.championName);
     return (
-      <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 8, flex: "1 1 320px", minWidth: 0 }}>
-        <h2 style={{ fontFamily: FONT_HEADING, fontSize: 15, fontWeight: 400, margin: 0 }}>
-          {t(`Matchups.${titleKey}`, { champion: champion?.name ?? "" })}
-        </h2>
-        {solid.length === 0 && thin.length === 0 ? (
-          <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("Matchups.noData")}</p>
-        ) : (
+      <button
+        key={row.championName}
+        onClick={() => pick(row)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "3px 10px 3px 3px",
+          borderRadius: 999,
+          border: `1px solid ${COLORS.cardBorder}`,
+          background: "rgba(255,255,255,0.03)",
+          color: COLORS.text,
+          fontSize: 12,
+          cursor: info ? "pointer" : "default",
+        }}
+      >
+        {info ? <img src={info.iconUrl} alt="" style={{ width: 22, height: 22, borderRadius: 999 }} /> : null}
+        <span style={{ maxWidth: 96, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nameOf(row)}</span>
+        <span style={{ fontWeight: 700, color: COLORS[winRateTone(row.winRate)] }}>{Math.round(row.winRate * 100)}%</span>
+      </button>
+    );
+  };
+
+  const list = (rows: MatchupRow[], thinRows: MatchupRow[]) => {
+    if (rows.length === 0 && thinRows.length === 0) {
+      return <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("Matchups.noData")}</p>;
+    }
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {rows.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column" }}>
-            {solid.map((row) => {
+            {rows.map((row, i) => {
               const info = lookup(row.championName);
-              const good = row.winRate >= 0.5;
+              const tone = winRateTone(row.winRate);
               return (
                 <div
                   key={row.championName}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: `1px solid ${COLORS.cardBorder}` }}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "20px 32px minmax(0,1fr) 48px 72px",
+                    alignItems: "center",
+                    columnGap: 8,
+                    padding: "8px 0",
+                    borderBottom: i < rows.length - 1 ? `1px solid ${COLORS.cardBorder}` : "none",
+                  }}
                 >
+                  <span style={{ fontSize: 11, color: `${COLORS.muted}b3`, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{i + 1}</span>
                   {info ? (
-                    <img src={info.iconUrl} alt="" style={{ width: 28, height: 28, borderRadius: 6, flexShrink: 0 }} />
+                    <img src={info.iconUrl} alt="" style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${COLORS.cardBorder}` }} />
                   ) : (
-                    <span style={{ width: 28, height: 28, borderRadius: 6, background: `${COLORS.muted}33`, flexShrink: 0 }} />
+                    <span style={{ width: 32, height: 32, borderRadius: 8, background: `${COLORS.muted}33` }} />
                   )}
-                  <button
-                    onClick={info ? () => setChampion(info) : undefined}
-                    style={{ flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", color: COLORS.text, fontSize: 13, cursor: info ? "pointer" : "default", padding: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                  >
-                    {info?.name ?? row.championName}
-                  </button>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: good ? COLORS.good : COLORS.bad }}>{Math.round(row.winRate * 100)}%</span>
-                  <span style={{ fontSize: 11, color: COLORS.muted, width: 70, textAlign: "right" }}>
-                    {t("Matchups.games", { games: row.games })}
-                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                    <button
+                      onClick={info ? () => pick(row) : undefined}
+                      style={{ textAlign: "left", background: "none", border: "none", color: COLORS.text, fontSize: 13, lineHeight: 1.2, cursor: info ? "pointer" : "default", padding: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
+                      {nameOf(row)}
+                    </button>
+                    <WinRateBar winRate={row.winRate} />
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, textAlign: "right", color: COLORS[tone], fontVariantNumeric: "tabular-nums" }}>{Math.round(row.winRate * 100)}%</span>
+                  <span style={{ fontSize: 11, color: COLORS.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{t("Matchups.games", { games: row.games })}</span>
                 </div>
               );
             })}
-            {thin.length > 0 ? (
-              <p style={{ fontSize: 11, color: COLORS.muted, margin: "8px 0 0", lineHeight: 1.5 }}>
-                {t("Matchups.thinSample", { min: minGames })}{" "}
-                {thin.map((row, i) => `${i > 0 ? ", " : ""}${lookup(row.championName)?.name ?? row.championName} (${row.games})`).join("")}
-              </p>
-            ) : null}
           </div>
-        )}
+        ) : null}
+        {thinRows.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <p style={{ fontSize: 11, color: COLORS.muted, margin: 0 }}>{t("Matchups.thinSample", { min: minGames })}</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {thinRows.map((row) => {
+                const info = lookup(row.championName);
+                return (
+                  <button
+                    key={row.championName}
+                    onClick={info ? () => pick(row) : undefined}
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 8px 2px 2px", borderRadius: 999, border: `1px solid ${COLORS.cardBorder}`, background: "transparent", color: COLORS.muted, fontSize: 11, cursor: info ? "pointer" : "default" }}
+                  >
+                    {info ? <img src={info.iconUrl} alt="" style={{ width: 18, height: 18, borderRadius: 999, opacity: 0.7 }} /> : null}
+                    {nameOf(row)}
+                    <span style={{ opacity: 0.7 }}>{row.games}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   };
+
+  const column = (rows: MatchupRow[], titleKey: "asChampionTitle" | "againstChampionTitle", hintKey: "asChampionHint" | "againstChampionHint") => (
+    <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 12, flex: "1 1 320px", minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <h2 style={{ fontFamily: FONT_HEADING, fontSize: 15, fontWeight: 400, margin: 0 }}>{t(`Matchups.${titleKey}`, { champion: champion?.name ?? "" })}</h2>
+        <p style={{ fontSize: 11, color: COLORS.muted, margin: 0 }}>{t(`Matchups.${hintKey}`, { champion: champion?.name ?? "" })}</p>
+      </div>
+      {list(solid(rows), thin(rows))}
+    </div>
+  );
+
+  // Resumen de la linea: winrate global (todas las filas, es un agregado) y
+  // los matchups mas comodos y mas dificiles entre los que tienen muestra.
+  const summaryGames = data ? data.asChampion.reduce((sum, r) => sum + r.games, 0) : 0;
+  const summaryWins = data ? data.asChampion.reduce((sum, r) => sum + r.wins, 0) : 0;
+  const summaryWinRate = summaryGames > 0 ? summaryWins / summaryGames : null;
+  const solidAs = data ? sortRows(data.asChampion.filter((r) => r.games >= minGames), "winrate") : [];
+  const best = solidAs.filter((r) => r.winRate >= 0.5).slice(0, 4);
+  const worst = [...solidAs].reverse().filter((r) => r.winRate < 0.5).slice(0, 4);
+  const labelStyle = { fontSize: 11, color: COLORS.muted, textTransform: "uppercase" as const, letterSpacing: "0.04em" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -213,9 +316,36 @@ export function Matchups() {
               </span>
             </div>
           </div>
+          <div style={{ ...cardStyle, display: "flex", flexWrap: "wrap", gap: 20 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 200, paddingRight: 20, borderRight: `1px solid ${COLORS.cardBorder}` }}>
+              <span style={labelStyle}>{t("Matchups.laneWinrate")}</span>
+              <span style={{ fontFamily: FONT_HEADING, fontSize: 30, lineHeight: 1.1, color: summaryWinRate === null ? COLORS.muted : summaryWinRate >= 0.5 ? COLORS.good : COLORS.bad }}>
+                {summaryWinRate === null ? "–" : `${(summaryWinRate * 100).toFixed(1)}%`}
+              </span>
+              <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Matchups.summaryGames", { games: summaryGames, rivals: solidAs.length })}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: "1 1 320px", minWidth: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={labelStyle}>{t("Matchups.bestMatchups")}</span>
+                {best.length === 0 ? <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Matchups.noneYet")}</span> : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{best.map(chip)}</div>}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={labelStyle}>{t("Matchups.worstMatchups")}</span>
+                {worst.length === 0 ? <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Matchups.noneYet")}</span> : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{worst.map(chip)}</div>}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Matchups.sortBy")}</span>
+            {(["winrate", "games"] as const).map((option) => (
+              <button key={option} onClick={() => setSort(option)} style={pillStyle(sort === option, "compact")}>
+                {t(option === "games" ? "Matchups.sortGames" : "Matchups.sortWinrate")}
+              </button>
+            ))}
+          </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-            {table(data.asChampion, "asChampionTitle")}
-            {table(data.againstChampion, "againstChampionTitle")}
+            {column(data.asChampion, "asChampionTitle", "asChampionHint")}
+            {column(data.againstChampion, "againstChampionTitle", "againstChampionHint")}
           </div>
           <DataQualityNote quality={data.dataQuality} patches={data.dataPatches} />
         </>
