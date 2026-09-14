@@ -3,13 +3,15 @@
 // handler).
 
 import { app, Menu, nativeImage, Tray } from "electron";
-import * as path from "node:path";
-import { markMainWindowQuitting, showMainWindow } from "./windows";
+import { APP_ICON, markMainWindowQuitting, showMainWindow } from "./windows";
 
 let tray: Tray | null = null;
 
 export function createTray(): void {
-  const icon = nativeImage.createFromPath(path.join(__dirname, "..", "..", "build", "icons", "32x32.png"));
+  // The .ico carries every size Windows may ask for (16px at 100 % DPI,
+  // 24/32px on scaled displays); a single 32px PNG came out blurry and, worse,
+  // wasn't shipped in the package at all (electron-builder.yml `files`).
+  const icon = nativeImage.createFromPath(APP_ICON);
   tray = new Tray(icon);
   tray.setToolTip("RiftCompass");
   tray.setContextMenu(

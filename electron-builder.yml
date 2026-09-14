@@ -11,6 +11,10 @@ files:
   - dist/**
   - dist-electron/**
   - package.json
+  # The tray reads this at runtime (tray.ts, windows.ts APP_ICON). Without it
+  # in the package the installed app had an invisible tray icon: the exe
+  # carries the icon for the taskbar, but a Tray needs a real image file.
+  - build/icons/icon.ico
 win:
   target: nsis
   icon: build/icons/icon.ico
