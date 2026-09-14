@@ -1,7 +1,7 @@
 {
   "name": "riftcompass-electron",
   "private": true,
-  "version": "0.3.1",
+  "version": "0.3.2",
   "license": "MIT",
   "description": "RiftCompass desktop companion: champ-select scouting and live in-game coaching, reading the League client locally.",
   "author": "RiftCompass",
