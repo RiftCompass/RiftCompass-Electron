@@ -267,9 +267,11 @@ export function GoldCalculator() {
     selected !== null && (!buildFull || (supportRole && SUPPORT_ITEM_IDS.has(selected.id) && build.some((id) => SUPPORT_ITEM_IDS.has(id))));
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "170px minmax(0, 1fr) minmax(260px, 320px)", gap: 18, alignItems: "start" }}>
+    <div className="rc-shop">
+    <div className="rc-shop-grid" style={{ display: "grid", gap: 18, alignItems: "start" }}>
       {/* Stat sidebar, like the in-game shop's left rail */}
       <div
+        className="rc-shop-rail"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -277,7 +279,6 @@ export function GoldCalculator() {
           border: `1px solid ${COLORS.cardBorder}`,
           background: `${COLORS.card}80`,
           padding: "10px 0",
-          position: "sticky",
           top: 0,
         }}
       >
@@ -416,7 +417,7 @@ export function GoldCalculator() {
       </div>
 
       {/* Build panel: 6 slots, build total vs your gold, item detail */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "sticky", top: 0 }}>
+      <div className="rc-shop-rail" style={{ display: "flex", flexDirection: "column", gap: 12, top: 0 }}>
         <div
           style={{
             display: "flex",
@@ -736,6 +737,7 @@ export function GoldCalculator() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

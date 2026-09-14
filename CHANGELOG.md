@@ -5,6 +5,12 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.3
+
+- Calculadora de oro: con la ventana estrecha, el panel de la build ya no se
+  pone encima de la lista de objetos; las tres columnas se apilan como en la
+  web.
+
 ## 0.3.2
 
 - Matchups de línea rediseñados: al elegir campeón aparece un resumen de la

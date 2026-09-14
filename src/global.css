@@ -353,3 +353,32 @@ details[open] > summary svg {
     margin-left: -32px;
   }
 }
+
+/* Gold Calculator's shop layout: stat rail, item list and build panel side by
+   side, like the web version (`lg:grid-cols-[170px_minmax(0,1fr)_300px]`).
+   Below 760px of panel width the middle column got squeezed to nothing and
+   the sticky build panel sat on top of the item list, so the three stack
+   into one column and stop being sticky, exactly what the web does below
+   `lg`. Container query for the same reason as .rc-ab-grid: the window can
+   be 1440px wide with the account panel eating a third of it. */
+.rc-shop {
+  container-type: inline-size;
+}
+
+.rc-shop-grid {
+  grid-template-columns: 170px minmax(0, 1fr) minmax(260px, 320px);
+}
+
+.rc-shop-rail {
+  position: sticky;
+}
+
+@container (max-width: 759px) {
+  .rc-shop-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rc-shop-rail {
+    position: static;
+  }
+}
