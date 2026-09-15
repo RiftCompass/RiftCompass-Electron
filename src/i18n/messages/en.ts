@@ -17,6 +17,7 @@ export const en = {
     rateLimitedFor: "Too many requests right now. Try again in {seconds} s.",
     rateLimited: "Too many requests right now. Wait a moment and try again.",
     networkError: "Couldn't reach riftcompass.com. Check your connection.",
+    dataDragonError: "Couldn't load the game data from Data Dragon. Check your connection.",
     loadingSaved: "Loading your saved items…",
     settings: "Settings",
     backToTools: "Back to Tools",
@@ -695,6 +696,7 @@ export const en = {
     },
   },
   PersonalityTest: {
+    intro: "12 quick questions about how you like to play, matched against champions' real attack/defense/magic/difficulty ratings, not a fabricated \"meta\" score.",
     roleStepTitle: "What role do you play?",
     roleStepSubtitle: "The 12 questions are the same either way. This just keeps the results to champions built for that role.",
     progress: "Question {current} of {total}",
@@ -723,6 +725,7 @@ export const en = {
     },
   },
   ChampionPoolBuilder: {
+    intro: "Build a focused pool of up to 6 champions per role: core picks you'll play most, flex picks for coverage, and one pocket pick. Saved automatically on this device.",
     realWinrate: "{rate}% real WR ({games} games)",
     realWinrateTooltip: "Real win rate from RiftCompass's own tracked matches. Sample is still small and growing.",
     searchNoResults: "No champions found.",
@@ -755,8 +758,8 @@ export const en = {
     howWeCount: "How we count",
   },
   Matchups: {
-    asChampionHint: "Win rate of {champion} in this position against each lane opponent, best to worst.",
-    againstChampionHint: "Win rate of each champion when laning against {champion}: the ones at the top are its counters.",
+    asChampionHint: "Win rate of {champion} in this position against each lane opponent.",
+    againstChampionHint: "Win rate of each champion when laning against {champion}: the higher it is, the harder the counter.",
     laneWinrate: "Lane win rate",
     summaryGames: "{games} tracked games · {rivals} opponents with a sample",
     bestMatchups: "Comfortable matchups",

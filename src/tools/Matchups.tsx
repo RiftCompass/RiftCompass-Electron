@@ -64,7 +64,7 @@ interface MatchupsResponse {
 const cardStyle = makeCardStyle({ borderRadius: 12, padding: 16 });
 
 export function Matchups() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const openTool = useOpenTool();
   const requested = useRequestedChampion();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
@@ -257,10 +257,11 @@ export function Matchups() {
         <ChampionCombobox
           champions={champions}
           value={champion}
-          onChange={(c) => {
-            setChampion(c);
-            setRole(null);
-          }}
+          // La posición elegida se conserva al cambiar de campeón, como en
+          // la web y como al pulsar un rival del tablero (ronda 21). Tampoco
+          // se suelta al vaciar el selector: en este combobox cambiar de
+          // campeón pasa siempre por vaciarlo primero.
+          onChange={setChampion}
           placeholder={t("Matchups.championPlaceholder")}
           noResultsLabel={t("Matchups.noChampionMatches")}
         />
@@ -320,7 +321,7 @@ export function Matchups() {
             <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 200, paddingRight: 20, borderRight: `1px solid ${COLORS.cardBorder}` }}>
               <span style={labelStyle}>{t("Matchups.laneWinrate")}</span>
               <span style={{ fontFamily: FONT_HEADING, fontSize: 30, lineHeight: 1.1, color: summaryWinRate === null ? COLORS.muted : summaryWinRate >= 0.5 ? COLORS.good : COLORS.bad }}>
-                {summaryWinRate === null ? "–" : `${(summaryWinRate * 100).toFixed(1)}%`}
+                {summaryWinRate === null ? "–" : new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryWinRate)}
               </span>
               <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Matchups.summaryGames", { games: summaryGames, rivals: solidAs.length })}</span>
             </div>

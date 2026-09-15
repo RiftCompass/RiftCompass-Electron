@@ -5,6 +5,7 @@ export const es: Messages = {
     rateLimitedFor: "Demasiadas peticiones ahora mismo. Vuelve a intentarlo en {seconds} s.",
     rateLimited: "Demasiadas peticiones ahora mismo. Espera un momento y vuelve a intentarlo.",
     networkError: "No se pudo conectar con riftcompass.com. Comprueba tu conexión.",
+    dataDragonError: "No se pudieron cargar los datos del juego desde Data Dragon. Comprueba tu conexión.",
     loadingSaved: "Cargando tus guardados…",
     settings: "Ajustes",
     backToTools: "Volver a Herramientas",
@@ -683,6 +684,7 @@ export const es: Messages = {
     },
   },
   PersonalityTest: {
+    intro: "12 preguntas rápidas sobre cómo te gusta jugar, contrastadas con las valoraciones reales de ataque/defensa/magia/dificultad de los campeones, no una puntuación de \"meta\" inventada.",
     roleStepTitle: "¿Qué rol juegas?",
     roleStepSubtitle: "Las 12 preguntas son las mismas en cualquier caso. Esto solo limita los resultados a campeones pensados para ese rol.",
     progress: "Pregunta {current} de {total}",
@@ -711,6 +713,7 @@ export const es: Messages = {
     },
   },
   ChampionPoolBuilder: {
+    intro: "Crea una pool enfocada de hasta 6 campeones por posición: picks principales que jugarás más, picks flexibles para cobertura y un pocket pick. Se guarda automáticamente en este dispositivo.",
     realWinrate: "{rate}% WR real ({games} partidas)",
     realWinrateTooltip: "Winrate real de las partidas rastreadas por RiftCompass. La muestra todavía es pequeña y sigue creciendo.",
     searchNoResults: "No se encontraron campeones.",
@@ -743,8 +746,8 @@ export const es: Messages = {
     howWeCount: "Cómo contamos",
   },
   Matchups: {
-    asChampionHint: "Winrate de {champion} en esta posición contra cada rival de línea, de mejor a peor.",
-    againstChampionHint: "Winrate de cada campeón cuando se enfrenta en línea a {champion}: los de arriba son sus counters.",
+    asChampionHint: "Winrate de {champion} en esta posición contra cada rival de línea.",
+    againstChampionHint: "Winrate de cada campeón cuando se enfrenta en línea a {champion}: cuanto más alto, más duro el counter.",
     laneWinrate: "Winrate de línea",
     summaryGames: "{games} partidas registradas · {rivals} rivales con muestra",
     bestMatchups: "Matchups cómodos",

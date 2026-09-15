@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ChampionInfo } from "./ddragon";
 import { COLORS } from "./theme";
 
@@ -23,6 +23,22 @@ export function ChampionCombobox({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
+
+  // Cierre por clic fuera del contenedor, como en la web, en vez de un
+  // onBlur con temporizador: aquel cerraba la lista al pulsar Tab antes de
+  // que el foco llegara a ningún botón, así que el selector no se podía
+  // usar sin ratón (ronda 21).
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, []);
 
   const results = useMemo(() => {
     if (!query.trim()) return champions.slice(0, 30);
@@ -30,8 +46,32 @@ export function ChampionCombobox({
     return champions.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 30);
   }, [champions, query]);
 
+  const pick = (c: ChampionInfo) => {
+    onChange(c);
+    setOpen(false);
+  };
+
+  // Enter elige el primer resultado, Escape cierra; Tab recorre la lista
+  // porque las opciones son botones. Salir del widget con el teclado cierra
+  // igual que un clic fuera.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && open && results.length > 0) {
+      e.preventDefault();
+      pick(results[0]);
+    } else if (e.key === "Escape" && open) {
+      e.preventDefault();
+      setOpen(false);
+    }
+  };
+
   return (
-    <div style={{ position: "relative" }}>
+    <div
+      ref={containerRef}
+      style={{ position: "relative" }}
+      onBlur={(e) => {
+        if (!containerRef.current?.contains(e.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
       {value ? (
         <button
           onClick={() => {
@@ -62,8 +102,13 @@ export function ChampionCombobox({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          role="combobox"
+          aria-label={placeholder}
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-autocomplete="list"
           style={{
             width: "100%",
             background: COLORS.card,
@@ -78,6 +123,8 @@ export function ChampionCombobox({
       )}
       {open && !value ? (
         <div
+          id={listId}
+          role="listbox"
           style={{
             position: "absolute",
             top: "calc(100% + 4px)",
@@ -98,11 +145,7 @@ export function ChampionCombobox({
             results.map((c) => (
               <button
                 key={c.id}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  onChange(c);
-                  setOpen(false);
-                }}
+                onClick={() => pick(c)}
                 style={{
                   display: "flex",
                   alignItems: "center",

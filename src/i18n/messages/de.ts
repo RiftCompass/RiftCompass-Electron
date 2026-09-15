@@ -5,6 +5,7 @@ export const de: Messages = {
     rateLimitedFor: "Gerade zu viele Anfragen. Versuch es in {seconds} s noch einmal.",
     rateLimited: "Gerade zu viele Anfragen. Warte kurz und versuch es noch einmal.",
     networkError: "riftcompass.com ist nicht erreichbar. Prüfe deine Verbindung.",
+    dataDragonError: "Die Spieldaten konnten nicht von Data Dragon geladen werden. Prüfe deine Verbindung.",
     loadingSaved: "Deine Speicherstände werden geladen…",
     settings: "Einstellungen",
     backToTools: "Zurück zu den Tools",
@@ -683,6 +684,7 @@ export const de: Messages = {
     },
   },
   PersonalityTest: {
+    intro: "12 kurze Fragen dazu, wie du gerne spielst, abgeglichen mit den echten Angriffs-/Verteidigungs-/Magie-/Schwierigkeitswerten der Champions, nicht mit einem erfundenen „Meta“-Score.",
     roleStepTitle: "Welche Rolle spielst du?",
     roleStepSubtitle: "Die 12 Fragen sind in jedem Fall gleich. Das begrenzt die Ergebnisse nur auf Champions, die für diese Rolle gemacht sind.",
     progress: "Frage {current} von {total}",
@@ -711,6 +713,7 @@ export const de: Messages = {
     },
   },
   ChampionPoolBuilder: {
+    intro: "Baue einen fokussierten Pool aus bis zu 6 Champions pro Rolle: Core-Picks, die du am meisten spielst, Flex-Picks zur Abdeckung und einen Pocket-Pick. Wird automatisch auf diesem Gerät gespeichert.",
     realWinrate: "{rate}% echte WR ({games} Spiele)",
     realWinrateTooltip: "Echte Winrate aus RiftCompass' eigenen erfassten Partien. Die Stichprobe ist noch klein und wächst weiter.",
     searchNoResults: "Keine Champions gefunden.",
@@ -743,8 +746,8 @@ export const de: Messages = {
     howWeCount: "Wie wir zählen",
   },
   Matchups: {
-    asChampionHint: "Winrate von {champion} auf dieser Position gegen jeden Lane-Gegner, vom besten zum schlechtesten.",
-    againstChampionHint: "Winrate jedes Champions auf der Lane gegen {champion}: die oben sind seine Counter.",
+    asChampionHint: "Winrate von {champion} auf dieser Position gegen jeden Lane-Gegner.",
+    againstChampionHint: "Winrate jedes Champions auf der Lane gegen {champion}: je höher, desto härter der Counter.",
     laneWinrate: "Lane-Winrate",
     summaryGames: "{games} erfasste Spiele · {rivals} Gegner mit Stichprobe",
     bestMatchups: "Angenehme Matchups",
