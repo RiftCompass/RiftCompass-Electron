@@ -412,6 +412,8 @@ export const en = {
     },
   },
   TierList: {
+    allUnranked: "{count} champions, all unranked",
+    resetConfirm: "Clear the whole tier list? This can't be undone.",
     loginToSaveLink: "Log in",
     intro: "Drag champions into a tier to build your own ranking. Saved automatically on this device.",
     reset: "Reset",
@@ -445,6 +447,7 @@ export const en = {
   },
   Cooldowns: {
     intro: "Pick two champions and see their ability cooldowns side by side, adjusted for ability haste.",
+    loadError: "Couldn't load this champion's abilities. Check your connection.",
     championLabel: "Champion {slot}",
     selectPlaceholder: "Search champion…",
     noResults: "No champions found.",

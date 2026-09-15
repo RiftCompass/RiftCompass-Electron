@@ -400,6 +400,8 @@ export const es: Messages = {
     },
   },
   TierList: {
+    allUnranked: "{count} campeones, todos sin clasificar",
+    resetConfirm: "¿Vaciar la tier list entera? Esta acción no se puede deshacer.",
     loginToSaveLink: "Inicia sesión",
     intro: "Arrastra campeones a un tier para crear tu propia clasificación. Se guarda automáticamente en este dispositivo.",
     reset: "Restablecer",
@@ -433,6 +435,7 @@ export const es: Messages = {
   },
   Cooldowns: {
     intro: "Elige dos campeones y compara sus tiempos de reutilización lado a lado, ajustados por celeridad de habilidad.",
+    loadError: "No se pudieron cargar las habilidades de este campeón. Comprueba tu conexión.",
     championLabel: "Campeón {slot}",
     selectPlaceholder: "Buscar campeón…",
     noResults: "No se han encontrado campeones.",

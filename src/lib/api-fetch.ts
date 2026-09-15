@@ -39,3 +39,9 @@ export async function apiGet<T>(url: string, init?: RequestInit): Promise<T> {
   if (!res.ok) throw new ApiFailed(res.status);
   return (await res.json()) as T;
 }
+
+// Un getSaved* del puente que no pudo pedir la lista (ronda 22), convertido
+// al mismo error que lanza apiGet para que LoadError distinga el 429.
+export function savedListError(result: { error: string; retryAfterSeconds: number | null }): Error {
+  return result.error === "rateLimited" ? new ApiRateLimited(result.retryAfterSeconds) : new ApiFailed(null);
+}

@@ -128,6 +128,13 @@ export type ToggleSavedProfileResult =
   | ({ ok: true; saved: boolean } & SavedProfilesPayload)
   | { ok: false; error: string };
 
+// Lo que devuelve cada getSaved*: la lista, o el motivo por el que no se
+// pudo pedir (ronda 22). `rateLimited` trae los segundos de espera si el
+// servidor los dijo.
+export type SavedListResult<T> =
+  | { ok: true; items: T[] }
+  | { ok: false; error: string; retryAfterSeconds: number | null };
+
 // Backend-synced (riftcompass.com's saved_tier_lists) — same
 // real data the web's own Tier List "Save tier list"/"My tier lists" reads
 // and writes. `board` is the tier-list board's own
@@ -320,20 +327,20 @@ export interface RiftCompassApi {
   deleteProfileFolder: (id: string) => Promise<FolderActionResult>;
   setSavedProfileFolder: (profileId: string, folderId: string) => Promise<FolderActionResult>;
   setMainSavedProfile: (profileId: string, isMain: boolean) => Promise<FolderActionResult>;
-  getSavedTierLists: () => Promise<SavedTierList[]>;
+  getSavedTierLists: () => Promise<SavedListResult<SavedTierList>>;
   createTierList: (name: string, board: Record<string, string[]>) => Promise<SaveTierListResult>;
   deleteTierList: (id: string) => Promise<SaveTierListResult>;
-  getSavedDrafts: () => Promise<SavedDraft[]>;
+  getSavedDrafts: () => Promise<SavedListResult<SavedDraft>>;
   createDraft: (name: string, selections: string[]) => Promise<SaveDraftResult>;
   deleteDraft: (id: string) => Promise<SaveDraftResult>;
-  getSavedMaps: () => Promise<SavedMapSummary[]>;
+  getSavedMaps: () => Promise<SavedListResult<SavedMapSummary>>;
   getSavedMap: (id: string) => Promise<LoadMapResult>;
   createMap: (name: string, strokes: unknown[], notes: string) => Promise<SaveMapResult>;
   deleteMap: (id: string) => Promise<SaveMapResult>;
-  getSavedBuilds: () => Promise<SavedBuild[]>;
+  getSavedBuilds: () => Promise<SavedListResult<SavedBuild>>;
   createBuild: (name: string, items: string[], supportRole: boolean) => Promise<SaveBuildResult>;
   deleteBuild: (id: string) => Promise<SaveBuildResult>;
-  getSavedChampionBuilds: () => Promise<SavedChampionBuild[]>;
+  getSavedChampionBuilds: () => Promise<SavedListResult<SavedChampionBuild>>;
   /** Perfil con `?force=true` y la sesión de la app: la web solo fuerza el refresco con sesión. */
   fetchProfileForced: (
     platform: string,

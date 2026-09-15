@@ -39,6 +39,7 @@ import type {
   SupportedLocale,
   ToggleSavedProfileResult,
   UpdateUsernameResult,
+  SavedListResult,
 } from "../riftcompass";
 
 // Exposed by electron/preload.ts via contextBridge.exposeInMainWorld — a
@@ -251,30 +252,34 @@ const api: RiftCompassApi = {
     tryInvoke(CMD.AccountSetProfileFolder, { profileId, folderId }, () => ({ ok: false as const, error: NO_BACKEND })),
   setMainSavedProfile: (profileId: string, isMain: boolean): Promise<FolderActionResult> =>
     tryInvoke(CMD.AccountSetMainProfile, { profileId, isMain }, () => ({ ok: false as const, error: NO_BACKEND })),
-  getSavedTierLists: (): Promise<SavedTierList[]> => tryInvoke(CMD.AccountGetSavedTierLists, undefined, () => []),
+  getSavedTierLists: (): Promise<SavedListResult<SavedTierList>> =>
+    tryInvoke(CMD.AccountGetSavedTierLists, undefined, () => ({ ok: true as const, items: [] })),
   createTierList: (name: string, board: Record<string, string[]>): Promise<SaveTierListResult> =>
     tryInvoke(CMD.AccountCreateTierList, { name, board }, () => ({ ok: false as const, error: NO_BACKEND })),
   deleteTierList: (id: string): Promise<SaveTierListResult> =>
     tryInvoke(CMD.AccountDeleteTierList, { id }, () => ({ ok: false as const, error: NO_BACKEND })),
-  getSavedDrafts: (): Promise<SavedDraft[]> => tryInvoke(CMD.AccountGetSavedDrafts, undefined, () => []),
+  getSavedDrafts: (): Promise<SavedListResult<SavedDraft>> =>
+    tryInvoke(CMD.AccountGetSavedDrafts, undefined, () => ({ ok: true as const, items: [] })),
   createDraft: (name: string, selections: string[]): Promise<SaveDraftResult> =>
     tryInvoke(CMD.AccountCreateDraft, { name, selections }, () => ({ ok: false as const, error: NO_BACKEND })),
   deleteDraft: (id: string): Promise<SaveDraftResult> =>
     tryInvoke(CMD.AccountDeleteDraft, { id }, () => ({ ok: false as const, error: NO_BACKEND })),
-  getSavedMaps: (): Promise<SavedMapSummary[]> => tryInvoke(CMD.AccountGetSavedMaps, undefined, () => []),
+  getSavedMaps: (): Promise<SavedListResult<SavedMapSummary>> =>
+    tryInvoke(CMD.AccountGetSavedMaps, undefined, () => ({ ok: true as const, items: [] })),
   getSavedMap: (id: string): Promise<LoadMapResult> =>
     tryInvoke(CMD.AccountGetSavedMap, { id }, () => ({ ok: false as const, error: NO_BACKEND })),
   createMap: (name: string, strokes: unknown[], notes: string): Promise<SaveMapResult> =>
     tryInvoke(CMD.AccountCreateMap, { name, strokes, notes }, () => ({ ok: false as const, error: NO_BACKEND })),
   deleteMap: (id: string): Promise<SaveMapResult> =>
     tryInvoke(CMD.AccountDeleteMap, { id }, () => ({ ok: false as const, error: NO_BACKEND })),
-  getSavedBuilds: (): Promise<SavedBuild[]> => tryInvoke(CMD.AccountGetSavedBuilds, undefined, () => []),
+  getSavedBuilds: (): Promise<SavedListResult<SavedBuild>> =>
+    tryInvoke(CMD.AccountGetSavedBuilds, undefined, () => ({ ok: true as const, items: [] })),
   createBuild: (name: string, items: string[], supportRole: boolean): Promise<SaveBuildResult> =>
     tryInvoke(CMD.AccountCreateBuild, { name, items, supportRole }, () => ({ ok: false as const, error: NO_BACKEND })),
   deleteBuild: (id: string): Promise<SaveBuildResult> =>
     tryInvoke(CMD.AccountDeleteBuild, { id }, () => ({ ok: false as const, error: NO_BACKEND })),
-  getSavedChampionBuilds: (): Promise<SavedChampionBuild[]> =>
-    tryInvoke(CMD.AccountGetSavedChampionBuilds, undefined, () => []),
+  getSavedChampionBuilds: (): Promise<SavedListResult<SavedChampionBuild>> =>
+    tryInvoke(CMD.AccountGetSavedChampionBuilds, undefined, () => ({ ok: true as const, items: [] })),
   fetchProfileForced: (platform: string, gameName: string, tagLine: string) =>
     tryInvoke(CMD.AccountFetchProfileForced, { platform, gameName, tagLine }, () => ({ error: "network" as const })),
   createChampionBuild: (build: ChampionBuildInput): Promise<SaveChampionBuildResult> =>

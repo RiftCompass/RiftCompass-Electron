@@ -5,6 +5,26 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.6
+
+- Mi Tier List: el badge de "tier real" solo aparece con datos del parche
+  actual; antes podía enseñar el del parche anterior sin avisar.
+  "Restablecer" pide confirmación si ya hay campeones clasificados. Se puede
+  arrastrar con el teclado (espacio para coger, flechas para mover, espacio
+  para soltar). "Mis tier lists" enseña qué hay en cada lista guardada sin
+  tener que cargarla.
+- Comparador de Cooldowns: los nombres de las habilidades salen en tu idioma
+  y los segundos con la coma del idioma ("5,5s"). Si no se pueden cargar las
+  habilidades, lo dice y ofrece reintentar.
+- Mientras se descargan los campeones, Mi Tier List, el Simulador de Draft y
+  el Comparador dicen "Cargando…" y, si falla la descarga, lo dicen y ofrecen
+  reintentar (antes ponían "Ningún campeón coincide" o una caja vacía).
+- Mis drafts, tier lists, mapas y builds guardados: si no se puede pedir la
+  lista (sin red, sesión caducada, demasiadas peticiones), lo dice con un
+  botón de reintentar en vez de "Aún no tienes…".
+- Los filtros de posición del Draft y de la Tier List anuncian su nombre a
+  los lectores de pantalla.
+
 ## 0.3.5
 
 - Test de personalidad: el badge de winrate real solo aparece con datos del
