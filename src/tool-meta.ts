@@ -60,9 +60,9 @@ export const TOOLS: ToolMeta[] = [
   { id: "map", icon: MapIcon, accent: "#e63977", native: true, introKey: "MapEditor.intro" },
   { id: "goldCalculator", icon: Coins, accent: "#e0873f", native: true, introKey: "GoldCalculator.intro" },
   { id: "waveTimer", icon: Waves, accent: "#2bb8ad", native: true, introKey: "WaveTimer.intro" },
-  { id: "personalityTest", icon: Brain, accent: "#7839ac", native: true },
+  { id: "personalityTest", icon: Brain, accent: "#7839ac", native: true, introKey: "PersonalityTest.intro" },
   { id: "jungleXp", icon: Tree, accent: "#2f9d68", native: true, introKey: "JungleXpCalculator.intro" },
-  { id: "championPool", icon: Stack, accent: "#6366d4", native: true },
+  { id: "championPool", icon: Stack, accent: "#6366d4", native: true, introKey: "ChampionPoolBuilder.intro" },
   { id: "metaTierList", icon: Crown, accent: "#9aa5b1", native: true, introKey: "MetaTierList.intro" },
   // Same hue as the web's --gem-lime, the thirteenth tool's own color.
   { id: "matchups", icon: Crosshair, accent: "#8fbf3a", native: true, introKey: "Matchups.intro" },

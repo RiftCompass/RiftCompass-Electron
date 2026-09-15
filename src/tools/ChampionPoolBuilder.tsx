@@ -212,7 +212,7 @@ export function ChampionPoolBuilder() {
                           <span style={{ fontSize: 14, fontWeight: 500 }}>{champion.name}</span>
                           <RealWinrateBadge winrate={winrateByChampion.get(champion.internalId)} label="ChampionPoolBuilder" />
                         </span>
-                        <span style={{ fontSize: 11, color: COLORS.muted }}>{champion.tags.join(" / ")}</span>
+                        <span style={{ fontSize: 11, color: COLORS.muted }}>{champion.tags.map((tag) => t(`GoldCalculator.categories.${tag.toLowerCase()}`)).join(" / ")}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
                         <IconButton onClick={() => handleMove(index, -1)} disabled={index === 0}>

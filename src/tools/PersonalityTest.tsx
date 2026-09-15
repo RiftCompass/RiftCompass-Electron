@@ -184,11 +184,16 @@ function Results({
   const roleChampions = useMemo(() => championsForRole(champions, role), [champions, role]);
   const matches = useMemo(() => matchChampions(scores, roleChampions).slice(0, 5), [scores, roleChampions]);
 
+  // Solo datos del parche actual, como en la web y en Champion Pool: sin
+  // `?patch=` la API cae al último parche con muestra, y aquí es preferible
+  // no enseñar el badge a enseñar un winrate de otro parche sin avisar.
   const [winrates, setWinrates] = useState<ChampionWinrate[]>([]);
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/v1/champion-winrates`)
       .then((r) => r.json())
-      .then((data: { winrates: ChampionWinrate[] }) => setWinrates(data.winrates ?? []))
+      .then((data: { winrates: ChampionWinrate[]; patch?: string; latestPatch?: string }) =>
+        setWinrates(data.patch === data.latestPatch ? (data.winrates ?? []) : []),
+      )
       .catch(() => setWinrates([]));
   }, []);
   const winrateByChampion = useMemo(
@@ -247,7 +252,7 @@ function Results({
               <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
                 <span style={{ fontSize: 13, fontWeight: 500 }}>{m.champion.name}</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: COLORS.muted }}>
-                  {m.champion.tags.join(" / ")}
+                  {m.champion.tags.map((tag) => t(`GoldCalculator.categories.${tag.toLowerCase()}`)).join(" / ")}
                   <RealWinrateBadge winrate={winrateByChampion.get(m.champion.internalId)} label="PersonalityTest" />
                 </span>
               </div>

@@ -5,6 +5,24 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.5
+
+- Test de personalidad: el badge de winrate real solo aparece con datos del
+  parche actual; antes podía enseñar el del parche anterior sin avisar. La
+  cabecera explica de dónde salen los números, como en la web, y las clases
+  de campeón ("Luchador / Tanque") salen en tu idioma (también en Champion
+  Pool).
+- Calculadora de oro: mientras cargan los objetos dice "Cargando…" y, si no
+  se pueden descargar, lo dice y ofrece reintentar (antes ponía "Ningún
+  objeto coincide con los filtros"). "Mis builds" enseña los objetos de cada
+  build guardada sin tener que cargarla.
+- Matchups de línea: el winrate del resumen se escribe según tu idioma
+  (52,3 %), la nota de cada columna ya no depende del orden elegido, y
+  cambiar de campeón conserva la posición elegida.
+- Selector de campeón: se puede usar con teclado (Enter elige, Escape cierra,
+  Tab recorre la lista) en Matchups, Cooldowns, Builds, Champion Pool y
+  Editor de mapa.
+
 ## 0.3.4
 
 - El icono de RiftCompass vuelve a verse en la bandeja de Windows (junto al

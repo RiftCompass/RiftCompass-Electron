@@ -26,6 +26,7 @@ import {
 } from "@phosphor-icons/react";
 import { fetchItemCatalog, fetchLatestVersion, itemIconUrl, type ItemCatalog, type ItemSummary } from "../ddragon";
 import { useI18n } from "../i18n";
+import { LoadError } from "./LoadError";
 import { useOpenAccountPanel } from "../account-panel";
 import type { AccountUser, SavedBuild } from "../riftcompass";
 import { COLORS, FONT_HEADING } from "../theme";
@@ -112,6 +113,11 @@ export function GoldCalculator() {
   const openAccountPanel = useOpenAccountPanel();
   const [version, setVersion] = useState("");
   const [catalog, setCatalog] = useState<ItemCatalog | null>(null);
+  // Carga, fallo y "sin resultados" son tres estados distintos (ronda 21):
+  // sin esto, una rejilla vacía por red caída se leía como "ningún objeto
+  // coincide con los filtros", y para siempre.
+  const [catalogStatus, setCatalogStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
   const [selected, setSelected] = useState<ItemSummary | null>(null);
   const [category, setCategory] = useState<CategoryId>("all");
   const [statFilters, setStatFilters] = useState<StatFilterId[]>([]);
@@ -133,19 +139,25 @@ export function GoldCalculator() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchLatestVersion().then((v) => {
-      fetchItemCatalog(v, locale).then((data) => {
+    setCatalogStatus("loading");
+    fetchLatestVersion()
+      .then((v) => fetchItemCatalog(v, locale).then((data) => ({ v, data })))
+      .then(({ v, data }) => {
         if (cancelled) return;
         setVersion(v);
         setCatalog(data);
+        setCatalogStatus("ready");
         // Re-resolve the selection so a locale switch keeps it, localized.
         setSelected((prev) => (prev ? data.byId[prev.id] ?? null : null));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCatalogStatus("error");
       });
-    });
     return () => {
       cancelled = true;
     };
-  }, [locale]);
+  }, [locale, catalogAttempt]);
 
   // An `into` id is only worth showing if it resolves to a shop item.
   const resolveInto = (item: ItemSummary): ItemSummary[] =>
@@ -408,11 +420,19 @@ export function GoldCalculator() {
               </div>
             </div>
           ))}
-          {grouped.length === 0 && (
+          {catalogStatus === "loading" ? (
+            <span style={{ fontSize: 13, color: COLORS.muted, textAlign: "center", padding: 24 }}>
+              {t("ProfileSearch.loading")}
+            </span>
+          ) : catalogStatus === "error" ? (
+            <div style={{ padding: 24 }}>
+              <LoadError message={t("Common.dataDragonError")} onRetry={() => setCatalogAttempt((n) => n + 1)} />
+            </div>
+          ) : grouped.length === 0 ? (
             <span style={{ fontSize: 13, color: COLORS.muted, textAlign: "center", padding: 24 }}>
               {t("GoldCalculator.noResults")}
             </span>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -587,28 +607,48 @@ export function GoldCalculator() {
                         key={sb.id}
                         style={{
                           display: "flex",
-                          alignItems: "center",
-                          gap: 8,
+                          flexDirection: "column",
+                          gap: 6,
                           borderRadius: 8,
                           border: `1px solid ${COLORS.cardBorder}`,
                           padding: "5px 8px",
                         }}
                       >
-                        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
-                          {sb.name}
-                        </span>
-                        <span style={{ fontSize: 11, color: COLORS.gold, flexShrink: 0 }}>{total}</span>
-                        <span style={{ fontSize: 11, color: COLORS.muted, flexShrink: 0 }}>{new Date(sb.createdAt).toLocaleDateString(locale)}</span>
-                        <button onClick={() => handleLoadBuild(sb)} style={saveButtonStyle(true)}>
-                          {t("GoldCalculator.load")}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBuild(sb.id)}
-                          title={t("GoldCalculator.delete")}
-                          style={{ ...saveButtonStyle(false), padding: "4px 6px", lineHeight: 0 }}
-                        >
-                          <X size={11} />
-                        </button>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
+                            {sb.name}
+                          </span>
+                          <span style={{ fontSize: 11, color: COLORS.gold, flexShrink: 0 }}>{total}</span>
+                          <span style={{ fontSize: 11, color: COLORS.muted, flexShrink: 0 }}>{new Date(sb.createdAt).toLocaleDateString(locale)}</span>
+                          <button onClick={() => handleLoadBuild(sb)} style={saveButtonStyle(true)}>
+                            {t("GoldCalculator.load")}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBuild(sb.id)}
+                            title={t("GoldCalculator.delete")}
+                            style={{ ...saveButtonStyle(false), padding: "4px 6px", lineHeight: 0 }}
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                        {/* Qué lleva cada build, como en la web: sin esto había
+                            que cargarla (pisando la actual) para saberlo (ronda 21). */}
+                        {version && sb.items.length > 0 ? (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {sb.items.map((id, i) => {
+                              const name = catalog?.byId[id]?.name ?? id;
+                              return (
+                                <img
+                                  key={`${id}-${i}`}
+                                  src={itemIconUrl(version, id)}
+                                  alt={name}
+                                  title={name}
+                                  style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${COLORS.cardBorder}`, display: "block" }}
+                                />
+                              );
+                            })}
+                          </div>
+                        ) : null}
                       </div>
                       );
                     })
