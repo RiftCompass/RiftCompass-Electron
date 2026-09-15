@@ -5,6 +5,8 @@ import { DRAFT_STEPS, type DraftTeam } from "../lib/draft-order";
 import { ALL_ROLES, rolesOf, type ChampionRole } from "../lib/champion-roles";
 import { positionIconUrl } from "../lib/profile-analysis";
 import { useI18n } from "../i18n";
+import { LoadError } from "./LoadError";
+import { savedListError } from "../lib/api-fetch";
 import { useOpenAccountPanel } from "../account-panel";
 import { COLORS } from "../theme";
 import type { AccountUser, SavedDraft } from "../riftcompass";
@@ -40,13 +42,36 @@ export function DraftSimulator() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedDrafts, setSavedDrafts] = useState<SavedDraft[] | null>(null);
+  // Un fallo al pedir la lista se dice como tal (con reintento), no como
+  // "Aún no tienes drafts guardados" (ronda 22).
+  const [savedDraftsError, setSavedDraftsError] = useState<Error | null>(null);
   const [listOpen, setListOpen] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
 
   useEffect(() => {
-    fetchChampionMap().then((m) => setChampions(Object.values(m.byInternalId)));
     window.riftcompass.getSession().then(setUser);
   }, []);
+
+  // Carga, fallo y rejilla vacía son tres estados distintos (ronda 22): sin
+  // esto, con Data Dragon caído la rejilla era una caja vacía sin texto.
+  const [championsStatus, setChampionsStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [championsAttempt, setChampionsAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setChampionsStatus("loading");
+    fetchChampionMap()
+      .then((m) => {
+        if (cancelled) return;
+        setChampions(Object.values(m.byInternalId));
+        setChampionsStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setChampionsStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [championsAttempt]);
 
   useEffect(() => {
     try {
@@ -105,12 +130,17 @@ export function DraftSimulator() {
     setSaveSuccess(true);
   }
 
+  async function loadSavedDrafts() {
+    setSavedDraftsError(null);
+    const result = await window.riftcompass.getSavedDrafts();
+    if (result.ok) setSavedDrafts(result.items);
+    else setSavedDraftsError(savedListError(result));
+  }
+
   async function toggleList() {
     const next = !listOpen;
     setListOpen(next);
-    if (next && savedDrafts === null) {
-      setSavedDrafts(await window.riftcompass.getSavedDrafts());
-    }
+    if (next && savedDrafts === null) await loadSavedDrafts();
   }
 
   async function handleDeleteDraft(id: string) {
@@ -249,7 +279,9 @@ export function DraftSimulator() {
           </div>
           {listOpen ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, borderRadius: 8, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}66`, padding: 10 }}>
-              {savedDrafts === null ? (
+              {savedDraftsError ? (
+                <LoadError error={savedDraftsError} onRetry={loadSavedDrafts} />
+              ) : savedDrafts === null ? (
                 <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
               ) : savedDrafts.length === 0 ? (
                 <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Draft.myDraftsEmpty")}</span>
@@ -347,6 +379,8 @@ export function DraftSimulator() {
                   key={role}
                   onClick={() => setRoleFilter(role)}
                   title={t(`Profile.positions.${role.toLowerCase()}`)}
+                  aria-label={t(`Profile.positions.${role.toLowerCase()}`)}
+                  aria-pressed={roleFilter === role}
                   style={roleIconStyle(roleFilter === role)}
                 >
                   {iconUrl ? <img src={iconUrl} alt="" style={{ width: 16, height: 16 }} /> : null}
@@ -368,6 +402,13 @@ export function DraftSimulator() {
             padding: 8,
           }}
         >
+          {championsStatus === "loading" ? (
+            <span style={{ fontSize: 13, color: COLORS.muted, padding: 4 }}>{t("ProfileSearch.loading")}</span>
+          ) : championsStatus === "error" ? (
+            <div style={{ padding: 4 }}>
+              <LoadError message={t("Common.dataDragonError")} onRetry={() => setChampionsAttempt((n) => n + 1)} />
+            </div>
+          ) : null}
           {filtered.map((champ) => {
             const used = usedIds.has(champ.internalId);
             return (

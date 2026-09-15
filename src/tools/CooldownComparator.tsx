@@ -10,6 +10,7 @@ import {
   type ChampionInfo,
 } from "../ddragon";
 import { useI18n } from "../i18n";
+import { LoadError } from "./LoadError";
 import { COLORS, FONT_HEADING, TYPE } from "../theme";
 
 // Ported from the web app's src/lib/riot/ddragon.ts's effectiveCooldown —
@@ -27,15 +28,40 @@ function clampHaste(value: number): number {
 const SPELL_KEYS = ["Q", "W", "E", "R"];
 
 export function CooldownComparator() {
+  const { t } = useI18n();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
   const [version, setVersion] = useState("");
+  // Carga, fallo y "sin resultados" son tres estados distintos (ronda 22):
+  // sin esto, con Data Dragon caído el combobox contestaba "No se han
+  // encontrado campeones" a cualquier letra, y para siempre.
+  const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    fetchLatestVersion().then((v) => {
-      setVersion(v);
-      fetchChampionMap().then((m) => setChampions(Object.values(m.byId)));
-    });
-  }, []);
+    let cancelled = false;
+    setStatus("loading");
+    fetchLatestVersion()
+      .then((v) => fetchChampionMap().then((m) => ({ v, list: Object.values(m.byId) })))
+      .then(({ v, list }) => {
+        if (cancelled) return;
+        setVersion(v);
+        setChampions(list);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
+
+  if (status === "loading") {
+    return <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>;
+  }
+  if (status === "error") {
+    return <LoadError message={t("Common.dataDragonError")} onRetry={() => setAttempt((n) => n + 1)} />;
+  }
 
   return (
     // A vertical divider between the two columns, since neither panel sits
@@ -67,11 +93,17 @@ function ChampionCooldownPanel({
   champions: ChampionInfo[];
   version: string;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [champion, setChampion] = useState<ChampionInfo | null>(null);
   const [detail, setDetail] = useState<ChampionDetail | null>(null);
   const [abilityHaste, setAbilityHaste] = useState(0);
   const [loading, setLoading] = useState(false);
+  // Un fallo al pedir las habilidades se dice (con reintento) en vez de
+  // volver a "Elige un campeón" con el campeón ya elegido (ronda 22).
+  const [detailError, setDetailError] = useState(false);
+  const [detailAttempt, setDetailAttempt] = useState(0);
+  // Segundos con la coma del idioma ("4,4s" en es/fr/de), ronda 22.
+  const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
   // One rank pip-picker per ability (like the in-game skill points),
   // index-matched to detail.spells, defaulting to rank 1 on a fresh pick.
   const [selectedRanks, setSelectedRanks] = useState<number[]>([]);
@@ -84,11 +116,18 @@ function ChampionCooldownPanel({
     }
     let cancelled = false;
     setLoading(true);
-    fetchChampionDetail(version, champion.internalId)
+    setDetailError(false);
+    fetchChampionDetail(version, champion.internalId, locale)
       .then((data) => {
         if (!cancelled) {
           setDetail(data);
           setSelectedRanks(data.spells.map(() => 1));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDetail(null);
+          setDetailError(true);
         }
       })
       .finally(() => {
@@ -97,7 +136,7 @@ function ChampionCooldownPanel({
     return () => {
       cancelled = true;
     };
-  }, [champion, version]);
+  }, [champion, version, locale, detailAttempt]);
 
   function setRank(spellIndex: number, rank: number) {
     setSelectedRanks((prev) => prev.map((r, i) => (i === spellIndex ? rank : r)));
@@ -171,6 +210,8 @@ function ChampionCooldownPanel({
 
       {loading ? (
         <p style={{ fontSize: 13, color: COLORS.muted }}>{t("Cooldowns.loading")}</p>
+      ) : detailError ? (
+        <LoadError message={t("Cooldowns.loadError")} onRetry={() => setDetailAttempt((n) => n + 1)} />
       ) : detail ? (
         <ul style={{ display: "flex", flexDirection: "column", gap: 10, margin: 0, padding: 0, listStyle: "none" }}>
           {detail.spells.map((spell, index) => {
@@ -233,13 +274,13 @@ function ChampionCooldownPanel({
                 <span style={{ textAlign: "right", fontSize: 13, fontWeight: 500 }}>
                   {withHaste !== null ? (
                     <>
-                      <span style={{ color: COLORS.gold }}>{withHaste}s</span>
+                      <span style={{ color: COLORS.gold }}>{nf.format(withHaste)}s</span>
                       <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: COLORS.muted }}>
                         {t("Cooldowns.withHaste")}
                       </span>
                     </>
                   ) : (
-                    <span style={{ color: COLORS.muted }}>{baseCooldown}s</span>
+                    <span style={{ color: COLORS.muted }}>{nf.format(baseCooldown)}s</span>
                   )}
                 </span>
               </li>

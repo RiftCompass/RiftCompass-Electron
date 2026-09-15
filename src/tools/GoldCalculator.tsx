@@ -27,6 +27,7 @@ import {
 import { fetchItemCatalog, fetchLatestVersion, itemIconUrl, type ItemCatalog, type ItemSummary } from "../ddragon";
 import { useI18n } from "../i18n";
 import { LoadError } from "./LoadError";
+import { savedListError } from "../lib/api-fetch";
 import { useOpenAccountPanel } from "../account-panel";
 import type { AccountUser, SavedBuild } from "../riftcompass";
 import { COLORS, FONT_HEADING } from "../theme";
@@ -131,6 +132,9 @@ export function GoldCalculator() {
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedBuilds, setSavedBuilds] = useState<SavedBuild[] | null>(null);
+  // Un fallo al pedir la lista se dice como tal, no como "Aún no tienes
+  // builds guardadas" (ronda 22, mismo patrón que drafts y tier lists).
+  const [savedBuildsError, setSavedBuildsError] = useState<Error | null>(null);
   const [buildListOpen, setBuildListOpen] = useState(false);
 
   useEffect(() => {
@@ -257,9 +261,14 @@ export function GoldCalculator() {
   async function toggleBuildList() {
     const next = !buildListOpen;
     setBuildListOpen(next);
-    if (next && savedBuilds === null) {
-      setSavedBuilds(await window.riftcompass.getSavedBuilds());
-    }
+    if (next && savedBuilds === null) await loadSavedBuilds();
+  }
+
+  async function loadSavedBuilds() {
+    setSavedBuildsError(null);
+    const result = await window.riftcompass.getSavedBuilds();
+    if (result.ok) setSavedBuilds(result.items);
+    else setSavedBuildsError(savedListError(result));
   }
 
   function handleLoadBuild(saved: SavedBuild) {
@@ -595,7 +604,11 @@ export function GoldCalculator() {
               )}
               {buildListOpen && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {savedBuilds === null ? null : savedBuilds.length === 0 ? (
+                  {savedBuildsError ? (
+                    <LoadError error={savedBuildsError} onRetry={loadSavedBuilds} />
+                  ) : savedBuilds === null ? (
+                    <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
+                  ) : savedBuilds.length === 0 ? (
                     <span style={{ fontSize: 12, color: COLORS.muted }}>{t("GoldCalculator.myBuildsEmpty")}</span>
                   ) : (
                     savedBuilds.map((sb) => {

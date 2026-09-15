@@ -260,7 +260,7 @@ export function ChampionBuilds() {
   useEffect(() => {
     if (!champion || !version) return;
     let cancelled = false;
-    fetchChampionDetail(version, toDDragonId(champion.internalId))
+    fetchChampionDetail(version, toDDragonId(champion.internalId), locale)
       .then((data) => {
         if (!cancelled) setDetail(data);
       })
@@ -270,7 +270,7 @@ export function ChampionBuilds() {
     return () => {
       cancelled = true;
     };
-  }, [champion, version]);
+  }, [champion, version, locale]);
 
   useEffect(() => {
     if (!champion) {
@@ -317,7 +317,7 @@ export function ChampionBuilds() {
       setBuilds(user === null ? [] : null);
       return;
     }
-    window.riftcompass.getSavedChampionBuilds().then(setBuilds);
+    window.riftcompass.getSavedChampionBuilds().then((result) => setBuilds(result.ok ? result.items : null));
   }, [user]);
 
   const runeIndex = useMemo(() => {

@@ -277,8 +277,11 @@ export interface ChampionDetail {
 }
 
 // Ported from the web app's src/lib/riot/ddragon.ts getChampionDetail().
-export async function fetchChampionDetail(version: string, championId: string): Promise<ChampionDetail> {
-  const res = await fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/champion/${championId}.json`);
+// Con el idioma de la app, como el catálogo de objetos: las habilidades
+// salían siempre en inglés en es/fr/de (ronda 22; la web lo hizo en 8ae9951).
+export async function fetchChampionDetail(version: string, championId: string, locale = "en"): Promise<ChampionDetail> {
+  const ddLocale = DDRAGON_LOCALES[locale] ?? "en_US";
+  const res = await fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/${ddLocale}/champion/${championId}.json`);
   const json = await res.json();
   return json.data[championId];
 }
