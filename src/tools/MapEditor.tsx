@@ -19,6 +19,8 @@ import { championSquareUrl, fetchChampionMap, fetchLatestVersion, type ChampionI
 import { useI18n } from "../i18n";
 import { useOpenAccountPanel } from "../account-panel";
 import { COLORS as THEME } from "../theme";
+import { LoadError } from "./LoadError";
+import { savedListError } from "../lib/api-fetch";
 import type { AccountUser, SavedMapSummary } from "../riftcompass";
 // The map image is imported as a module, not referenced by absolute path:
 // `<img src="/images/...">` works under Vite's dev server but breaks in a
@@ -450,6 +452,9 @@ export function MapEditor() {
   const [mapSaveSuccess, setMapSaveSuccess] = useState(false);
   const [isSavingMap, setIsSavingMap] = useState(false);
   const [savedMaps, setSavedMaps] = useState<SavedMapSummary[] | null>(null);
+  // Un fallo al pedir la lista se dice como tal, no como "Aún no tienes
+  // mapas guardados" (ronda 22, mismo patrón que drafts y tier lists).
+  const [savedMapsError, setSavedMapsError] = useState<Error | null>(null);
   const [mapListOpen, setMapListOpen] = useState(false);
 
   useEffect(() => {
@@ -474,9 +479,14 @@ export function MapEditor() {
   async function toggleMapList() {
     const next = !mapListOpen;
     setMapListOpen(next);
-    if (next && savedMaps === null) {
-      setSavedMaps(await window.riftcompass.getSavedMaps());
-    }
+    if (next && savedMaps === null) await loadSavedMaps();
+  }
+
+  async function loadSavedMaps() {
+    setSavedMapsError(null);
+    const result = await window.riftcompass.getSavedMaps();
+    if (result.ok) setSavedMaps(result.items);
+    else setSavedMapsError(savedListError(result));
   }
 
   async function handleLoadMap(id: string) {
@@ -1261,7 +1271,9 @@ export function MapEditor() {
           </div>
           {mapListOpen ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, borderRadius: 8, border: `1px solid ${THEME.cardBorder}`, background: `${THEME.card}66`, padding: 10 }}>
-              {savedMaps === null ? (
+              {savedMapsError ? (
+                <LoadError error={savedMapsError} onRetry={loadSavedMaps} />
+              ) : savedMaps === null ? (
                 <span style={{ fontSize: 13, color: THEME.muted }}>{t("Common.loadingSaved")}</span>
               ) : savedMaps.length === 0 ? (
                 <span style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.myMapsEmpty")}</span>

@@ -400,6 +400,8 @@ export const de: Messages = {
     },
   },
   TierList: {
+    allUnranked: "{count} Champions, alle ohne Einstufung",
+    resetConfirm: "Die ganze Tier List leeren? Das lässt sich nicht rückgängig machen.",
     loginToSaveLink: "Anmelden",
     intro: "Ziehe Champions in einen Tier, um dein eigenes Ranking zu erstellen. Wird automatisch auf diesem Gerät gespeichert.",
     reset: "Zurücksetzen",
@@ -433,6 +435,7 @@ export const de: Messages = {
   },
   Cooldowns: {
     intro: "Wähle zwei Champions und vergleiche ihre Fähigkeiten-Cooldowns nebeneinander, angepasst an Ability Haste.",
+    loadError: "Die Fähigkeiten dieses Champions konnten nicht geladen werden. Prüfe deine Verbindung.",
     championLabel: "Champion {slot}",
     selectPlaceholder: "Champion suchen…",
     noResults: "Keine Champions gefunden.",
@@ -478,7 +481,7 @@ export const de: Messages = {
     myDraftsEmpty: "Noch keine gespeicherten Drafts.",
     load: "Laden",
     delete: "Löschen",
-    loginToSave: "Diesen Entwurf speichern?",
+    loginToSave: "Diesen Draft speichern?",
     filterAll: "Alle",
   },
   MapEditor: {

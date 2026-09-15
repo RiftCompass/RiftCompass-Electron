@@ -187,7 +187,9 @@ export function ChampSelectView() {
       .catch(() => setAutoAplicar(false));
     window.riftcompass
       .getSavedChampionBuilds()
-      .then(setGuardadas)
+      .then((result) => {
+        if (result.ok) setGuardadas(result.items);
+      })
       .catch(() => undefined);
     window.riftcompass
       .lcuGet<{ queueMap?: Record<string, { tier?: string }> }>("/lol-ranked-stats/v1/current-ranked-stats")

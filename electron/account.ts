@@ -292,17 +292,28 @@ export async function accountFetchProfileForced(
   }
 }
 
-async function getList(urlPath: string, key: string): Promise<unknown[]> {
+// Una lista guardada que no se pudo pedir NO es una lista vacía (ronda 22):
+// antes red caída, timeout, 401 y 429 volvían como [] y el panel decía "Aún
+// no tienes drafts guardados", que es una afirmación sobre la cuenta del
+// usuario. Sin sesión sí es una lista vacía de verdad para esta app.
+type ListResult = { ok: true; items: unknown[] } | { ok: false; error: string; retryAfterSeconds: number | null };
+
+async function getList(urlPath: string, key: string): Promise<ListResult> {
   const stored = loadPersistedSession();
-  if (!stored) return [];
+  if (!stored) return { ok: true, items: [] };
+  let res: Response;
   try {
-    const res = await fetch(`${API_BASE_URL}${urlPath}`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` }, signal: timeout() });
-    if (!res.ok) return [];
-    const data = await readJson(res);
-    return data?.[key] ?? [];
+    res = await fetch(`${API_BASE_URL}${urlPath}`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` }, signal: timeout() });
   } catch {
-    return [];
+    return { ok: false, error: "network", retryAfterSeconds: null };
   }
+  const data = await readJson(res);
+  if (res.status === 429) {
+    const fromBody = typeof data?.retryAfterSeconds === "number" ? data.retryAfterSeconds : null;
+    return { ok: false, error: "rateLimited", retryAfterSeconds: fromBody ?? (Number(res.headers.get("retry-after")) || null) };
+  }
+  if (!res.ok) return { ok: false, error: data?.error ?? `http${res.status}`, retryAfterSeconds: null };
+  return { ok: true, items: data?.[key] ?? [] };
 }
 
 // Wraps a write response whose body carries the updated list under `key`

@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   PointerSensor,
   useDroppable,
   useSensor,
@@ -13,7 +14,7 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { snapCenterToCursor } from "@dnd-kit/modifiers";
 import { Bookmark, MagnifyingGlass, X } from "@phosphor-icons/react";
@@ -22,6 +23,8 @@ import { TIERS, TIER_COLORS, type Tier } from "../lib/tier-colors";
 import { ALL_ROLES, rolesOf, primaryRoleOf, type ChampionRole } from "../lib/champion-roles";
 import { positionIconUrl } from "../lib/profile-analysis";
 import { useI18n } from "../i18n";
+import { LoadError } from "./LoadError";
+import { savedListError } from "../lib/api-fetch";
 import { useOpenAccountPanel } from "../account-panel";
 import { COLORS } from "../theme";
 import { API_BASE_URL } from "../shared/api";
@@ -135,16 +138,43 @@ export function TierListBuilder() {
   const [isSaving, setIsSaving] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [savedTierLists, setSavedTierLists] = useState<SavedTierList[] | null>(null);
+  // Un fallo al pedir la lista se dice como tal (con reintento), no como
+  // "Aún no tienes tier lists guardadas" (ronda 22).
+  const [savedTierListsError, setSavedTierListsError] = useState<Error | null>(null);
   const [winrates, setWinrates] = useState<ChampionWinrate[]>([]);
 
+  // Carga, fallo y "sin resultados" son tres estados distintos (ronda 22):
+  // sin esto, el pool vacío decía "Ningún campeón coincide con este filtro"
+  // mientras cargaba y para siempre si Data Dragon fallaba.
+  const [championsStatus, setChampionsStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [championsAttempt, setChampionsAttempt] = useState(0);
   useEffect(() => {
-    fetchChampionMap().then((m) => setChampions(Object.values(m.byInternalId)));
-  }, []);
+    let cancelled = false;
+    setChampionsStatus("loading");
+    fetchChampionMap()
+      .then((m) => {
+        if (cancelled) return;
+        setChampions(Object.values(m.byInternalId));
+        setChampionsStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setChampionsStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [championsAttempt]);
 
+  // Solo datos del parche actual, como en la web, Champion Pool y el Test
+  // de personalidad: sin `?patch=` la API cae al último parche con muestra,
+  // y aquí es preferible no enseñar el badge a enseñar el tier de otro
+  // parche sin avisar (ronda 22).
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/v1/champion-winrates`)
       .then((r) => r.json())
-      .then((data: { winrates: ChampionWinrate[] }) => setWinrates(data.winrates ?? []))
+      .then((data: { winrates: ChampionWinrate[]; patch?: string; latestPatch?: string }) =>
+        setWinrates(data.patch === data.latestPatch ? (data.winrates ?? []) : []),
+      )
       .catch(() => setWinrates([]));
   }, []);
 
@@ -204,7 +234,12 @@ export function TierListBuilder() {
     }
   }, [board, loaded]);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  // Teclado también (ronda 22): useSortable ya anuncia "pulsa espacio para
+  // arrastrar" a los lectores de pantalla, así que el sensor tiene que existir.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id));
@@ -248,6 +283,10 @@ export function TierListBuilder() {
   }
 
   function handleReset() {
+    // Misma guarda que el Draft (ronda 17) y el Map Editor (ronda 10): una
+    // tarde de arrastrar no debe desaparecer con un clic (ronda 22).
+    const ranked = TIERS.some((tier) => (board[tier]?.length ?? 0) > 0);
+    if (ranked && !window.confirm(t("TierList.resetConfirm"))) return;
     setBoard(buildInitialState(championIds));
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -280,9 +319,14 @@ export function TierListBuilder() {
   async function toggleList() {
     const next = !listOpen;
     setListOpen(next);
-    if (next && savedTierLists === null) {
-      setSavedTierLists(await window.riftcompass.getSavedTierLists());
-    }
+    if (next && savedTierLists === null) await loadSavedTierLists();
+  }
+
+  async function loadSavedTierLists() {
+    setSavedTierListsError(null);
+    const result = await window.riftcompass.getSavedTierLists();
+    if (result.ok) setSavedTierLists(result.items);
+    else setSavedTierListsError(savedListError(result));
   }
 
   function handleLoadSaved(tierList: SavedTierList) {
@@ -393,25 +437,80 @@ export function TierListBuilder() {
 
         {listOpen ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 6, borderRadius: 8, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}66`, padding: 10 }}>
-            {savedTierLists === null ? (
+            {savedTierListsError ? (
+              <LoadError error={savedTierListsError} onRetry={loadSavedTierLists} />
+            ) : savedTierLists === null ? (
               <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
             ) : savedTierLists.length === 0 ? (
               <span style={{ fontSize: 13, color: COLORS.muted }}>{t("TierList.myTierListsEmpty")}</span>
             ) : (
-              savedTierLists.map((tl) => (
-                <div key={tl.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {tl.name}
-                  </span>
-                  <span style={{ fontSize: 12, color: COLORS.muted }}>{new Date(tl.createdAt).toLocaleDateString(locale)}</span>
-                  <button onClick={() => handleLoadSaved(tl)} style={ghostButtonStyle(false)}>
-                    {t("TierList.load")}
-                  </button>
-                  <button onClick={() => handleDeleteSaved(tl.id)} title={t("TierList.delete")} style={{ ...ghostButtonStyle(false), padding: "6px 8px" }}>
-                    <X size={13} />
-                  </button>
+              savedTierLists.map((tl) => {
+                // Vista previa como en la web (ronda 22): los dos primeros
+                // tiers con contenido, hasta 8 iconos por tier y "+N"; sin
+                // esto había que cargarla (pisando el tablero actual) para
+                // saber cuál era cuál.
+                const previewTiers = TIERS.filter((tier) => (tl.board[tier]?.length ?? 0) > 0).slice(0, 2);
+                return (
+                <div key={tl.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {tl.name}
+                    </span>
+                    <span style={{ fontSize: 12, color: COLORS.muted }}>{new Date(tl.createdAt).toLocaleDateString(locale)}</span>
+                    <button onClick={() => handleLoadSaved(tl)} style={ghostButtonStyle(false)}>
+                      {t("TierList.load")}
+                    </button>
+                    <button onClick={() => handleDeleteSaved(tl.id)} title={t("TierList.delete")} style={{ ...ghostButtonStyle(false), padding: "6px 8px" }}>
+                      <X size={13} />
+                    </button>
+                  </div>
+                  {previewTiers.length === 0 ? (
+                    <span style={{ fontSize: 12, color: COLORS.muted }}>
+                      {t("TierList.allUnranked", { count: tl.board[UNRANKED]?.length ?? 0 })}
+                    </span>
+                  ) : (
+                    previewTiers.map((tier) => (
+                      <div key={tier} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span
+                          style={{
+                            width: 20,
+                            height: 20,
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: 4,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#fff",
+                            background: TIER_COLORS[tier],
+                          }}
+                        >
+                          {tier}
+                        </span>
+                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4 }}>
+                          {tl.board[tier].slice(0, 8).map((id) => {
+                            const champ = championById.get(id);
+                            return (
+                              <img
+                                key={id}
+                                src={champ?.iconUrl}
+                                alt={champ?.name ?? id}
+                                title={champ?.name ?? id}
+                                style={{ width: 24, height: 24, borderRadius: 4, border: `1px solid ${COLORS.cardBorder}`, display: "block" }}
+                              />
+                            );
+                          })}
+                          {tl.board[tier].length > 8 ? (
+                            <span style={{ fontSize: 11, color: COLORS.muted }}>+{tl.board[tier].length - 8}</span>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         ) : null}
@@ -443,6 +542,8 @@ export function TierListBuilder() {
                       key={role}
                       onClick={() => setRoleFilter(role)}
                       title={t(`Profile.positions.${role.toLowerCase()}`)}
+                      aria-label={t(`Profile.positions.${role.toLowerCase()}`)}
+                      aria-pressed={roleFilter === role}
                       style={roleFilterIconStyle(roleFilter === role)}
                     >
                       {iconUrl ? <img src={iconUrl} alt="" style={{ width: 16, height: 16 }} /> : null}
@@ -473,11 +574,16 @@ export function TierListBuilder() {
               real dnd-kit droppable target for "unrank a champion" (drag out
               of a tier row), so hiding it while a filter/search matches
               nothing would make that impossible until the filter is cleared. */}
+          {championsStatus === "loading" ? (
+            <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+          ) : championsStatus === "error" ? (
+            <LoadError message={t("Common.dataDragonError")} onRetry={() => setChampionsAttempt((n) => n + 1)} />
+          ) : null}
           <UnrankedPool
             id={UNRANKED}
             championIds={filteredUnranked}
             championById={championById}
-            emptyLabel={t("TierList.noMatches")}
+            emptyLabel={championsStatus === "ready" ? t("TierList.noMatches") : undefined}
             realTierByChampion={realTierByChampion}
           />
         </div>

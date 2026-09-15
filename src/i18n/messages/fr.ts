@@ -400,6 +400,8 @@ export const fr: Messages = {
     },
   },
   TierList: {
+    allUnranked: "{count} champions, tous non classés",
+    resetConfirm: "Vider toute la tier list ? Cette action est irréversible.",
     loginToSaveLink: "Connectez-vous",
     intro: "Glissez les champions dans un tier pour créer votre propre classement. Sauvegardé automatiquement sur cet appareil.",
     reset: "Réinitialiser",
@@ -433,6 +435,7 @@ export const fr: Messages = {
   },
   Cooldowns: {
     intro: "Choisissez deux champions pour comparer leurs temps de recharge de sorts côte à côte, ajustés selon l'accélération de compétence.",
+    loadError: "Impossible de charger les sorts de ce champion. Vérifiez votre connexion.",
     championLabel: "Champion {slot}",
     selectPlaceholder: "Rechercher un champion…",
     noResults: "Aucun champion trouvé.",
