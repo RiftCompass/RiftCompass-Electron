@@ -24,6 +24,13 @@ export function formatPercent(locale: string, rate: number): string {
   return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(rate);
 }
 
+/** "32:14" a partir de segundos, como el historial de la web (`formatDuration` en match-history.tsx). */
+export function formatDuration(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 export function tierToBand(tier: string | null | undefined): RankBand {
   if (!tier) return "default";
   if (["IRON", "BRONZE", "SILVER"].includes(tier)) return "learning";

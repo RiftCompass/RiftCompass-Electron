@@ -5,14 +5,16 @@
 // but surfaces the full per-metric breakdown, you against this game's lane
 // opponent, as a report instead of a single compact note.
 import { useEffect, useState } from "react";
-import { championSquareUrl } from "../ddragon";
+import { championSquareUrl, fetchChampionMap, toDDragonId } from "../ddragon";
 import { useI18n } from "../i18n";
-import { diagnoseMatch, FOCUS_RATIO, STRENGTH_RATIO } from "../lib/profile-analysis";
+import { diagnoseMatch, FOCUS_RATIO, STRENGTH_RATIO, formatDecimal, formatDuration } from "../lib/profile-analysis";
 import { DiagnosticBar, formatDiagnosticPair } from "./ProfileDetail";
 import type { RecentMatchSummary } from "../lib/profile-types";
 import type { LcuIdentity } from "../riftcompass";
 import { COLORS, TYPE, cardStyle as makeCardStyle } from "../theme";
-import { fetchProfile, type ProfileTarget } from "./ProfileShared";
+import { errorMessageKey, fetchProfile, type FetchProfileError, type ProfileTarget } from "./ProfileShared";
+import { LoadError } from "../tools/LoadError";
+import { ApiRateLimited } from "../lib/api-fetch";
 
 const cardStyle = makeCardStyle();
 
@@ -51,18 +53,26 @@ export function PostGameReport({
   onOpenProfile: (target: ProfileTarget) => void;
 }) {
   const { t, locale } = useI18n();
-  const [status, setStatus] = useState<"loading" | "ready" | "timeout">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "timeout" | "error">("loading");
   const [match, setMatch] = useState<RecentMatchSummary | null>(null);
   const [ddragonVersion, setDdragonVersion] = useState<string | null>(null);
+  // Un fallo de red, un 404 o un 429 se dicen como tales, con reintento
+  // (ronda 26): antes caían en "Riot puede tardar un poco", que es una
+  // afirmación sobre Riot cuando quien no contestó fue riftcompass.com.
+  const [lastError, setLastError] = useState<FetchProfileError | null>(null);
+  const [attemptSeed, setAttemptSeed] = useState(0);
+  const [championName, setChampionName] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     let attempt = 0;
+    setStatus("loading");
+    setLastError(null);
 
     async function poll() {
       attempt += 1;
       let data = await fetchProfile(identity.platform, identity.gameName, identity.tagLine, { force: attempt === 1 });
-      if ("error" in data && data.retryAfterSeconds !== undefined) {
+      if ("error" in data && data.status === 429 && data.retryAfterSeconds !== undefined && attempt === 1) {
         // The force-refresh cooldown was already spent recently (e.g. the
         // player manually refreshed right before this game) — a plain
         // fetch still returns a reasonably fresh cache instead of failing
@@ -71,16 +81,21 @@ export function PostGameReport({
       }
       if (cancelled) return;
 
-      if (!("error" in data)) {
-        const top = data.profile.recentMatches[0];
-        if (top && top.playedAt >= gameStartedAt - FRESHNESS_MARGIN_MS) {
-          setMatch(top);
-          setDdragonVersion(data.ddragonVersion);
-          setStatus("ready");
-          return;
-        }
+      if ("error" in data) {
+        setLastError(data);
+        setStatus("error");
+        return;
+      }
+      const top = data.profile.recentMatches[0];
+      if (top && top.playedAt >= gameStartedAt - FRESHNESS_MARGIN_MS) {
+        setMatch(top);
+        setDdragonVersion(data.ddragonVersion);
+        setStatus("ready");
+        return;
       }
 
+      // Riot really hasn't processed the game yet: this is the only case
+      // PostGameReport.timeout describes.
       if (attempt >= MAX_ATTEMPTS) {
         setStatus("timeout");
         return;
@@ -92,7 +107,21 @@ export function PostGameReport({
     return () => {
       cancelled = true;
     };
-  }, [identity.platform, identity.gameName, identity.tagLine, gameStartedAt]);
+  }, [identity.platform, identity.gameName, identity.tagLine, gameStartedAt, attemptSeed]);
+
+  // Nombre visible del campeón para el retrato ("Wukong", no "MonkeyKing").
+  useEffect(() => {
+    if (!match) return;
+    let cancelled = false;
+    fetchChampionMap()
+      .then((m) => {
+        if (!cancelled) setChampionName(m.byInternalId[toDDragonId(match.championName)]?.name ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [match]);
 
   function openFullProfile() {
     onOpenProfile({ platform: identity.platform, gameName: identity.gameName, tagLine: identity.tagLine });
@@ -106,10 +135,18 @@ export function PostGameReport({
     );
   }
 
-  if (status === "timeout" || !match) {
+  if (status === "error" || status === "timeout" || !match) {
     return (
       <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 10 }}>
-        <p style={{ margin: 0, color: COLORS.muted, fontSize: TYPE.body }}>{t("PostGameReport.timeout")}</p>
+        {status === "error" && lastError ? (
+          <LoadError
+            error={lastError.status === 429 ? new ApiRateLimited(lastError.retryAfterSeconds ?? null) : undefined}
+            message={t(`ProfileSearch.errors.${errorMessageKey(lastError.error, lastError.status)}`)}
+            onRetry={() => setAttemptSeed((n) => n + 1)}
+          />
+        ) : (
+          <p style={{ margin: 0, color: COLORS.muted, fontSize: TYPE.body }}>{t("PostGameReport.timeout")}</p>
+        )}
         <button
           onClick={openFullProfile}
           style={{
@@ -138,7 +175,7 @@ export function PostGameReport({
         {ddragonVersion ? (
           <img
             src={championSquareUrl(ddragonVersion, match.championName)}
-            alt={match.championName}
+            alt={championName ?? match.championName}
             style={{ width: 48, height: 48, borderRadius: 10, flexShrink: 0 }}
           />
         ) : null}
@@ -147,12 +184,12 @@ export function PostGameReport({
             {match.win ? t("PostGameReport.win") : t("PostGameReport.loss")}
           </span>
           <span style={{ fontSize: 12, color: COLORS.muted }}>
-            {match.kills}/{match.deaths}/{match.assists} · {Math.round(match.durationSeconds / 60)}m
+            {match.kills}/{match.deaths}/{match.assists} · {formatDuration(match.durationSeconds)}
           </span>
         </div>
         {note ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <span style={{ fontSize: TYPE.heading, fontWeight: 700, color: sentimentColor(note.scoreSentiment) }}>{note.score.toFixed(1)}</span>
+            <span style={{ fontSize: TYPE.heading, fontWeight: 700, color: sentimentColor(note.scoreSentiment) }}>{formatDecimal(locale, note.score)}</span>
             <span style={{ fontSize: 11, color: COLORS.muted }}>{t("PostGameReport.scoreLabel")}</span>
           </div>
         ) : null}

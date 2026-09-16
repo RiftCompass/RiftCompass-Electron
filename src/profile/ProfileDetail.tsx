@@ -47,6 +47,7 @@ import {
   type DiagnosticNode,
   type RoleStats,
   formatDecimal,
+  formatDuration,
 } from "../lib/profile-analysis";
 import type { ProfileApiResponse, RecentMatchSummary, RiotLeagueEntry, RoadmapSnapshot } from "../lib/profile-types";
 import type { SavedProfileWithRank } from "../riftcompass";
@@ -1565,12 +1566,6 @@ function MatchHistoryCard({
 // (not just the raw number), and the real 7-slot item build.
 // Puerto de formatDuration de la web (match-history.tsx): "28:34", no "28m".
 // Redondear a minutos enteros perdia el detalle que si da la web.
-function formatDuration(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.floor(totalSeconds % 60);
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
 function MatchScoreboard({
   match,
   puuid,
