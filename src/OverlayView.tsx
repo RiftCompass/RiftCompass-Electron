@@ -117,11 +117,6 @@ interface SkillOrderEntry {
   games: number;
 }
 
-interface SummonerInfo {
-  gameName: string;
-  tagLine: string;
-}
-
 interface LiveGameItem {
   itemID: number;
   count: number;
@@ -461,7 +456,8 @@ function useDraggablePanel(saved: { x: number; y: number } | null, onDrop: (norm
 }
 
 export function OverlayView() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const nf = useMemo(() => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }), [locale]);
   const [phase, setPhase] = useState<string>("None");
   const [myTeam, setMyTeam] = useState<ChampSelectPlayer[]>([]);
   const [theirTeam, setTheirTeam] = useState<ChampSelectPlayer[]>([]);
@@ -473,7 +469,6 @@ export function OverlayView() {
   // lcu:identity — see ddragon.ts's mergeLocalizedChampionNames for why
   // the lane-gold table needs this.
   const [gameClientLocale, setGameClientLocale] = useState<string | undefined>(undefined);
-  const [summoners, setSummoners] = useState<Record<string, SummonerInfo>>({});
   const [importState, setImportState] = useState<"idle" | "working" | "done" | "error">("idle");
   const [overlayModules, setOverlayModules] = useState<OverlayModules>({
     csPerMinute: true,
@@ -493,7 +488,6 @@ export function OverlayView() {
   // `set([])` is a new array (same fix as DraftAdvisor.tsx).
   const [championWinrates, setChampionWinrates] = useState<ChampionWinrateEntry[] | null>(null);
   const [applyBuildState, setApplyBuildState] = useState<"idle" | "working" | "done" | "error">("idle");
-  const requestedPuuids = useRef(new Set<string>());
   // The local player's real solo-queue tier, for the CS/min-vs-elo target —
   // fetched once via the LCU, not carried by Live Client Data or the
   // champ-select session.
@@ -604,26 +598,6 @@ export function OverlayView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameClientLocale, champions.byId]);
 
-  // Teammates only — the LCU never exposes puuid for the enemy team until
-  // after the draft, matching Riot's own privacy behavior (not a bug here).
-  useEffect(() => {
-    for (const player of myTeam) {
-      if (!player.puuid || requestedPuuids.current.has(player.puuid)) continue;
-      requestedPuuids.current.add(player.puuid);
-      window.riftcompass
-        .lcuGet<{ gameName: string; tagLine: string }>(`/lol-summoner/v1/summoners/puuid/${player.puuid}`)
-        .then((info) => {
-          setSummoners((prev) => ({ ...prev, [player.puuid!]: { gameName: info.gameName, tagLine: info.tagLine } }));
-        })
-        .catch(() => {
-          // Not resolvable yet (e.g. still loading in) — un-mark it so the
-          // next champ-select session update retries instead of giving up
-          // on this player for the rest of the draft.
-          requestedPuuids.current.delete(player.puuid!);
-        });
-    }
-  }, [myTeam]);
-
   // Recommended build (runes/spells/items) for the local player's
   // champion+role — matchup-aware against the real lane opponent once
   // champ select has revealed one (theirTeam's championId is visible
@@ -700,13 +674,16 @@ export function OverlayView() {
     }
     const role = localPick.role;
     const player = liveGame.allPlayers.find((p) => isLocalPlayer(p, liveGame.activePlayerName));
-    if (!role || !player?.championName) return;
-    const params = new URLSearchParams({ champion: player.championName, role: role.toUpperCase() });
+    // El id de Data Dragon, no el nombre para mostrar ("Kai'Sa", "Maestro
+    // Yi"): la API lo rechazaba con 400 y el resaltado nunca aparecía.
+    const championId = player ? championInfoFor(champions, player)?.internalId : undefined;
+    if (!role || !championId) return;
+    const params = new URLSearchParams({ champion: championId, role: role.toUpperCase() });
     fetch(`${API_BASE_URL}/api/v1/champion-skill-order?${params}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data) => setSkillOrder(data.skillOrder ?? []))
       .catch(() => setSkillOrder([]));
-  }, [phase, overlayModules.skillOrder, localPick.role, liveGame?.activePlayerName]);
+  }, [phase, overlayModules.skillOrder, localPick.role, liveGame?.activePlayerName, champions]);
 
   // Fetched once per session (not per game) — same LCU endpoint the client
   // itself uses for the ranked tab, no reason to refetch every match.
@@ -856,9 +833,8 @@ export function OverlayView() {
       {phase === "ChampSelect" && myTeam.length > 0 ? (
         <div style={{ position: "fixed", top: 12, right: 12, width: 420, ...cardStyle }}>
           <span style={headingStyle}>{t("Overlay.champSelect")}</span>
-          {myTeam.map((p) => {
+          {myTeam.map((p, index) => {
             const champ = p.championId ? champions.byId[p.championId] : undefined;
-            const summoner = p.puuid ? summoners[p.puuid] : undefined;
             const position = p.assignedPosition ? t(`Profile.positions.${p.assignedPosition.toLowerCase()}`) : "—";
             const isLocal = p.cellId === localCellId;
             return (
@@ -880,7 +856,7 @@ export function OverlayView() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {summoner ? `${summoner.gameName}#${summoner.tagLine}` : isLocal ? t("Overlay.you") : "—"}
+                    {isLocal ? t("Overlay.you") : t("Overlay.ally", { n: index + 1 })}
                   </span>
                   <span style={{ color: MUTED, fontSize: 11 }}>
                     {position} · {champ?.name ?? t("Overlay.lockingIn")}
@@ -899,8 +875,8 @@ export function OverlayView() {
                         fontSize: 11,
                         fontWeight: 600,
                         cursor: importState === "idle" || importState === "error" ? "pointer" : "default",
-                        background: importState === "done" ? "rgba(120,220,150,0.15)" : `${ROSE}26`,
-                        color: importState === "done" ? GOOD : ROSE,
+                        background: `${ROSE}26`,
+                        color: ROSE,
                       }}
                     >
                       {importState === "working"
@@ -953,8 +929,8 @@ export function OverlayView() {
                       fontSize: 11,
                       fontWeight: 600,
                       cursor: applyBuildState === "idle" || applyBuildState === "error" ? "pointer" : "default",
-                      background: applyBuildState === "done" ? "rgba(120,220,150,0.15)" : `${ROSE}26`,
-                      color: applyBuildState === "done" ? GOOD : ROSE,
+                      background: `${ROSE}26`,
+                      color: ROSE,
                     }}
                   >
                     {applyBuildState === "working"
@@ -1107,7 +1083,7 @@ export function OverlayView() {
             <span style={headingStyle}>{t("Overlay.csPerMinLabel")}</span>
             <span style={{ fontSize: 12, fontWeight: 600, color: localCsPerMin >= localCsTarget ? GOOD : BAD }}>
               <span style={{ fontWeight: 700, marginRight: 3 }}>{localCsPerMin >= localCsTarget ? "▲" : "▼"}</span>
-              {localCsPerMin} <span style={{ color: MUTED, fontWeight: 400 }}>/ {localCsTarget}</span>
+              {nf.format(localCsPerMin)} <span style={{ color: MUTED, fontWeight: 400 }}>/ {nf.format(localCsTarget)}</span>
             </span>
           </div>
         </div>
@@ -1160,7 +1136,7 @@ export function OverlayView() {
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 60 }}>
                     {icon ? <img src={icon} alt="" style={{ width: 12, height: 12, opacity: 0.6, marginBottom: 2 }} /> : null}
                     <span style={{ fontSize: 12, fontWeight: 700, color: diff === null ? MUTED : diff > 0 ? GOOD : diff < 0 ? BAD : MUTED }}>
-                      {diff === null ? "—" : `${diff > 0 ? "+" : ""}${diff}`}
+                      {diff === null ? "—" : `${diff > 0 ? "+" : ""}${nf.format(diff)}`}
                     </span>
                   </div>
                   <LaneChampion champ={row.theirs ? championInfoFor(champions, row.theirs) : undefined} align="left" />

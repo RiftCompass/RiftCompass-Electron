@@ -18,7 +18,7 @@ const FLASH_ID = 4;
 // call, and every write, stays inside the main process behind a dedicated
 // command, so a renderer bug can never turn into an arbitrary request
 // against the League client.
-const RENDERER_READABLE_LCU_PATHS = ["/lol-summoner/v1/summoners/puuid/", "/lol-ranked-stats/v1/current-ranked-stats"];
+const RENDERER_READABLE_LCU_PATHS = ["/lol-ranked-stats/v1/current-ranked-stats"];
 
 const RUNE_PAGE_PERKS = 9;
 

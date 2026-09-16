@@ -812,6 +812,8 @@ export const de: Messages = {
     },
   },
   ChampionBuilds: {
+    openMatchups: "In Matchups öffnen",
+    setSkillAtLevel: "{skill} auf Championlevel {level} skillen",
     intro:
       "Was in echten erfassten Spielen wirklich gespielt wird: Runen, Beschwörerzauber, Kernitems und Skill-Reihenfolge pro Position und Rang, dazu die Builds, die du in deinem Konto speicherst.",
     pickChampion: "Wähle einen Champion, um seine Builds zu sehen.",
@@ -886,6 +888,7 @@ export const de: Messages = {
     },
   },
   Overlay: {
+    ally: "Verbündeter {n}",
     voidGrubsWindow: "Weg in",
     champSelect: "Champion-Auswahl",
     suggestedFor: "Vorschlag für {position}",
@@ -922,7 +925,7 @@ export const de: Messages = {
     noBuilds: "Für diesen Champion auf dieser Position gibt es noch keine Build.",
     fromSaved: "Deine gespeicherte Build",
     alternative: "Alternative: {runes}",
-    alternativeStats: "{games} Spiele · {percent} % Siegrate",
+    alternativeStats: "{games} Spiele · {percent}% Siegrate",
     fromSample: "{games} Spiele",
     withItems: "{count} Items in Reihenfolge",
     applying: "wird angewendet",
@@ -930,8 +933,9 @@ export const de: Messages = {
     applyFailed: "Konnte nicht angewendet werden. Ist der League-Client offen?",
   },
   DraftAdvisor: {
+    masteryLabel: "Meisterschaft {level} · {points} Punkte",
+    masteryNone: "Keine Meisterschaft mit diesem Champion",
     loading: "Suche die besten Picks für deine Rolle…",
-    error: "Daten konnten nicht geladen werden. Prüfe deine Verbindung.",
     title: "Draft-Beratung",
     description: "Deine stärksten Picks für diese Lane, aus echten Matchup- und persönlichen Siegraten.",
     notInChampSelect: "Nur während der Champion-Auswahl verfügbar.",

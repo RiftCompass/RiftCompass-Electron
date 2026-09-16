@@ -3,6 +3,8 @@ import { API_BASE_URL } from "../shared/api";
 import { DraftAdvisor } from "./DraftAdvisor";
 import { useI18n } from "../i18n";
 import { COLORS, FONT_HEADING, cardStyle } from "../theme";
+import { apiGet } from "../lib/api-fetch";
+import { LoadError } from "../tools/LoadError";
 import { fetchChampionMap, fetchLatestVersion, fetchRuneStyles, runeIconUrl, type ChampionMaps, type RuneStyle } from "../ddragon";
 import { rolesOf } from "../lib/champion-roles";
 import type { LcuIdentity, RecommendedItemSet, SavedChampionBuild } from "../riftcompass";
@@ -113,6 +115,7 @@ function runasAPerkIds(r: RunasRecomendadas): number[] {
 
 export function ChampSelectView() {
   const { t, locale } = useI18n();
+  const nf = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const [identity, setIdentity] = useState<LcuIdentity | null>(null);
   const [sesion, setSesion] = useState<SesionSeleccion | null>(null);
   const [champions, setChampions] = useState<ChampionMaps>(SIN_CAMPEONES);
@@ -219,16 +222,30 @@ export function ChampSelectView() {
 
   // La build recomendada se pide al elegir campeón, no antes: hasta entonces no
   // hay nada que pedir.
+  // Carga, fallo y "sin build" son tres estados distintos (ronda 25): con
+  // la petición en vuelo o un 429 se leía "Todavía no hay build", una
+  // afirmación sobre la muestra del crawler, sin reintento.
+  const [buildStatus, setBuildStatus] = useState<"loading" | "error" | "ready">("ready");
+  const [buildError, setBuildError] = useState<unknown>(null);
+  const [buildAttempt, setBuildAttempt] = useState(0);
   useEffect(() => {
     if (!campeon || !rol) {
       setRecomendada(null);
+      setBuildStatus("ready");
       return;
     }
     const params = new URLSearchParams({ champion: campeon.internalId, role: rol });
     if (rangoJugador) params.set("rank", rangoJugador);
     let cancelado = false;
-    fetch(`${API_BASE_URL}/api/v1/champion-build?${params}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+    setBuildStatus("loading");
+    setBuildError(null);
+    apiGet<{
+      runes?: RunasRecomendadas | null;
+      spells?: HechizosRecomendados | null;
+      startingItems?: EntradaPlanObjetos[];
+      itemOrder?: EntradaOrdenObjetos[];
+      situationalItems?: EntradaPlanObjetos[];
+    }>(`${API_BASE_URL}/api/v1/champion-build?${params}`)
       .then((d) => {
         if (cancelado) return;
         setRecomendada({
@@ -238,14 +255,18 @@ export function ChampSelectView() {
           itemOrder: d.itemOrder ?? [],
           situationalItems: d.situationalItems ?? [],
         });
+        setBuildStatus("ready");
       })
-      .catch(() => {
-        if (!cancelado) setRecomendada(null);
+      .catch((err: unknown) => {
+        if (cancelado) return;
+        setRecomendada(null);
+        setBuildError(err);
+        setBuildStatus("error");
       });
     return () => {
       cancelado = true;
     };
-  }, [campeon, rol, rangoJugador]);
+  }, [campeon, rol, rangoJugador, buildAttempt]);
 
   useEffect(() => {
     if (!campeon || !rol) {
@@ -255,8 +276,7 @@ export function ChampSelectView() {
     const params = new URLSearchParams({ champion: campeon.internalId, role: rol });
     if (rangoJugador) params.set("rank", rangoJugador);
     let cancelado = false;
-    fetch(`${API_BASE_URL}/api/v1/champion-builds?${params}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+    apiGet<{ runePages?: PaginaPopular[] }>(`${API_BASE_URL}/api/v1/champion-builds?${params}`)
       .then((d) => {
         if (!cancelado) setPaginasPopulares(d.runePages ?? []);
       })
@@ -464,9 +484,16 @@ export function ChampSelectView() {
 
         {!campeon ? (
           <p style={{ color: COLORS.muted, fontSize: 13, margin: 0 }}>{t("ChampSelect.pickFirst")}</p>
-        ) : opciones.length === 0 ? (
+        ) : null}
+        {campeon && buildStatus === "loading" ? (
+          <p style={{ color: COLORS.muted, fontSize: 13, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+        ) : campeon && buildStatus === "error" ? (
+          <LoadError error={buildError} onRetry={() => setBuildAttempt((n) => n + 1)} />
+        ) : null}
+        {campeon && buildStatus === "ready" && opciones.length === 0 ? (
           <p style={{ color: COLORS.muted, fontSize: 13, margin: 0 }}>{t("ChampSelect.noBuilds")}</p>
-        ) : (
+        ) : null}
+        {campeon && opciones.length > 0 ? (
           opciones.map((o) => (
             <button
               key={o.clave}
@@ -474,8 +501,8 @@ export function ChampSelectView() {
               disabled={aplicando !== null}
               style={{
                 textAlign: "left",
-                background: aplicada === o.clave ? "rgba(120,57,172,0.18)" : "rgba(255,255,255,0.04)",
-                border: `1px solid ${aplicada === o.clave ? COLORS.good : COLORS.cardBorder}`,
+                background: aplicada === o.clave ? `${COLORS.rose}18` : "rgba(255,255,255,0.04)",
+                border: `1px solid ${aplicada === o.clave ? COLORS.rose : COLORS.cardBorder}`,
                 borderRadius: 8,
                 padding: "8px 10px",
                 color: COLORS.text,
@@ -494,17 +521,17 @@ export function ChampSelectView() {
                   ? t("ChampSelect.fromSaved")
                   : o.origen === "alternativa"
                     ? t("ChampSelect.alternativeStats", {
-                        games: String(o.muestra ?? 0),
+                        games: nf.format(o.muestra ?? 0),
                         percent: String(Math.round(((o.victorias ?? 0) / Math.max(1, o.muestra ?? 0)) * 100)),
                       })
-                    : t("ChampSelect.fromSample", { games: String(o.muestra ?? 0) })}
+                    : t("ChampSelect.fromSample", { games: nf.format(o.muestra ?? 0) })}
                 {o.itemIds.length > 0 ? ` · ${t("ChampSelect.withItems", { count: String(o.itemIds.length) })}` : ""}
                 {aplicando === o.clave ? ` · ${t("ChampSelect.applying")}` : ""}
                 {aplicada === o.clave ? ` · ${t("ChampSelect.applied")}` : ""}
               </span>
             </button>
           ))
-        )}
+        ) : null}
 
         {fallo ? <span style={{ fontSize: 12, color: COLORS.destructive }}>{t("ChampSelect.applyFailed")}</span> : null}
       </div>

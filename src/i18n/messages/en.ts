@@ -824,6 +824,8 @@ export const en = {
     },
   },
   ChampionBuilds: {
+    openMatchups: "Open in Matchups",
+    setSkillAtLevel: "Level {skill} at champion level {level}",
     intro:
       "What real tracked games actually run on each champion: runes, summoner spells, core items and skill order per position and rank, plus the builds you save to your account.",
     pickChampion: "Pick a champion to see its builds.",
@@ -898,6 +900,7 @@ export const en = {
     },
   },
   Overlay: {
+    ally: "Ally {n}",
     voidGrubsWindow: "Leave in",
     champSelect: "Champ select",
     suggestedFor: "Suggested for {position}",
@@ -942,8 +945,9 @@ export const en = {
     applyFailed: "Could not apply it. Is the League client open?",
   },
   DraftAdvisor: {
+    masteryLabel: "Mastery {level} · {points} points",
+    masteryNone: "No mastery with this champion",
     loading: "Finding the best picks for your role…",
-    error: "Couldn't load the data. Check your connection.",
     title: "Draft advice",
     description: "Your strongest picks for this lane, from real matchup and personal win rates.",
     notInChampSelect: "Only available during champion select.",

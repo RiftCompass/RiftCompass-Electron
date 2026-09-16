@@ -19,6 +19,11 @@ export function formatDecimal(locale: string, value: number, maxFractionDigits =
   return new Intl.NumberFormat(locale, { maximumFractionDigits: maxFractionDigits }).format(value);
 }
 
+/** Porcentaje entero con el espacio del idioma ("52 %" en es/fr/de), ronda 25. */
+export function formatPercent(locale: string, rate: number): string {
+  return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(rate);
+}
+
 export function tierToBand(tier: string | null | undefined): RankBand {
   if (!tier) return "default";
   if (["IRON", "BRONZE", "SILVER"].includes(tier)) return "learning";
