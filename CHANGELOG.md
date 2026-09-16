@@ -5,6 +5,14 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.8
+
+- Matchups de línea: al pulsar un rival se abre la ficha de ese matchup:
+  winrate y partidas del enfrentamiento, la build (runas, hechizos y objetos
+  principales) más jugada contra ese rival —o la habitual del campeón,
+  diciéndolo, si aún no hay partidas suficientes— y el orden de habilidades.
+  Desde la ficha se puede ver el matchup desde el otro lado.
+
 ## 0.3.7
 
 - Editor de Mapa: "Cargar" un mapa guardado pide confirmación si hay algo
