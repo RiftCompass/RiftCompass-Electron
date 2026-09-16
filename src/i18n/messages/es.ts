@@ -2,6 +2,7 @@ import type { Messages } from "../index";
 
 export const es: Messages = {
   Common: {
+    myAccount: "Mi cuenta",
     rateLimitedFor: "Demasiadas peticiones ahora mismo. Vuelve a intentarlo en {seconds} s.",
     rateLimited: "Demasiadas peticiones ahora mismo. Espera un momento y vuelve a intentarlo.",
     networkError: "No se pudo conectar con riftcompass.com. Comprueba tu conexión.",
@@ -125,7 +126,6 @@ export const es: Messages = {
     unranked: "Sin clasificar",
     winLossRate: "{wins}V {losses}D · {rate}% de victorias",
     rankTrend: "Tendencia de rango",
-    notTrackedYet: "Todavía sin seguimiento en el tiempo.",
     momentumSubtitle: "Victorias y derrotas en tus partidas recientes de {queue}",
     rankTrendQueueSolo: "Solo/Dúo",
     rankTrendQueueFlex: "Flexible",
@@ -207,7 +207,7 @@ export const es: Messages = {
       flat: "igual que {when}",
     },
     title: "Tu roadmap de mejora",
-    subtitle: "Tú frente a tus rivales de línea en tus últimas {games} partidas de la Grieta del Invocador, {roleGames} de ellas como {role}. Todavía sin seguimiento en el tiempo.",
+    subtitle: "Tú frente a tus rivales de línea en tus últimas {games} partidas de la Grieta del Invocador, {roleGames} de ellas como {role}.",
     notReady: "Aún no hay partidas suficientes en la Grieta del Invocador para un diagnóstico: {games} de {required} necesarias (ARAM y otros modos no cuentan).",
     priorityLabel: "Mayor oportunidad ahora mismo:",
     youLabel: "Tú",

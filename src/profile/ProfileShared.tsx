@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, CaretDown } from "@phosphor-icons/react";
+import { Check, CaretDown, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { API_BASE_URL } from "../shared/api";
 import { COLORS, TYPE, cardStyle as makeCardStyle, inputStyle } from "../theme";
 import { useI18n } from "../i18n";
@@ -87,6 +87,40 @@ export function errorMessageKey(error: string, status?: number): string {
   return "unknown";
 }
 
+// Disabled with a visible countdown instead of a bare "Retry" that just
+// fails again immediately against the same still-saturated quota — Riot's
+// rate limit window is real (see RiftCompass-Web CLAUDE.md's own docs on
+// this), so a rate-limited failure gets a genuinely longer wait than a
+// plain network hiccup. Remounted with a fresh `key` per attempt (see the
+// call site) so the countdown always restarts at the right length instead
+// of carrying over a stale one.
+export function RetryCountdownButton({ seconds, onRetry }: { seconds: number; onRetry: () => void }) {
+  const { t } = useI18n();
+  const [remaining, setRemaining] = useState(seconds);
+
+  useEffect(() => {
+    if (remaining <= 0) return;
+    const id = setTimeout(() => setRemaining((r) => r - 1), 1000);
+    return () => clearTimeout(id);
+  }, [remaining]);
+
+  const ready = remaining <= 0;
+  return (
+    <button
+      onClick={() => ready && onRetry()}
+      disabled={!ready}
+      style={{
+        ...secondaryButtonStyle,
+        cursor: ready ? "pointer" : "default",
+        opacity: ready ? 1 : 0.6,
+      }}
+    >
+      <ArrowCounterClockwise size={13} />
+      {ready ? t("ProfileSearch.retryNow") : t("ProfileSearch.retryIn", { seconds: remaining })}
+    </button>
+  );
+}
+
 export interface ProfileTarget {
   platform: string;
   gameName: string;
@@ -101,7 +135,8 @@ export function useSavedProfiles(): SavedProfileWithRank[] {
   useEffect(() => {
     let cancelled = false;
     window.riftcompass.getSavedProfiles().then((data) => {
-      if (!cancelled) setProfiles(data.profiles);
+      // Los selectores solo rellenan un hueco: sin lista, nada que ofrecer.
+      if (!cancelled) setProfiles(data.ok ? data.profiles : []);
     });
     return () => {
       cancelled = true;
@@ -178,8 +213,20 @@ export function DropdownMenu({
       if (target instanceof Element && target.closest("[data-rc-dropdown]")) return;
       onClose();
     }
+    // Escape cierra y devuelve el foco al botón que lo abrió (ronda 24):
+    // antes solo se cerraba con un clic fuera.
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      onClose();
+      triggerRef.current?.focus();
+    }
     document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [open, onClose, triggerRef]);
 
   if (!open || !rect) return null;
@@ -314,6 +361,8 @@ export function PlatformSelect({ value, onChange }: { value: string; onChange: (
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         style={{
           ...selectStyle,
           // Sized to content instead of a fixed width, so no label ("EUNE",

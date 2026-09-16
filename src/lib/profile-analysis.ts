@@ -12,6 +12,13 @@ import type { MatchParticipantSummary, RecentMatchSummary } from "./profile-type
 // --- rank-band.ts ---
 export type RankBand = "default" | "learning" | "climbing" | "high";
 
+// Decimales con el separador del idioma ("6,4" en es/fr/de), ronda 24: la
+// misma fila del marcador ya formateaba oro y daño con toLocaleString y los
+// decimales iban con punto. Una cifra, una regla.
+export function formatDecimal(locale: string, value: number, maxFractionDigits = 1): string {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: maxFractionDigits }).format(value);
+}
+
 export function tierToBand(tier: string | null | undefined): RankBand {
   if (!tier) return "default";
   if (["IRON", "BRONZE", "SILVER"].includes(tier)) return "learning";

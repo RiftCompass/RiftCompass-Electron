@@ -14,6 +14,7 @@
 // /tools/tier-list/saved page.
 export const en = {
   Common: {
+    myAccount: "My account",
     rateLimitedFor: "Too many requests right now. Try again in {seconds} s.",
     rateLimited: "Too many requests right now. Wait a moment and try again.",
     networkError: "Couldn't reach riftcompass.com. Check your connection.",
@@ -137,7 +138,6 @@ export const en = {
     unranked: "Unranked",
     winLossRate: "{wins}W {losses}L · {rate}% winrate",
     rankTrend: "Rank trend",
-    notTrackedYet: "Not tracked over time yet.",
     momentumSubtitle: "Wins and losses across recent {queue} games",
     rankTrendQueueSolo: "Solo/Duo",
     rankTrendQueueFlex: "Flex",
@@ -219,7 +219,7 @@ export const en = {
       flat: "same as {when}",
     },
     title: "Your improvement roadmap",
-    subtitle: "You vs. your lane opponents over your last {games} Summoner's Rift games, {roleGames} of them as {role}. Not tracked over time yet.",
+    subtitle: "You vs. your lane opponents over your last {games} Summoner's Rift games, {roleGames} of them as {role}.",
     notReady: "Not enough Summoner's Rift games to diagnose yet: {games} of {required} needed (ARAM and other modes don't count).",
     priorityLabel: "Biggest opportunity right now:",
     youLabel: "You",

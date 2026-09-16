@@ -40,6 +40,7 @@ import type {
   ToggleSavedProfileResult,
   UpdateUsernameResult,
   SavedListResult,
+  SavedProfilesResult,
 } from "../riftcompass";
 
 // Exposed by electron/preload.ts via contextBridge.exposeInMainWorld — a
@@ -236,8 +237,8 @@ const api: RiftCompassApi = {
     tryInvoke(CMD.AccountLogin, { email, password }, () => ({ ok: false as const, error: NO_BACKEND })),
   logout: (): Promise<void> => tryInvoke(CMD.AccountLogout, undefined, () => undefined),
   getSession: (): Promise<AccountUser | null> => tryInvoke(CMD.AccountGetSession, undefined, () => null),
-  getSavedProfiles: (): Promise<SavedProfilesPayload> =>
-    tryInvoke(CMD.AccountGetSavedProfiles, undefined, () => ({ folders: [], profiles: [] })),
+  getSavedProfiles: (): Promise<SavedProfilesResult> =>
+    tryInvoke(CMD.AccountGetSavedProfiles, undefined, () => ({ ok: true as const, folders: [], profiles: [] })),
   toggleSavedProfile: (platform: string, gameName: string, tagLine: string, puuid?: string): Promise<ToggleSavedProfileResult> =>
     tryInvoke(CMD.AccountToggleSavedProfile, { platform, gameName, tagLine, puuid }, () => ({ ok: false as const, error: NO_BACKEND })),
   updateUsername: (username: string): Promise<UpdateUsernameResult> =>

@@ -5,6 +5,32 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.9
+
+- Perfil: si no se puede cargar (límite de Riot, red), aparece "Reintentar"
+  con cuenta atrás además de "Buscar de nuevo". "Comparar" abre la Sinergia
+  de grupo con ese jugador ya puesto en el primer hueco, con todo lo que da
+  la herramienta (antes era un pequeño panel con solo siete medias). Si
+  guardar un perfil falla (por ejemplo, sin el correo verificado), lo dice.
+- Perfiles guardados: si no se puede pedir la lista (sin red, sesión
+  caducada), lo dice con un botón de reintentar en vez de "Aún no tienes
+  perfiles guardados"; y el perfil no enseña "Guardar" hasta saber si ya
+  está guardado.
+- Errores del perfil, del calendario y de la comparación en el color de
+  error (antes iban en el rosa de "Guardado"); "faltan partidas de este mes"
+  en ámbar, como aviso.
+- Cifras con el formato del idioma: "6,4 CS/min", "KDA 2,3", nota "7,5",
+  "1.500 LP".
+- El plan de mejora ya no dice "sin seguimiento en el tiempo" (cada fila
+  enseña "mejor que hace N días" cuando hay fotos). Ajustes: cambiar el
+  nombre sin el correo verificado explica el motivo en vez de "Algo ha
+  fallado". La barra lateral no enseña el correo si aún no hay nombre de
+  usuario.
+- Accesibilidad: etiquetas y autocompletado en el inicio de sesión y en el
+  nombre de usuario, idioma con estado pulsado, selector de región con
+  estado y cierre con Escape. Francés: trato de usted en el plan de mejora,
+  los avisos de espera y el resumen de partida.
+
 ## 0.3.8
 
 - Matchups de línea: al pulsar un rival se abre la ficha de ese matchup:

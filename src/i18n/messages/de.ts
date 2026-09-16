@@ -2,6 +2,7 @@ import type { Messages } from "../index";
 
 export const de: Messages = {
   Common: {
+    myAccount: "Mein Konto",
     rateLimitedFor: "Gerade zu viele Anfragen. Versuch es in {seconds} s noch einmal.",
     rateLimited: "Gerade zu viele Anfragen. Warte kurz und versuch es noch einmal.",
     networkError: "riftcompass.com ist nicht erreichbar. Prüfe deine Verbindung.",
@@ -125,7 +126,6 @@ export const de: Messages = {
     unranked: "Ohne Rang",
     winLossRate: "{wins}S {losses}N · {rate}% Winrate",
     rankTrend: "Rang-Trend",
-    notTrackedYet: "Noch kein Verlauf erfasst.",
     momentumSubtitle: "Siege und Niederlagen in deinen letzten {queue}-Spielen",
     rankTrendQueueSolo: "Solo/Duo",
     rankTrendQueueFlex: "Flex",
@@ -207,7 +207,7 @@ export const de: Messages = {
       flat: "gleich wie {when}",
     },
     title: "Deine Verbesserungs-Roadmap",
-    subtitle: "Du gegen deine Lane-Gegner in deinen letzten {games} Spielen auf der Kluft der Beschwörer, {roleGames} davon als {role}. Noch nicht über die Zeit verfolgt.",
+    subtitle: "Du gegen deine Lane-Gegner in deinen letzten {games} Spielen auf der Kluft der Beschwörer, {roleGames} davon als {role}.",
     notReady: "Noch nicht genug Spiele auf der Kluft der Beschwörer für eine Diagnose: {games} von {required} nötig (ARAM und andere Modi zählen nicht).",
     priorityLabel: "Größtes Potenzial gerade jetzt:",
     youLabel: "Du",

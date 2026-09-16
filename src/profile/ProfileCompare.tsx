@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CaretRight, ArrowCounterClockwise, Path, ShieldWarning, Sword, X, type Icon } from "@phosphor-icons/react";
+import { CaretRight, Path, ShieldWarning, Sword, X, type Icon } from "@phosphor-icons/react";
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
 import { DiagnosticBar, formatDiagnosticPair } from "./ProfileDetail";
 import { COLORS, FONT_HEADING, inputStyle } from "../theme";
@@ -19,6 +19,7 @@ import {
   type DiagnosticResult,
   type HeadToHeadStat,
   type RoleStats,
+  formatDecimal,
 } from "../lib/profile-analysis";
 import type { ProfileApiResponse, RecentMatchSummary, RiotLeagueEntry } from "../lib/profile-types";
 import type { SavedProfileWithRank } from "../riftcompass";
@@ -29,6 +30,7 @@ import {
   errorMessageKey,
   type ProfileTarget,
   useSavedProfiles,
+  RetryCountdownButton,
   PlatformSelect,
   CompareSavedProfilePicker,
   cardStyle,
@@ -62,9 +64,17 @@ interface CompareSlotDraft {
 
 const EMPTY_COMPARE_SLOT: CompareSlotDraft = { platform: "euw1", riotId: "" };
 
-export function ProfileCompareEntry() {
+// `initialTarget` rellena el primer hueco cuando se llega desde un perfil
+// ("Comparar", ronda 24): el equivalente de initialPlayerA de /duo en la
+// web. Antes ese botón abría un popover con solo el head-to-head.
+export function ProfileCompareEntry({ initialTarget }: { initialTarget?: ProfileTarget | null } = {}) {
   const { t } = useI18n();
-  const [slots, setSlots] = useState<CompareSlotDraft[]>([{ ...EMPTY_COMPARE_SLOT }, { ...EMPTY_COMPARE_SLOT }]);
+  const [slots, setSlots] = useState<CompareSlotDraft[]>([
+    initialTarget
+      ? { platform: initialTarget.platform, riotId: `${initialTarget.gameName}#${initialTarget.tagLine}` }
+      : { ...EMPTY_COMPARE_SLOT },
+    { ...EMPTY_COMPARE_SLOT },
+  ]);
   const [targets, setTargets] = useState<ProfileTarget[] | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const savedProfiles = useSavedProfiles();
@@ -177,7 +187,7 @@ export function ProfileCompareEntry() {
             {t("ProfileSearch.compareStart")}
           </button>
         </div>
-        {formError ? <span style={{ fontSize: 12, color: COLORS.rose }}>{formError}</span> : null}
+        {formError ? <span style={{ fontSize: 12, color: COLORS.destructive }}>{formError}</span> : null}
       </div>
     </div>
   );
@@ -476,7 +486,7 @@ function ComparePlayerSlot({
         <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-          <p style={{ fontSize: 12, color: COLORS.rose, margin: 0 }}>
+          <p style={{ fontSize: 12, color: COLORS.destructive, margin: 0 }}>
             {t(`ProfileSearch.errors.${errorMessageKey(slot.error, slot.status)}`)}
           </p>
           <RetryCountdownButton
@@ -487,40 +497,6 @@ function ComparePlayerSlot({
         </div>
       )}
     </div>
-  );
-}
-
-// Disabled with a visible countdown instead of a bare "Retry" that just
-// fails again immediately against the same still-saturated quota — Riot's
-// rate limit window is real (see RiftCompass-Web CLAUDE.md's own docs on
-// this), so a rate-limited failure gets a genuinely longer wait than a
-// plain network hiccup. Remounted with a fresh `key` per attempt (see the
-// call site) so the countdown always restarts at the right length instead
-// of carrying over a stale one.
-function RetryCountdownButton({ seconds, onRetry }: { seconds: number; onRetry: () => void }) {
-  const { t } = useI18n();
-  const [remaining, setRemaining] = useState(seconds);
-
-  useEffect(() => {
-    if (remaining <= 0) return;
-    const id = setTimeout(() => setRemaining((r) => r - 1), 1000);
-    return () => clearTimeout(id);
-  }, [remaining]);
-
-  const ready = remaining <= 0;
-  return (
-    <button
-      onClick={() => ready && onRetry()}
-      disabled={!ready}
-      style={{
-        ...secondaryButtonStyle,
-        cursor: ready ? "pointer" : "default",
-        opacity: ready ? 1 : 0.6,
-      }}
-    >
-      <ArrowCounterClockwise size={13} />
-      {ready ? t("ProfileSearch.retryNow") : t("ProfileSearch.retryIn", { seconds: remaining })}
-    </button>
   );
 }
 
@@ -612,7 +588,7 @@ function CompareRankLine({
   // same rule as the web's RankChip.
   topRole: RoleStats | undefined;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const winRate = entry ? Math.round((entry.wins / Math.max(1, entry.wins + entry.losses)) * 100) : null;
   const emblem = entry ? rankEmblemUrl(entry.tier) : null;
   const roleIcon = topRole && topRole.games > 0 ? positionIconUrl(topRole.position) : null;
@@ -620,7 +596,7 @@ function CompareRankLine({
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 12, color: COLORS.muted }}>
       {emblem && <img src={emblem} alt="" style={{ width: 18, height: 18 }} />}
       <span>
-        {label}: {entry ? `${formatTierRank(entry.tier, entry.rank)} · ${entry.leaguePoints} LP · ${winRate}% WR` : t("ProfileSearch.unranked")}
+        {label}: {entry ? `${formatTierRank(entry.tier, entry.rank)} · ${new Intl.NumberFormat(locale).format(entry.leaguePoints)} LP · ${winRate}% WR` : t("ProfileSearch.unranked")}
       </span>
       {roleIcon ? (
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -780,7 +756,7 @@ function RoadmapMetricRow({
   showNames: boolean;
   isLast: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const cells = diagnostics.map((d) => (d.ready ? { diagnostic: d, node: d.nodes.find((n) => n.metric === metric)! } : null));
   const referenceLabel = metric === "laningAdvantage" ? t("Roadmap.evenLabel") : t("Roadmap.rivalsLabel");
   const columnGrid: React.CSSProperties = {
@@ -824,7 +800,7 @@ function RoadmapMetricRow({
         {profiles.map((_, i) => {
           const cell = cells[i];
           if (!cell) return <span key={i} style={{ fontSize: 13, color: COLORS.muted }}>—</span>;
-          const pair = formatDiagnosticPair(cell.node);
+          const pair = formatDiagnosticPair(cell.node, locale);
           return (
             <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ fontSize: 13 }}>
@@ -862,105 +838,6 @@ function RoadmapMetricRow({
   );
 }
 
-// The inline "Comparar con" popover ProfileDetail.tsx opens from a single
-// profile's own header — same fetch/head-to-head machinery as the
-// standalone compare entry above, just anchored to one already-open
-// profile instead of starting from a blank multi-slot form.
-export function CompareBlock({
-  base,
-  baseMatches,
-  compareTarget,
-  onSetCompareTarget,
-  onClose,
-}: {
-  base: ProfileTarget;
-  baseMatches: RecentMatchSummary[];
-  compareTarget: ProfileTarget;
-  onSetCompareTarget: (t: ProfileTarget) => void;
-  onClose: () => void;
-}) {
-  const { t } = useI18n();
-  const [riotId, setRiotId] = useState("");
-  const [platform, setPlatform] = useState(base.platform);
-  const savedProfiles = useSavedProfiles();
-  const [state, setState] = useState<
-    { kind: "idle" } | { kind: "loading" } | ({ kind: "error" } & FetchProfileError) | { kind: "ok"; data: ProfileApiResponse }
-  >({ kind: "idle" });
-
-  useEffect(() => {
-    if (!compareTarget.gameName) {
-      setState({ kind: "idle" });
-      return;
-    }
-    let cancelled = false;
-    setState({ kind: "loading" });
-    fetchProfile(compareTarget.platform, compareTarget.gameName, compareTarget.tagLine).then((result) => {
-      if (cancelled) return;
-      if ("error" in result) setState({ kind: "error", error: result.error, status: result.status });
-      else setState({ kind: "ok", data: result });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [compareTarget.platform, compareTarget.gameName, compareTarget.tagLine]);
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const parsed = parseRiotId(riotId);
-    if (!parsed) return;
-    onSetCompareTarget({ platform, gameName: parsed.gameName, tagLine: parsed.tagLine });
-  }
-
-  function handlePickSaved(target: ProfileTarget) {
-    setPlatform(target.platform);
-    setRiotId(`${target.gameName}#${target.tagLine}`);
-    onSetCompareTarget(target);
-  }
-
-  return (
-    // No cardStyle wrapper — DropdownMenu already supplies the background,
-    // border, shadow, and padding for its popover; nesting cardStyle here
-    // used to draw a card-inside-a-card.
-    <div style={{ position: "relative" }}>
-      <button onClick={onClose} style={{ position: "absolute", top: -4, right: -4, background: "none", border: "none", color: COLORS.muted, cursor: "pointer" }}>
-        <X size={15} />
-      </button>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.compareWith")}</span>
-      {state.kind === "idle" ? (
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <PlatformSelect value={platform} onChange={setPlatform} />
-            <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
-              <input
-                value={riotId}
-                onChange={(e) => setRiotId(e.target.value)}
-                placeholder={t("ProfileSearch.riotIdPlaceholder")}
-                style={{ ...inputStyle, width: "100%", boxSizing: "border-box", paddingRight: 24 }}
-              />
-              <CompareSavedProfilePicker profiles={savedProfiles} onPick={handlePickSaved} />
-            </div>
-          </div>
-          <button type="submit" style={secondaryButtonStyle}>
-            {t("ProfileSearch.searchButton")}
-          </button>
-        </form>
-      ) : state.kind === "loading" ? (
-        <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 10 }}>{t("ProfileSearch.loading")}</p>
-      ) : state.kind === "error" ? (
-        <p style={{ fontSize: 12, color: COLORS.rose, marginTop: 10 }}>
-          {t(`ProfileSearch.errors.${errorMessageKey(state.error, state.status)}`)}
-        </p>
-      ) : (
-        <HeadToHeadTable
-          nameA={`${base.gameName}#${base.tagLine}`}
-          nameB={`${state.data.profile.gameName}#${state.data.profile.tagLine}`}
-          stats={computeHeadToHead(baseMatches, state.data.profile.recentMatches)}
-        />
-      )}
-    </div>
-  );
-}
-
 // Generously spaced so this card reads as substantial next to Skill
 // Overview even at equal grid width — the difference is content density,
 // not column size. A border between rows gives each stat real vertical
@@ -969,20 +846,16 @@ function HeadToHeadTable({
   nameA,
   nameB,
   stats,
-  colorA = COLORS.rose,
-  colorB = COLORS.goodMild,
+  colorA,
+  colorB,
 }: {
   nameA: string;
   nameB: string;
   stats: HeadToHeadStat[];
-  // Defaults only cover CompareBlock's own 2-player popover (no
-  // COMPARE_ACCENTS context there); ProfileCompareResult's call always
-  // passes the pair's real accent colors so a player's color stays
-  // consistent with the rest of that screen.
-  colorA?: string;
-  colorB?: string;
+  colorA: string;
+  colorB: string;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   return (
     <div style={{ marginTop: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>
@@ -1007,9 +880,9 @@ function HeadToHeadTable({
                 borderTop: i > 0 ? `1px solid ${COLORS.cardBorder}66` : "none",
               }}
             >
-              <span style={{ width: 64, flexShrink: 0, fontWeight: aWins ? 700 : 400, color: aWins ? colorA : COLORS.text }}>{s.valueA}</span>
+              <span style={{ width: 64, flexShrink: 0, fontWeight: aWins ? 700 : 400, color: aWins ? colorA : COLORS.text }}>{formatDecimal(locale, s.valueA)}</span>
               <span style={{ flex: 1, textAlign: "center", color: COLORS.muted, fontSize: 12 }}>{t(`ProfileSearch.h2h.${s.key}`)}</span>
-              <span style={{ width: 64, flexShrink: 0, textAlign: "right", fontWeight: bWins ? 700 : 400, color: bWins ? colorB : COLORS.text }}>{s.valueB}</span>
+              <span style={{ width: 64, flexShrink: 0, textAlign: "right", fontWeight: bWins ? 700 : 400, color: bWins ? colorB : COLORS.text }}>{formatDecimal(locale, s.valueB)}</span>
             </div>
           );
         })}

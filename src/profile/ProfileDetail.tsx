@@ -46,6 +46,7 @@ import {
   type DiagnosticMetric,
   type DiagnosticNode,
   type RoleStats,
+  formatDecimal,
 } from "../lib/profile-analysis";
 import type { ProfileApiResponse, RecentMatchSummary, RiotLeagueEntry, RoadmapSnapshot } from "../lib/profile-types";
 import type { SavedProfileWithRank } from "../riftcompass";
@@ -62,8 +63,8 @@ import {
   cardStyle,
   selectStyle,
   secondaryButtonStyle,
+  RetryCountdownButton,
 } from "./ProfileShared";
-import { CompareBlock } from "./ProfileCompare";
 
 // Riot ID search + single-profile view — same real data as
 // riftcompass.com's own profile page (via the public
@@ -158,11 +159,20 @@ function SavedProfileSelect({
   );
 }
 
-export function ProfileScreen({ initialTarget, canSave = false }: { initialTarget?: ProfileTarget | null; canSave?: boolean }) {
+export function ProfileScreen({
+  initialTarget,
+  canSave = false,
+  onCompare,
+}: {
+  initialTarget?: ProfileTarget | null;
+  canSave?: boolean;
+  /** "Comparar": abre la Sinergia de grupo con este jugador ya relleno (ronda 24). */
+  onCompare?: (target: ProfileTarget) => void;
+}) {
   const [target, setTarget] = useState<ProfileTarget | null>(initialTarget ?? null);
 
   if (!target) return <ProfileSearchForm onSearch={setTarget} />;
-  return <ProfileDetail target={target} canSave={canSave} onSearchAgain={() => setTarget(null)} onOpenProfile={setTarget} />;
+  return <ProfileDetail target={target} canSave={canSave} onSearchAgain={() => setTarget(null)} onOpenProfile={setTarget} onCompare={onCompare} />;
 }
 
 function ProfileSearchForm({ onSearch }: { onSearch: (target: ProfileTarget) => void }) {
@@ -286,24 +296,28 @@ function ProfileDetail({
   canSave,
   onSearchAgain,
   onOpenProfile,
+  onCompare,
 }: {
   target: ProfileTarget;
   canSave?: boolean;
   onSearchAgain: () => void;
   onOpenProfile: (target: ProfileTarget) => void;
+  onCompare?: (target: ProfileTarget) => void;
 }) {
   const { t, locale } = useI18n();
   const [state, setState] = useState<
     { kind: "loading" } | ({ kind: "error" } & FetchProfileError) | { kind: "ok"; data: ProfileApiResponse }
   >({ kind: "loading" });
-  const [compareTarget, setCompareTarget] = useState<ProfileTarget | null>(null);
-  const compareButtonRef = useRef<HTMLButtonElement>(null);
+  // Reintento con cuenta atrás (ronda 24): antes un 429 de la cuota de Riot
+  // solo ofrecía "Buscar de nuevo", que vuelve al formulario en blanco.
+  const [attempt, setAttempt] = useState(0);
   const [searchAgainOpen, setSearchAgainOpen] = useState(false);
   const searchAgainButtonRef = useRef<HTMLButtonElement>(null);
   // null = still unknown (either the saved-list fetch is in flight or the
   // user isn't logged in) — the button only renders once this is boolean.
   const [saved, setSaved] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   // Called unconditionally, before the loading/error early returns below —
   // React requires every hook to run on every render regardless of state,
   // and this one used to sit after those returns, so it went from unrun
@@ -319,6 +333,10 @@ function ProfileDetail({
     setSaved(null);
     window.riftcompass.getSavedProfiles().then((data) => {
       if (cancelled) return;
+      // Sin lista (red, sesión caducada, 429) no se sabe si está guardado:
+      // el botón no se pinta antes que enseñar "Guardar" en un perfil que
+      // sí lo está (el endpoint es un toggle y lo quitaría), ronda 24.
+      if (!data.ok) return;
       setSaved(
         data.profiles.some(
           (p) =>
@@ -347,13 +365,13 @@ function ProfileDetail({
     setState({ kind: "loading" });
     fetchProfile(target.platform, target.gameName, target.tagLine).then((result) => {
       if (cancelled) return;
-      if ("error" in result) setState({ kind: "error", error: result.error, status: result.status });
+      if ("error" in result) setState({ kind: "error", error: result.error, status: result.status, retryAfterSeconds: result.retryAfterSeconds });
       else setState({ kind: "ok", data: result });
     });
     return () => {
       cancelled = true;
     };
-  }, [target.platform, target.gameName, target.tagLine]);
+  }, [target.platform, target.gameName, target.tagLine, attempt]);
 
   if (state.kind === "loading") {
     return <p style={{ fontSize: 13, color: COLORS.muted, marginTop: 40, textAlign: "center" }}>{t("ProfileSearch.loading")}</p>;
@@ -364,16 +382,28 @@ function ProfileDetail({
       <div style={{ maxWidth: 480, margin: "40px auto 0", display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-start" }}>
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start", width: "100%" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <WarningCircle size={18} color={COLORS.rose} />
+            <WarningCircle size={18} color={COLORS.destructive} />
             <p style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0, color: COLORS.text }}>
               {t("ProfileSearch.errorTitle")}
             </p>
           </div>
           <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0, lineHeight: 1.5 }}>{t(`ProfileSearch.errors.${key}`)}</p>
         </div>
-        <button onClick={onSearchAgain} style={secondaryButtonStyle}>
-          {t("ProfileSearch.searchAgain")}
-        </button>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {/* 30 s tras un 429, 5 s en cualquier otro fallo, nunca para un
+              Riot ID que no existe: lo mismo que RetryProfileButton en la
+              web (ronda 17) y que la comparación de la app (ronda 10). */}
+          {key !== "notFound" ? (
+            <RetryCountdownButton
+              key={attempt}
+              seconds={state.retryAfterSeconds ?? (key === "rateLimited" ? 30 : 5)}
+              onRetry={() => setAttempt((a) => a + 1)}
+            />
+          ) : null}
+          <button onClick={onSearchAgain} style={secondaryButtonStyle}>
+            {t("ProfileSearch.searchAgain")}
+          </button>
+        </div>
       </div>
     );
   }
@@ -386,6 +416,7 @@ function ProfileDetail({
   async function handleToggleSaved() {
     if (saved === null || saving) return;
     setSaving(true);
+    setSaveError(null);
     const result = await window.riftcompass.toggleSavedProfile(
       target.platform,
       profile.gameName,
@@ -396,8 +427,23 @@ function ProfileDetail({
     if (result.ok) {
       setSaved(result.saved);
       window.dispatchEvent(new Event("riftcompass:profile-panel-refresh"));
+    } else {
+      // Un fallo se dice (ronda 24): desde C7 se puede iniciar sesión sin
+      // verificar el correo y cada escritura contesta emailNotVerified;
+      // antes el botón se quedaba en "Guardar" como si nada.
+      setSaveError(result.error);
     }
   }
+  const saveErrorText =
+    saveError === null
+      ? null
+      : saveError === "emailNotVerified"
+        ? t("SavedProfiles.folderErrors.emailNotVerified")
+        : saveError === "network"
+          ? t("Common.networkError")
+          : saveError === "rateLimited"
+            ? t("Common.rateLimited")
+            : t("SavedProfiles.folderErrors.unknown");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18, position: "relative" }}>
@@ -453,13 +499,14 @@ function ProfileDetail({
               {saved ? t("ProfileSearch.savedProfile") : t("ProfileSearch.saveProfile")}
             </button>
           ) : null}
-          <button
-            ref={compareButtonRef}
-            onClick={() => setCompareTarget(compareTarget ? null : { platform: target.platform, gameName: "", tagLine: "" })}
-            style={secondaryButtonStyle}
-          >
-            <ArrowsLeftRight size={13} /> {t("ProfileSearch.compare")}
-          </button>
+          {onCompare ? (
+            <button
+              onClick={() => onCompare({ platform: target.platform, gameName: profile.gameName, tagLine: profile.tagLine })}
+              style={secondaryButtonStyle}
+            >
+              <ArrowsLeftRight size={13} /> {t("ProfileSearch.compare")}
+            </button>
+          ) : null}
           <button
             ref={searchAgainButtonRef}
             onClick={() => setSearchAgainOpen((v) => !v)}
@@ -468,6 +515,7 @@ function ProfileDetail({
             <MagnifyingGlass size={13} /> {t("ProfileSearch.searchAgain")}
           </button>
         </div>
+        {saveErrorText ? <span style={{ fontSize: 12, color: COLORS.destructive }}>{saveErrorText}</span> : null}
       </div>
 
       {/* Small popover next to the button, not a full-page takeover — same
@@ -494,32 +542,6 @@ function ProfileDetail({
             setSearchAgainOpen(false);
           }}
         />
-      </DropdownMenu>
-
-      {/* Anchored to the Comparar button itself, rather than a full-width
-          card sitting inline in the page flow — same DropdownMenu portal
-          every other popover in this file already uses, just with roomier
-          sizing than the small option-list default since this one holds a
-          real form and a result table. */}
-      <DropdownMenu
-        triggerRef={compareButtonRef}
-        open={compareTarget !== null}
-        onClose={() => setCompareTarget(null)}
-        align="right"
-        minWidth={320}
-        maxWidth={380}
-        maxHeight={480}
-        padding={16}
-      >
-        {compareTarget ? (
-          <CompareBlock
-            base={target}
-            baseMatches={profile.recentMatches}
-            compareTarget={compareTarget}
-            onSetCompareTarget={setCompareTarget}
-            onClose={() => setCompareTarget(null)}
-          />
-        ) : null}
       </DropdownMenu>
 
       {/* Same order as the web's profile page: who you are, how much you
@@ -621,7 +643,7 @@ function RankCard({
             ) : null}
             <div style={{ display: "flex", flexDirection: "column" }}>
               <span style={{ fontSize: 15, fontWeight: 600 }}>
-                {formatTierRank(entry.tier, entry.rank)} · {entry.leaguePoints} LP
+                {formatTierRank(entry.tier, entry.rank)} · {new Intl.NumberFormat(locale).format(entry.leaguePoints)} LP
               </span>
               <span style={{ fontSize: 12, color: COLORS.muted }}>
                 {t("ProfileSearch.winLossRate", { wins: entry.wins, losses: entry.losses, rate: winPct })}
@@ -974,14 +996,14 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
       {monthState.kind === "ok" && !monthState.complete && !isCurrentMonth ? (
         // Solo en un mes navegado, igual que en la web: el mes en curso
         // siempre tiene al menos las partidas recientes y ahí sería ruido.
-        <p style={{ fontSize: 12, color: COLORS.rose, margin: "10px 0 0" }}>{t("ProfileSearch.partialMonth")}</p>
+        <p style={{ fontSize: 12, color: COLORS.gold, margin: "10px 0 0" }}>{t("ProfileSearch.partialMonth")}</p>
       ) : null}
       {monthState.kind === "loading" ? (
         <p style={{ fontSize: 12, color: COLORS.muted, margin: "10px 0 0" }}>{t("ProfileSearch.loading")}</p>
       ) : monthState.kind === "error" && !isCurrentMonth ? (
         // El mes en curso tiene las partidas recientes de respaldo: si su
         // carga falla se enseñan esas, sin mensaje.
-        <p style={{ fontSize: 12, color: COLORS.rose, margin: "10px 0 0" }}>
+        <p style={{ fontSize: 12, color: COLORS.destructive, margin: "10px 0 0" }}>
           {t(`ProfileSearch.errors.${errorMessageKey(monthState.error, monthState.status)}`)}
         </p>
       ) : (
@@ -1292,14 +1314,14 @@ export function DiagnosticBar({ node, height = 6 }: { node: DiagnosticNode; heig
   );
 }
 
-export function formatDiagnosticPair(node: DiagnosticNode): { value: string; reference: string } {
+export function formatDiagnosticPair(node: DiagnosticNode, locale: string): { value: string; reference: string } {
   const unit = metricUnit(node.metric);
-  return { value: `${node.value}${unit}`, reference: `${node.reference}${unit}` };
+  return { value: `${formatDecimal(locale, node.value)}${unit}`, reference: `${formatDecimal(locale, node.reference)}${unit}` };
 }
 
 function RoadmapRow({ node, diagnostic, baseline }: { node: DiagnosticNode; diagnostic: Diagnostic; baseline: RoadmapSnapshot | null }) {
   const { t, locale } = useI18n();
-  const pair = formatDiagnosticPair(node);
+  const pair = formatDiagnosticPair(node, locale);
   const RowIcon = METRIC_ICON[node.metric];
   const referenceLabel = node.metric === "laningAdvantage" ? t("Roadmap.evenLabel") : t("Roadmap.rivalsLabel");
   // Movement against the rivals since the baseline snapshot, in points of
@@ -1334,7 +1356,7 @@ function RoadmapRow({ node, diagnostic, baseline }: { node: DiagnosticNode; diag
       <DiagnosticBar node={node} />
       <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, lineHeight: 1.5 }}>{t(tipKey(node, diagnostic))}</p>
       {node.metric === "csPerMin" && diagnostic.csReference ? (
-        <p style={{ fontSize: 10, color: COLORS.muted, margin: 0 }}>{t("Roadmap.csReference", { target: diagnostic.csReference })}</p>
+        <p style={{ fontSize: 10, color: COLORS.muted, margin: 0 }}>{t("Roadmap.csReference", { target: formatDecimal(locale, diagnostic.csReference) })}</p>
       ) : null}
     </div>
   );
@@ -1345,7 +1367,7 @@ function RoadmapRow({ node, diagnostic, baseline }: { node: DiagnosticNode; diag
 // paired next to the activity calendar — distinct from ChampionPoolCard
 // below, which groups real mastery per role instead of raw play count.
 function ChampionOverviewCard({ matches, ddragonVersion }: { matches: RecentMatchSummary[]; ddragonVersion: string }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const rows = computeChampionOverview(matches);
   if (rows.length === 0) return null;
 
@@ -1387,8 +1409,8 @@ function ChampionOverviewCard({ matches, ddragonVersion }: { matches: RecentMatc
                   >
                     {winRate}%
                   </td>
-                  <td style={{ padding: "6px 0", textAlign: "right", color: COLORS.muted }}>{kda}</td>
-                  <td style={{ padding: "6px 0", textAlign: "right", color: COLORS.muted }}>{csPerMin}</td>
+                  <td style={{ padding: "6px 0", textAlign: "right", color: COLORS.muted }}>{formatDecimal(locale, kda)}</td>
+                  <td style={{ padding: "6px 0", textAlign: "right", color: COLORS.muted }}>{formatDecimal(locale, csPerMin)}</td>
                 </tr>
               );
             })}
@@ -1414,7 +1436,7 @@ function MatchHistoryCard({
   platform: string;
   onOpenProfile: (target: ProfileTarget) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
@@ -1486,7 +1508,7 @@ function MatchHistoryCard({
                     color: note?.scoreSentiment === "good" ? COLORS.goodMild : note?.scoreSentiment === "bad" ? COLORS.badMild : COLORS.muted,
                   }}
                 >
-                  {note ? note.score.toFixed(1) : ""}
+                  {note ? formatDecimal(locale, note.score) : ""}
                 </span>
                 <span style={{ width: 108, flexShrink: 0, fontSize: 11, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {noteLabel}
@@ -1729,7 +1751,7 @@ function MatchScoreboard({
                       color: note?.scoreSentiment === "good" ? COLORS.goodMild : note?.scoreSentiment === "bad" ? COLORS.badMild : COLORS.muted,
                     }}
                   >
-                    {note ? note.score.toFixed(1) : ""}
+                    {note ? formatDecimal(locale, note.score) : ""}
                   </span>
                 </button>
               );
