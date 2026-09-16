@@ -2,8 +2,9 @@ import type { Messages } from "../index";
 
 export const fr: Messages = {
   Common: {
-    rateLimitedFor: "Trop de requêtes pour le moment. Réessaie dans {seconds} s.",
-    rateLimited: "Trop de requêtes pour le moment. Attends un instant et réessaie.",
+    myAccount: "Mon compte",
+    rateLimitedFor: "Trop de requêtes pour le moment. Réessayez dans {seconds} s.",
+    rateLimited: "Trop de requêtes pour le moment. Patientez un instant et réessayez.",
     networkError: "Impossible de joindre riftcompass.com. Vérifiez votre connexion.",
     dataDragonError: "Impossible de charger les données du jeu depuis Data Dragon. Vérifiez votre connexion.",
     loadingSaved: "Chargement de vos enregistrements…",
@@ -21,7 +22,7 @@ export const fr: Messages = {
     intro: "Des outils autonomes, sans besoin de Riot ID.",
     profileSearch: "Rechercher des profils",
     duo: "Synergie d'équipe",
-    goldCalculator: { title: "Calculateur d'or", description: "La boutique de LoL avec le coût total de ta build." },
+    goldCalculator: { title: "Calculateur d'or", description: "La boutique de LoL avec le coût total de votre build." },
     waveTimer: { title: "Minuteur de vagues", description: "L'or et la composition de chaque vague, minute par minute." },
     tierList: { title: "Ma Tier List", description: "Glissez-déposez les champions pour créer votre propre classement S-D." },
     cooldowns: { title: "Comparateur de cooldowns", description: "Comparez les temps de recharge des sorts de deux champions, ajustés selon l'accélération de compétence." },
@@ -125,7 +126,6 @@ export const fr: Messages = {
     unranked: "Non classé",
     winLossRate: "{wins}V {losses}D · {rate}% de victoires",
     rankTrend: "Tendance de rang",
-    notTrackedYet: "Pas encore suivi dans le temps.",
     momentumSubtitle: "Victoires et défaites sur vos parties {queue} récentes",
     rankTrendQueueSolo: "Solo/Duo",
     rankTrendQueueFlex: "Flexible",
@@ -207,7 +207,7 @@ export const fr: Messages = {
       flat: "pareil que {when}",
     },
     title: "Votre feuille de route de progression",
-    subtitle: "Toi face à tes adversaires de lane sur tes {games} dernières parties de la Faille de l'invocateur, dont {roleGames} en {role}. Pas encore suivi dans le temps.",
+    subtitle: "Vous face à vos adversaires de lane sur vos {games} dernières parties de la Faille de l'invocateur, dont {roleGames} en {role}.",
     notReady: "Pas assez de parties sur la Faille de l'invocateur pour établir un diagnostic : {games} sur {required} nécessaires (ARAM et autres modes ne comptent pas).",
     priorityLabel: "Votre plus grande opportunité en ce moment :",
     youLabel: "Vous",
@@ -952,7 +952,7 @@ export const fr: Messages = {
   },
   PostGameReport: {
     title: "Bilan de la partie",
-    description: "Comment s'est passée la partie que tu viens de jouer, axe par axe.",
+    description: "Comment s'est passée la partie que vous venez de jouer, axe par axe.",
     loading: "Analyse de votre partie…",
     timeout: "Votre partie n'apparaît pas encore : Riot peut mettre un moment à la traiter.",
     openProfile: "Voir le profil complet",

@@ -120,6 +120,12 @@ export interface SavedProfilesPayload {
   profiles: SavedProfileWithRank[];
 }
 
+// getSavedProfiles: la lista, o el motivo por el que no se pudo pedir
+// (ronda 24; mismo molde que SavedListResult).
+export type SavedProfilesResult =
+  | ({ ok: true } & SavedProfilesPayload)
+  | { ok: false; error: string; retryAfterSeconds: number | null };
+
 export type UpdateUsernameResult = { ok: true; user: AccountUser } | { ok: false; error: string };
 
 export type FolderActionResult = ({ ok: true } & SavedProfilesPayload) | { ok: false; error: string };
@@ -321,7 +327,7 @@ export interface RiftCompassApi {
   login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   getSession: () => Promise<AccountUser | null>;
-  getSavedProfiles: () => Promise<SavedProfilesPayload>;
+  getSavedProfiles: () => Promise<SavedProfilesResult>;
   toggleSavedProfile: (platform: string, gameName: string, tagLine: string, puuid?: string) => Promise<ToggleSavedProfileResult>;
   updateUsername: (username: string) => Promise<UpdateUsernameResult>;
   createProfileFolder: (name: string) => Promise<FolderActionResult>;

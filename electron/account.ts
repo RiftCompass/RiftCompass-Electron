@@ -202,18 +202,28 @@ export async function accountUpdateUsername(username: string): Promise<unknown> 
   return err(data?.error ?? "unknown");
 }
 
+// La sexta lista guardada que la ronda 22 dejó fuera de SavedListResult
+// (ronda 24): sin red, timeout, 401 o 429 la respuesta dice por qué en vez
+// de una lista vacía, que el panel leía como "Aún no tienes perfiles
+// guardados". Sin sesión sí es una lista vacía de verdad para esta app.
 export async function accountGetSavedProfiles(): Promise<unknown> {
-  const empty = { folders: [], profiles: [] };
+  const empty = { ok: true, folders: [], profiles: [] };
   const stored = loadPersistedSession();
   if (!stored) return empty;
 
+  let res: Response;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/saved-profiles`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` }, signal: timeout() });
-    if (!res.ok) return empty;
-    return await res.json();
+    res = await fetch(`${API_BASE_URL}/api/v1/saved-profiles`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` }, signal: timeout() });
   } catch {
-    return empty;
+    return { ok: false, error: "network", retryAfterSeconds: null };
   }
+  const data = await readJson(res);
+  if (res.status === 429) {
+    const fromBody = typeof data?.retryAfterSeconds === "number" ? data.retryAfterSeconds : null;
+    return { ok: false, error: "rateLimited", retryAfterSeconds: fromBody ?? (Number(res.headers.get("retry-after")) || null) };
+  }
+  if (!res.ok || !data) return { ok: false, error: data?.error ?? `http${res.status}`, retryAfterSeconds: null };
+  return { ok: true, folders: data.folders ?? [], profiles: data.profiles ?? [] };
 }
 
 // Shared by every folder-scoped mutation (profile folders + the toggle

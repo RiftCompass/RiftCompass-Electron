@@ -50,7 +50,7 @@ export function PostGameReport({
   gameStartedAt: number;
   onOpenProfile: (target: ProfileTarget) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [status, setStatus] = useState<"loading" | "ready" | "timeout">("loading");
   const [match, setMatch] = useState<RecentMatchSummary | null>(null);
   const [ddragonVersion, setDdragonVersion] = useState<string | null>(null);
@@ -164,7 +164,7 @@ export function PostGameReport({
           <>
             <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>{t("PostGameReport.breakdownSubtitle")}</p>
             {note.nodes.map((node) => {
-              const pair = formatDiagnosticPair(node);
+              const pair = formatDiagnosticPair(node, locale);
               const color = sentimentColor(ratioSentiment(node.ratio));
               return (
                 <div key={node.metric} style={{ display: "flex", flexDirection: "column", gap: 4 }}>

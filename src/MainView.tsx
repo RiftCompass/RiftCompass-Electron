@@ -24,6 +24,8 @@ import { API_BASE_URL } from "./shared/api";
 import { ProfileScreen } from "./profile/ProfileDetail";
 import { ProfileCompareEntry } from "./profile/ProfileCompare";
 import { parseRiotId, PlatformSelect, type ProfileTarget } from "./profile/ProfileShared";
+import { LoadError } from "./tools/LoadError";
+import { savedListError } from "./lib/api-fetch";
 import { PostGameReport } from "./profile/PostGameReport";
 import { scheduleRankSnapshot } from "./lib/rank-snapshot";
 import { DraftAdvisor } from "./champselect/DraftAdvisor";
@@ -242,6 +244,14 @@ export function MainView() {
     setPanel("profile");
   }
 
+  // "Comparar" desde un perfil: la Sinergia de grupo con ese jugador ya
+  // relleno (ronda 24), como /duo?with= en la web.
+  const [compareInitial, setCompareInitial] = useState<ProfileTarget | null>(null);
+  function openCompareWith(target: ProfileTarget) {
+    setCompareInitial(target);
+    setPanel("compare");
+  }
+
   useEffect(() => {
     window.riftcompass.onLcuConnection(setLcuStatus);
     window.riftcompass.getSession().then(setUser);
@@ -447,6 +457,7 @@ export function MainView() {
                 key={profileTarget ? `${profileTarget.platform}-${profileTarget.gameName}-${profileTarget.tagLine}` : "search"}
                 initialTarget={profileTarget}
                 canSave={Boolean(user)}
+                onCompare={openCompareWith}
               />
             </div>
           ) : panel === "compare" ? (
@@ -470,7 +481,10 @@ export function MainView() {
               >
                 <ArrowLeft size={15} /> {t("Common.backToTools")}
               </button>
-              <ProfileCompareEntry />
+              <ProfileCompareEntry
+                key={compareInitial ? `${compareInitial.platform}-${compareInitial.gameName}-${compareInitial.tagLine}` : "blank"}
+                initialTarget={compareInitial}
+              />
             </div>
           ) : panel === "draft" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -635,7 +649,7 @@ export function MainView() {
             <button onClick={() => setPanel("settings")} style={navProfileRowStyle}>
               <Avatar user={user} size={30} />
               <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user.username ?? user.email}
+                {user.username ?? t("Common.myAccount")}
               </span>
             </button>
           ) : user === null ? (
@@ -861,12 +875,20 @@ function SavedProfilesPanel({
   const [groupFilter, setGroupFilter] = useState<string>("all");
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [folderError, setFolderError] = useState<string | null>(null);
+  // Un fallo al pedir la lista se dice como tal, con reintento, no como
+  // "Aún no tienes perfiles guardados" (ronda 24).
+  const [loadError, setLoadError] = useState<Error | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const load = () => {
+      setLoadError(null);
       window.riftcompass.getSavedProfiles().then((data) => {
         if (cancelled) return;
+        if (!data.ok) {
+          setLoadError(savedListError(data));
+          return;
+        }
         setProfiles(data.profiles);
         setFolders(data.folders);
       });
@@ -954,6 +976,13 @@ function SavedProfilesPanel({
   const query = textFilter.trim().toLowerCase();
   const textFiltered = query ? sorted.filter((p) => `${p.gameName}#${p.tagLine}`.toLowerCase().includes(query)) : sorted;
 
+  if (loadError) {
+    return (
+      <div style={{ padding: "12px 4px" }}>
+        <LoadError error={loadError} onRetry={() => window.dispatchEvent(new Event("riftcompass:profile-panel-refresh"))} />
+      </div>
+    );
+  }
   if (profiles === null) return null;
 
   const header = (
@@ -2029,7 +2058,7 @@ function Settings({
         <h2 style={sectionTitleStyle}>{t("Settings.languageSection")}</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {SUPPORTED_LOCALES.map((l) => (
-            <button key={l} onClick={() => setLocale(l as Locale)} style={pillStyle(locale === l)}>
+            <button key={l} onClick={() => setLocale(l as Locale)} aria-pressed={locale === l} style={pillStyle(locale === l)}>
               {LOCALE_LABEL[l]}
             </button>
           ))}
@@ -2106,7 +2135,7 @@ function ProfileSection({
       setStatus({ kind: "saved", message: t("Settings.usernameSaved") });
       return;
     }
-    const known = ["invalidUsername", "usernameTaken", "nameOffensive", "network"];
+    const known = ["invalidUsername", "usernameTaken", "nameOffensive", "network", "emailNotVerified"];
     const key = known.includes(result.error) ? result.error : "unknown";
     setStatus({ kind: "error", message: t(`Settings.usernameErrors.${key}`) });
   }
@@ -2119,9 +2148,10 @@ function ProfileSection({
       <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
         <Avatar user={user} size={48} />
         <form onSubmit={handleSubmit} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 12, color: COLORS.muted }}>{t("Settings.usernameLabel")}</label>
+          <label htmlFor="account-username" style={{ fontSize: 12, color: COLORS.muted }}>{t("Settings.usernameLabel")}</label>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input
+              id="account-username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder={t("Settings.usernamePlaceholder")}
@@ -2198,6 +2228,8 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (user: AccountUser) => void }) 
       <input
         type="email"
         required
+        autoComplete="email"
+        aria-label={t("Auth.emailLabel")}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder={t("Auth.emailLabel")}
@@ -2206,6 +2238,8 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (user: AccountUser) => void }) 
       <input
         type="password"
         required
+        autoComplete="current-password"
+        aria-label={t("Auth.passwordLabel")}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder={t("Auth.passwordLabel")}
