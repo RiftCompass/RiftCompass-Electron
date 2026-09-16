@@ -196,8 +196,8 @@ function ProfileSearchForm({ onSearch }: { onSearch: (target: ProfileTarget) => 
 
   return (
     <div style={{ maxWidth: 480, margin: "40px auto 0" }}>
-      <h1 style={{ fontFamily: FONT_HEADING, fontSize: 22, fontWeight: 400, margin: 0 }}>{t("ProfileSearch.title")}</h1>
-      <p style={{ color: COLORS.muted, fontSize: 13, marginTop: 6 }}>{t("ProfileSearch.intro")}</p>
+      <h1 tabIndex={-1} style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0, outline: "none" }}>{t("ProfileSearch.title")}</h1>
+      <p style={{ color: COLORS.muted, fontSize: TYPE.body, marginTop: 6 }}>{t("ProfileSearch.intro")}</p>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
         <div style={{ display: "flex", gap: 8 }}>
           <PlatformSelect value={platform} onChange={setPlatform} />
@@ -208,7 +208,7 @@ function ProfileSearchForm({ onSearch }: { onSearch: (target: ProfileTarget) => 
             style={{ ...inputStyle, flex: 1 }}
           />
         </div>
-        {error ? <span style={{ fontSize: 12, color: COLORS.destructive }}>{error}</span> : null}
+        {error ? <span style={{ fontSize: TYPE.caption, color: COLORS.destructive }}>{error}</span> : null}
         <button type="submit" style={{ ...primaryButtonStyle, alignSelf: "flex-start" }}>
           <MagnifyingGlass size={14} /> {t("ProfileSearch.searchButton")}
         </button>
@@ -277,7 +277,7 @@ function RefreshProfileButton({
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 11, color: COLORS.muted }}>
+      <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
         {minutesAgo <= 0 ? t("ProfileSearch.lastUpdatedNow") : t("ProfileSearch.lastUpdatedMinutes", { minutes: minutesAgo })}
       </span>
       <button onClick={handleClick} disabled={loading || onCooldown} style={{ ...secondaryButtonStyle, opacity: loading || onCooldown ? 0.6 : 1 }}>
@@ -375,7 +375,7 @@ function ProfileDetail({
   }, [target.platform, target.gameName, target.tagLine, attempt]);
 
   if (state.kind === "loading") {
-    return <p style={{ fontSize: 13, color: COLORS.muted, marginTop: 40, textAlign: "center" }}>{t("ProfileSearch.loading")}</p>;
+    return <p style={{ fontSize: TYPE.body, color: COLORS.muted, marginTop: 40, textAlign: "center" }}>{t("ProfileSearch.loading")}</p>;
   }
   if (state.kind === "error") {
     const key = errorMessageKey(state.error, state.status);
@@ -466,11 +466,11 @@ function ProfileDetail({
             style={{ width: 52, height: 52, borderRadius: 999, border: `2px solid ${COLORS.rose}66` }}
           />
           <div>
-            <h1 style={{ fontFamily: FONT_HEADING, fontSize: 20, fontWeight: 400, margin: 0 }}>
+            <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
               {profile.gameName}
               <span style={{ color: COLORS.muted }}>#{profile.tagLine}</span>
             </h1>
-            <span style={{ fontSize: 12, color: COLORS.muted }}>
+            <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
               {PLATFORM_LABELS[target.platform] ?? target.platform} · {t("ProfileSearch.level", { level: profile.summonerLevel })}
               {profile.recentMatches[0]
                 ? ` · ${t("ProfileSearch.lastGame", { time: formatRelativeTime(profile.recentMatches[0].playedAt, locale) })}`
@@ -516,7 +516,7 @@ function ProfileDetail({
             <MagnifyingGlass size={13} /> {t("ProfileSearch.searchAgain")}
           </button>
         </div>
-        {saveErrorText ? <span style={{ fontSize: 12, color: COLORS.destructive }}>{saveErrorText}</span> : null}
+        {saveErrorText ? <span style={{ fontSize: TYPE.caption, color: COLORS.destructive }}>{saveErrorText}</span> : null}
       </div>
 
       {/* Small popover next to the button, not a full-page takeover — same
@@ -631,7 +631,7 @@ function RankCard({
         : t("ProfileSearch.seasonsAgo", { count: index });
   return (
     <div style={{ ...cardStyle, borderTop: entry ? `2px solid ${lpTierColor(entry.tier)}` : cardStyle.border, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{title}</span>
+      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{title}</span>
       {/* flex:1 + centered, not just marginTop — so a row that stretches
           this card taller than its own content re-centers the actual
           rank/role info in the extra height instead of leaving it pinned
@@ -643,10 +643,10 @@ function RankCard({
               <img src={emblem} alt={entry.tier} style={{ width: 40, height: 40 }} />
             ) : null}
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: 15, fontWeight: 600 }}>
+              <span style={{ fontSize: TYPE.subheading, fontWeight: 600 }}>
                 {formatTierRank(entry.tier, entry.rank)} · {new Intl.NumberFormat(locale).format(entry.leaguePoints)} LP
               </span>
-              <span style={{ fontSize: 12, color: COLORS.muted }}>
+              <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
                 {t("ProfileSearch.winLossRate", { wins: entry.wins, losses: entry.losses, rate: winPct })}
               </span>
             </div>
@@ -660,7 +660,7 @@ function RankCard({
               const icon = positionIconUrl(r.position);
               const rate = r.games > 0 ? `${Math.round((r.wins / r.games) * 100)}%` : "—";
               return (
-                <div key={r.position} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                <div key={r.position} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: TYPE.label }}>
                   {icon ? <img src={icon} alt="" style={{ width: 13, height: 13, flexShrink: 0 }} /> : null}
                   <span style={{ width: 48, flexShrink: 0, color: COLORS.muted }}>
                     {t(`Profile.positions.${r.position.toLowerCase()}`)}
@@ -675,11 +675,11 @@ function RankCard({
       </div>
       {seasonPeaks.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${COLORS.cardBorder}` }}>
-          <span style={{ fontSize: 11, color: COLORS.muted }}>{t("ProfileSearch.seasonPeaksTitle")}</span>
+          <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("ProfileSearch.seasonPeaksTitle")}</span>
           {seasonPeaks.map((peak, index) => {
             const peakEmblem = rankEmblemUrl(peak.tier);
             return (
-              <div key={peak.from.toISOString()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 12 }}>
+              <div key={peak.from.toISOString()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: TYPE.caption }}>
                 <span style={{ color: COLORS.muted, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {seasonLabel(index)}
                   <span style={{ opacity: 0.7 }}>
@@ -752,7 +752,7 @@ function RankTrendCard({
 
   return (
     <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.rankTrend")}</span>
+      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.rankTrend")}</span>
       <div role="group" aria-label={t("ProfileSearch.rankTrendQueueLabel")} style={{ display: "flex", gap: 6, marginTop: 8 }}>
         {RANKED_QUEUES.map((q) => (
           <button key={q} type="button" onClick={() => setQueue(q)} aria-pressed={queue === q} style={pillStyle(queue === q, "compact")}>
@@ -766,8 +766,8 @@ function RankTrendCard({
         <MomentumBody key={queue} matches={queueMatches} queueLabel={queueLabel} />
       ) : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6, marginTop: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 600 }}>{t("ProfileSearch.rankTrendEmptyTitle", { queue: queueLabel })}</span>
-          <span style={{ fontSize: 12, color: COLORS.muted, lineHeight: 1.5 }}>{t("ProfileSearch.rankTrendEmptyBody", { queue: queueLabel })}</span>
+          <span style={{ fontSize: TYPE.subheading, fontWeight: 600 }}>{t("ProfileSearch.rankTrendEmptyTitle", { queue: queueLabel })}</span>
+          <span style={{ fontSize: TYPE.caption, color: COLORS.muted, lineHeight: 1.5 }}>{t("ProfileSearch.rankTrendEmptyBody", { queue: queueLabel })}</span>
         </div>
       )}
     </div>
@@ -801,11 +801,11 @@ function LpHistoryBody({ history }: { history: ProfileApiResponse["lpHistory"] }
   return (
     <>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 15, fontWeight: 600 }}>{formatTierRank(latest.tier, latest.rank)}</span>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{latest.leaguePoints} LP</span>
-        <span style={{ fontSize: 15, fontWeight: 600, color, marginLeft: "auto" }}>{signedNumber(delta)} LP</span>
+        <span style={{ fontSize: TYPE.subheading, fontWeight: 600 }}>{formatTierRank(latest.tier, latest.rank)}</span>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{latest.leaguePoints} LP</span>
+        <span style={{ fontSize: TYPE.subheading, fontWeight: 600, color, marginLeft: "auto" }}>{signedNumber(delta)} LP</span>
       </div>
-      <span style={{ fontSize: 11, color: COLORS.muted, marginTop: 2 }}>
+      <span style={{ fontSize: TYPE.label, color: COLORS.muted, marginTop: 2 }}>
         {t("ProfileSearch.lpHistorySubtitle", { count: history.length, since })}
       </span>
       {/* height:100% (not a fixed px height) — a row that stretches this
@@ -864,8 +864,8 @@ function MomentumBody({ matches, queueLabel }: { matches: RecentMatchSummary[]; 
   return (
     <>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 10 }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color }}>{signedNumber(current)}</span>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.momentumSubtitle", { queue: queueLabel })}</span>
+        <span style={{ fontSize: TYPE.subheading, fontWeight: 600, color }}>{signedNumber(current)}</span>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.momentumSubtitle", { queue: queueLabel })}</span>
       </div>
       <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ marginTop: 8, display: "block", flex: 1, minHeight: 80 }}>
         <defs>
@@ -949,7 +949,7 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
   return (
     <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
           {t("ProfileSearch.activityCalendar")} · {monthLabel}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -997,14 +997,14 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
       {monthState.kind === "ok" && !monthState.complete && !isCurrentMonth ? (
         // Solo en un mes navegado, igual que en la web: el mes en curso
         // siempre tiene al menos las partidas recientes y ahí sería ruido.
-        <p style={{ fontSize: 12, color: COLORS.gold, margin: "10px 0 0" }}>{t("ProfileSearch.partialMonth")}</p>
+        <p style={{ fontSize: TYPE.caption, color: COLORS.gold, margin: "10px 0 0" }}>{t("ProfileSearch.partialMonth")}</p>
       ) : null}
       {monthState.kind === "loading" ? (
-        <p style={{ fontSize: 12, color: COLORS.muted, margin: "10px 0 0" }}>{t("ProfileSearch.loading")}</p>
+        <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: "10px 0 0" }}>{t("ProfileSearch.loading")}</p>
       ) : monthState.kind === "error" && !isCurrentMonth ? (
         // El mes en curso tiene las partidas recientes de respaldo: si su
         // carga falla se enseñan esas, sin mensaje.
-        <p style={{ fontSize: 12, color: COLORS.destructive, margin: "10px 0 0" }}>
+        <p style={{ fontSize: TYPE.caption, color: COLORS.destructive, margin: "10px 0 0" }}>
           {t(`ProfileSearch.errors.${errorMessageKey(monthState.error, monthState.status)}`)}
         </p>
       ) : (
@@ -1020,7 +1020,7 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", marginTop: 10 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 4 }}>
           {weekdayLabels.map((label, i) => (
-            <span key={i} style={{ textAlign: "center", fontSize: 11, color: COLORS.muted }}>
+            <span key={i} style={{ textAlign: "center", fontSize: TYPE.label, color: COLORS.muted }}>
               {label}
             </span>
           ))}
@@ -1061,7 +1061,7 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 12,
+                fontSize: TYPE.caption,
                 color: day.games === 0 ? COLORS.muted : COLORS.text,
                 // Not-yet-played days stay in the grid (so the month never
                 // looks broken/empty right after it starts) but read as
@@ -1080,7 +1080,7 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
         // Sibling of the grid above, not nested inside it, so the legend
         // sits flush against the card's own left edge (same structure as
         // the web version's legend).
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11, color: COLORS.muted }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: TYPE.label, color: COLORS.muted }}>
           <span>{t("ProfileSearch.activityLegendLoss")}</span>
           <span style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.bad }} />
           <span style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.badMild }} />
@@ -1116,7 +1116,7 @@ function ChampionPoolCard({
 
   return (
     <div style={cardStyle}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.championPool")}</span>
+      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.championPool")}</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 12 }}>
         {pools.map((pool) => {
           const icon = positionIconUrl(pool.position);
@@ -1128,10 +1128,10 @@ function ChampionPoolCard({
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {icon ? <img src={icon} alt="" style={{ width: 16, height: 16 }} /> : null}
-                  <span style={{ fontSize: 12, color: COLORS.muted }}>{t(`Profile.positions.${pool.position.toLowerCase()}`)}</span>
+                  <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t(`Profile.positions.${pool.position.toLowerCase()}`)}</span>
                 </div>
                 {top ? (
-                  <span style={{ fontSize: 12, color: isOneTrick ? COLORS.gold : COLORS.muted }}>
+                  <span style={{ fontSize: TYPE.caption, color: isOneTrick ? COLORS.gold : COLORS.muted }}>
                     {t("ProfileSearch.championPoolConcentration", { percent: Math.round(topShare * 100), champion: top.championName })}
                     {isOneTrick ? ` · ${t("ProfileSearch.championPoolOneTrick")}` : ""}
                   </span>
@@ -1167,10 +1167,10 @@ function ChampionPoolCard({
                         style={{ width: 40, height: 40, borderRadius: 9, flexShrink: 0 }}
                       />
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.text }} title={c.championName}>
+                        <span style={{ fontSize: TYPE.body, fontWeight: 600, color: COLORS.text }} title={c.championName}>
                           {c.championName}
                         </span>
-                        <span style={{ fontSize: 11, color: COLORS.muted }}>
+                        <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                           {t("ProfileSearch.championPoolStats", { games: c.games, winRate: winPct })}
                         </span>
                       </div>
@@ -1215,8 +1215,8 @@ function RoadmapCard({ matches, tier, history }: { matches: RecentMatchSummary[]
   if (!diagnostic.ready) {
     return (
       <div style={cardStyle}>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Roadmap.title")}</span>
-        <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Roadmap.title")}</span>
+        <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: "4px 0 0" }}>
           {t("Roadmap.notReady", { games: diagnostic.games, required: diagnostic.required, total: diagnostic.totalGames })}
         </p>
       </div>
@@ -1226,8 +1226,8 @@ function RoadmapCard({ matches, tier, history }: { matches: RecentMatchSummary[]
   const topPriority = diagnostic.nodes.find((n) => n.status === "below");
   return (
     <div style={cardStyle}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Roadmap.title")}</span>
-      <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>
+      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Roadmap.title")}</span>
+      <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: "4px 0 0" }}>
         {t("Roadmap.subtitle", {
           games: diagnostic.games,
           role: t(`Profile.positions.${diagnostic.primaryRole.toLowerCase()}`),
@@ -1237,7 +1237,7 @@ function RoadmapCard({ matches, tier, history }: { matches: RecentMatchSummary[]
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 10 }}>
         <SummaryPills diagnostic={diagnostic} />
         {topPriority ? (
-          <p style={{ margin: 0, padding: "8px 10px", borderRadius: 6, border: `1px solid ${COLORS.rose}4d`, background: `${COLORS.rose}0d`, fontSize: 12 }}>
+          <p style={{ margin: 0, padding: "8px 10px", borderRadius: 6, border: `1px solid ${COLORS.rose}4d`, background: `${COLORS.rose}0d`, fontSize: TYPE.caption }}>
             <span style={{ fontWeight: 600, color: COLORS.rose }}>{t("Roadmap.priorityLabel")}</span>{" "}
             <span style={{ color: COLORS.muted }}>{t(`Roadmap.${topPriority.metric}.title`)}</span>
           </p>
@@ -1289,7 +1289,7 @@ function SummaryPills({ diagnostic }: { diagnostic: Diagnostic }) {
               background: colors.bg,
               color: colors.text,
               padding: "5px 12px",
-              fontSize: 12,
+              fontSize: TYPE.caption,
               fontWeight: 600,
             }}
           >
@@ -1334,11 +1334,11 @@ function RoadmapRow({ node, diagnostic, baseline }: { node: DiagnosticNode; diag
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: COLORS.text }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: TYPE.caption, color: COLORS.text }}>
           <RowIcon size={13} color={COLORS.muted} />
           {t(`Roadmap.${node.metric}.title`)}
         </span>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
           <span style={{ fontWeight: 600, color: COLORS.text }}>
             {t("Roadmap.youLabel")} {pair.value}
           </span>
@@ -1355,7 +1355,7 @@ function RoadmapRow({ node, diagnostic, baseline }: { node: DiagnosticNode; diag
         </span>
       </div>
       <DiagnosticBar node={node} />
-      <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, lineHeight: 1.5 }}>{t(tipKey(node, diagnostic))}</p>
+      <p style={{ fontSize: TYPE.label, color: COLORS.muted, margin: 0, lineHeight: 1.5 }}>{t(tipKey(node, diagnostic))}</p>
       {node.metric === "csPerMin" && diagnostic.csReference ? (
         <p style={{ fontSize: 10, color: COLORS.muted, margin: 0 }}>{t("Roadmap.csReference", { target: formatDecimal(locale, diagnostic.csReference) })}</p>
       ) : null}
@@ -1374,9 +1374,9 @@ function ChampionOverviewCard({ matches, ddragonVersion }: { matches: RecentMatc
 
   return (
     <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.championOverviewTitle")}</span>
+      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.championOverviewTitle")}</span>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", marginTop: 10, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: TYPE.caption }}>
           <thead>
             <tr style={{ textAlign: "left", color: COLORS.muted }}>
               <th style={{ paddingBottom: 6, fontWeight: 500 }}>{t("ProfileSearch.championOverviewChampion")}</th>
@@ -1442,9 +1442,9 @@ function MatchHistoryCard({
 
   return (
     <div style={cardStyle}>
-      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ProfileSearch.recentMatches")}</span>
+      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.recentMatches")}</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
-        {matches.length === 0 ? <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.noMatches")}</p> : null}
+        {matches.length === 0 ? <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.noMatches")}</p> : null}
         {matches.map((m) => {
           const isOpen = expandedId === m.matchId;
           // Null for games outside the diagnostic (ARAM, no lane opponent):
@@ -1488,14 +1488,14 @@ function MatchHistoryCard({
                     />
                   ) : null}
                 </div>
-                <span style={{ width: 60, flexShrink: 0, fontSize: 12, fontWeight: 600, color: m.win ? COLORS.goodMild : COLORS.badMild }}>
+                <span style={{ width: 60, flexShrink: 0, fontSize: TYPE.caption, fontWeight: 600, color: m.win ? COLORS.goodMild : COLORS.badMild }}>
                   {m.win ? t("ProfileSearch.win") : t("ProfileSearch.loss")}
                 </span>
-                <span style={{ width: 80, flexShrink: 0, fontSize: 12 }}>
+                <span style={{ width: 80, flexShrink: 0, fontSize: TYPE.caption }}>
                   {m.kills}/{m.deaths}/{m.assists}
                 </span>
-                <span style={{ width: 70, flexShrink: 0, fontSize: 11, color: COLORS.muted }}>{m.cs} CS</span>
-                <span style={{ width: 90, flexShrink: 0, fontSize: 11, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ width: 70, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted }}>{m.cs} CS</span>
+                <span style={{ width: 90, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {m.queueName}
                 </span>
                 <span
@@ -1503,7 +1503,7 @@ function MatchHistoryCard({
                   style={{
                     width: 34,
                     flexShrink: 0,
-                    fontSize: 12,
+                    fontSize: TYPE.caption,
                     fontWeight: 700,
                     textAlign: "right",
                     color: note?.scoreSentiment === "good" ? COLORS.goodMild : note?.scoreSentiment === "bad" ? COLORS.badMild : COLORS.muted,
@@ -1511,10 +1511,10 @@ function MatchHistoryCard({
                 >
                   {note ? formatDecimal(locale, note.score) : ""}
                 </span>
-                <span style={{ width: 108, flexShrink: 0, fontSize: 11, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ width: 108, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {noteLabel}
                 </span>
-                <span style={{ flex: 1, fontSize: 11, color: COLORS.muted, textAlign: "right" }}>{formatDuration(m.durationSeconds)}</span>
+                <span style={{ flex: 1, fontSize: TYPE.label, color: COLORS.muted, textAlign: "right" }}>{formatDuration(m.durationSeconds)}</span>
                 {/* Same circular chevron badge as the web's
                     match-history.tsx (h-7 w-7 rounded-full border, rose
                     border/bg/text + 180° rotation when open), not a bare
@@ -1608,7 +1608,7 @@ function MatchScoreboard({
                 borderRadius: 6,
                 background: `${COLORS.background}66`,
                 padding: "5px 10px",
-                fontSize: 12,
+                fontSize: TYPE.caption,
               }}
             >
               <span style={{ fontWeight: 600, color: summary.win ? COLORS.goodMild : COLORS.badMild }}>
@@ -1625,7 +1625,7 @@ function MatchScoreboard({
                 })}
               </span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 8px", fontSize: 11, color: COLORS.muted }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 8px", fontSize: TYPE.label, color: COLORS.muted }}>
               <div style={{ width: 22, flexShrink: 0 }} />
               <div style={{ width: 14, flexShrink: 0 }} />
               <span style={{ width: 130, flexShrink: 0 }}>{t("ProfileSearch.matchColumns.player")}</span>
@@ -1691,7 +1691,7 @@ function MatchScoreboard({
                     style={{
                       width: 130,
                       flexShrink: 0,
-                      fontSize: 12,
+                      fontSize: TYPE.caption,
                       fontWeight: isTracked ? 700 : 400,
                       color: isTracked ? COLORS.text : COLORS.muted,
                       overflow: "hidden",
@@ -1701,20 +1701,20 @@ function MatchScoreboard({
                   >
                     {p.gameName}
                   </span>
-                  <span style={{ width: 64, flexShrink: 0, fontSize: 11, textAlign: "right", color: COLORS.text }}>
+                  <span style={{ width: 64, flexShrink: 0, fontSize: TYPE.label, textAlign: "right", color: COLORS.text }}>
                     {p.kills}/{p.deaths}/{p.assists}
                   </span>
-                  <span style={{ width: 70, flexShrink: 0, fontSize: 11, textAlign: "right", color: COLORS.muted }}>
+                  <span style={{ width: 70, flexShrink: 0, fontSize: TYPE.label, textAlign: "right", color: COLORS.muted }}>
                     {p.cs} ({csPerMin})
                   </span>
-                  <span style={{ width: 40, flexShrink: 0, fontSize: 11, textAlign: "right", color: COLORS.muted }}>
+                  <span style={{ width: 40, flexShrink: 0, fontSize: TYPE.label, textAlign: "right", color: COLORS.muted }}>
                     {Math.round(p.killParticipation * 100)}%
                   </span>
-                  <span style={{ width: 56, flexShrink: 0, fontSize: 11, textAlign: "right", color: COLORS.muted }}>
+                  <span style={{ width: 56, flexShrink: 0, fontSize: TYPE.label, textAlign: "right", color: COLORS.muted }}>
                     {p.goldEarned.toLocaleString(locale)}g
                   </span>
                   <div style={{ minWidth: 90, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ width: 46, flexShrink: 0, textAlign: "right", fontSize: 11, color: COLORS.muted }}>
+                    <span style={{ width: 46, flexShrink: 0, textAlign: "right", fontSize: TYPE.label, color: COLORS.muted }}>
                       {p.damageDealt.toLocaleString(locale)}
                     </span>
                     <div style={{ flex: 1, height: 5, borderRadius: 999, background: `${COLORS.background}99`, overflow: "hidden" }}>
@@ -1740,7 +1740,7 @@ function MatchScoreboard({
                   <span
                     style={{
                       marginLeft: 8,
-                      fontSize: 12,
+                      fontSize: TYPE.caption,
                       fontWeight: 700,
                       flexShrink: 0,
                       color: note?.scoreSentiment === "good" ? COLORS.goodMild : note?.scoreSentiment === "bad" ? COLORS.badMild : COLORS.muted,
@@ -1796,7 +1796,7 @@ function SearchAgainBlock({ defaultPlatform, onOpen }: { defaultPlatform: string
             <CompareSavedProfilePicker profiles={savedProfiles} onPick={onOpen} />
           </div>
         </div>
-        {error ? <span style={{ fontSize: 11, color: COLORS.destructive }}>{t("ProfileSearch.invalidRiotId")}</span> : null}
+        {error ? <span style={{ fontSize: TYPE.label, color: COLORS.destructive }}>{t("ProfileSearch.invalidRiotId")}</span> : null}
         <button type="submit" style={secondaryButtonStyle}>
           {t("ProfileSearch.searchButton")}
         </button>
@@ -1814,7 +1814,7 @@ const primaryButtonStyle: React.CSSProperties = {
   border: "none",
   background: COLORS.rose,
   color: "#fff",
-  fontSize: 13,
+  fontSize: TYPE.body,
   fontWeight: 600,
   cursor: "pointer",
 };

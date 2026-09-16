@@ -11,6 +11,8 @@ import * as path from "node:path";
 import { protect, unprotect } from "./dpapi";
 import { BACKEND_ORIGIN as API_BASE_URL } from "./backend";
 import { writeFileAtomic } from "./settings";
+import { broadcast } from "./windows";
+import { EVT } from "../src/bridge/commands";
 
 // Ninguna llamada a riftcompass.com se queda colgada sin limite (APP-3,
 // ronda 20): si la web tarda (el servidor compilando, un corte de red), la
@@ -89,6 +91,23 @@ function err(code: string): { ok: false; error: string } {
   return { ok: false, error: code };
 }
 
+// Un 401 a cualquier llamada con Bearer significa lo mismo (ronda 27): el
+// token ya no vale (cambio de contraseña, cierre desde otro dispositivo,
+// 90 días). Antes solo lo trataba /api/v1/me al arrancar; un guardado con
+// el token caducado enseñaba la clave cruda "unauthorized" y la app seguía
+// diciendo "Locust" en el panel. Aquí se borra la sesión, se avisa a todas
+// las ventanas y el resultado dice "sessionExpired", que el renderer pinta
+// con Common.sessionExpired. `sessionEndedByServer` se lo lleva el
+// siguiente getSession para que el formulario de login explique por qué.
+let sessionEndedByServer = false;
+function authorized(res: Response): boolean {
+  if (res.status !== 401) return true;
+  clearPersistedSession();
+  sessionEndedByServer = true;
+  broadcast(EVT.AccountSessionEnded);
+  return false;
+}
+
 // riftcompass.com's response bodies are always a JSON object (or absent
 // on a parse failure) — typed as a loose record here since each caller
 // already knows, and checks for, the specific fields its own endpoint
@@ -121,6 +140,7 @@ export async function accountLogin(email: string, password: string): Promise<unk
   const data = await readJson(res);
   if (ok && data?.token && data?.user) {
     persistSession({ token: data.token, user: data.user });
+    sessionEndedByServer = false;
     return { ok: true, user: data.user };
   }
   return err(data?.error ?? "unknown");
@@ -150,22 +170,26 @@ export async function accountLogout(): Promise<void> {
 // session (that alone means the token is invalid); any other failure —
 // 5xx, offline — falls back to the last-known cached user instead of
 // silently logging the user out over a hiccup.
-export async function accountGetSession(): Promise<AccountUser | null> {
+// `endedByServer` (ronda 27): true solo cuando la sesión guardada se borró
+// por un 401 (aquí o en cualquier otra llamada desde el arranque), para que
+// el login diga "tu sesión se ha cerrado" en vez de aparecer sin más.
+export async function accountGetSession(): Promise<{ user: AccountUser | null; endedByServer: boolean }> {
   const stored = loadPersistedSession();
-  if (!stored) return null;
+  if (!stored) return { user: null, endedByServer: sessionEndedByServer };
 
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}/api/v1/me`, { headers: { ...CLIENT_HEADER, Authorization: `Bearer ${stored.token}` }, signal: timeout() });
   } catch {
-    return stored.user;
+    return { user: stored.user, endedByServer: false };
   }
 
   if (res.status === 401) {
     clearPersistedSession();
-    return null;
+    sessionEndedByServer = true;
+    return { user: null, endedByServer: true };
   }
-  if (!res.ok) return stored.user;
+  if (!res.ok) return { user: stored.user, endedByServer: false };
 
   const data = await readJson(res);
   if (data?.user) {
@@ -173,9 +197,10 @@ export async function accountGetSession(): Promise<AccountUser | null> {
     // ronda 20): se guarda y la sesion no caduca nunca por usar la app.
     const token = typeof data.token === "string" && data.token.length > 0 ? data.token : stored.token;
     persistSession({ token, user: data.user });
-    return data.user;
+    sessionEndedByServer = false;
+    return { user: data.user, endedByServer: false };
   }
-  return stored.user;
+  return { user: stored.user, endedByServer: false };
 }
 
 export async function accountUpdateUsername(username: string): Promise<unknown> {
@@ -193,6 +218,7 @@ export async function accountUpdateUsername(username: string): Promise<unknown> 
   } catch {
     return err("network");
   }
+  if (!authorized(res)) return err("sessionExpired");
   const ok = res.ok;
   const data = await readJson(res);
   if (ok && data?.user) {
@@ -217,6 +243,7 @@ export async function accountGetSavedProfiles(): Promise<unknown> {
   } catch {
     return { ok: false, error: "network", retryAfterSeconds: null };
   }
+  if (!authorized(res)) return { ok: false, error: "sessionExpired", retryAfterSeconds: null };
   const data = await readJson(res);
   if (res.status === 429) {
     const fromBody = typeof data?.retryAfterSeconds === "number" ? data.retryAfterSeconds : null;
@@ -243,6 +270,7 @@ async function folderApiCall(method: string, urlPath: string, body?: unknown): P
   } catch {
     return err("network");
   }
+  if (!authorized(res)) return err("sessionExpired");
   const ok = res.ok;
   const data = await readJson(res);
   if (ok && data?.folders && data?.profiles) {
@@ -317,6 +345,7 @@ async function getList(urlPath: string, key: string): Promise<ListResult> {
   } catch {
     return { ok: false, error: "network", retryAfterSeconds: null };
   }
+  if (!authorized(res)) return { ok: false, error: "sessionExpired", retryAfterSeconds: null };
   const data = await readJson(res);
   if (res.status === 429) {
     const fromBody = typeof data?.retryAfterSeconds === "number" ? data.retryAfterSeconds : null;
@@ -343,11 +372,13 @@ async function listResult(method: string, urlPath: string, body: unknown, key: s
   } catch {
     return err("network");
   }
+  if (!authorized(res)) return err("sessionExpired");
   const ok = res.ok;
   const data = await readJson(res);
   if (ok && data?.[key] !== undefined) {
     return { ok: true, [key]: data[key] };
   }
+  if (res.status === 429) return err("rateLimited");
   return err(data?.error ?? "unknown");
 }
 
@@ -375,6 +406,7 @@ export async function accountGetSavedMap(id: string): Promise<unknown> {
   } catch {
     return err("network");
   }
+  if (!authorized(res)) return err("sessionExpired");
   const ok = res.ok;
   const data = await readJson(res);
   if (ok && data?.strokes !== undefined) {

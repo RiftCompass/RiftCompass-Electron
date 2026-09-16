@@ -57,7 +57,7 @@ export function CooldownComparator() {
   }, [attempt]);
 
   if (status === "loading") {
-    return <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>;
+    return <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>;
   }
   if (status === "error") {
     return <LoadError message={t("Common.dataDragonError")} onRetry={() => setAttempt((n) => n + 1)} />;
@@ -167,7 +167,7 @@ function ChampionCooldownPanel({
           editable — the native number-input spinner is suppressed via
           -webkit-appearance so the two don't double up. */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <label style={{ flex: 1, fontSize: 13, color: COLORS.muted }}>{t("Cooldowns.abilityHasteLabel")}</label>
+        <label style={{ flex: 1, fontSize: TYPE.body, color: COLORS.muted }}>{t("Cooldowns.abilityHasteLabel")}</label>
         <div style={{ display: "flex", alignItems: "center" }}>
           <input
             type="number"
@@ -183,7 +183,7 @@ function ChampionCooldownPanel({
               border: "none",
               borderBottom: `1px solid ${COLORS.cardBorder}`,
               padding: "4px 2px",
-              fontSize: 13,
+              fontSize: TYPE.body,
               textAlign: "right",
             }}
           />
@@ -209,7 +209,7 @@ function ChampionCooldownPanel({
       </div>
 
       {loading ? (
-        <p style={{ fontSize: 13, color: COLORS.muted }}>{t("Cooldowns.loading")}</p>
+        <p style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("Cooldowns.loading")}</p>
       ) : detailError ? (
         <LoadError message={t("Cooldowns.loadError")} onRetry={() => setDetailAttempt((n) => n + 1)} />
       ) : detail ? (
@@ -228,7 +228,7 @@ function ChampionCooldownPanel({
                     borderRadius: 6,
                     background: `${COLORS.rose}1a`,
                     color: COLORS.rose,
-                    fontSize: 11,
+                    fontSize: TYPE.label,
                     fontWeight: 600,
                     display: "flex",
                     alignItems: "center",
@@ -243,7 +243,7 @@ function ChampionCooldownPanel({
                   style={{ width: 34, height: 34, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }}
                 />
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>{spell.name}</span>
+                  <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{spell.name}</span>
                   {/* Clickable rank pips, same visual language as the
                       client's own level-up UI (filled = points already
                       put in). Clicking pip N shows that rank's cooldown. */}
@@ -271,11 +271,11 @@ function ChampionCooldownPanel({
                     })}
                   </div>
                 </div>
-                <span style={{ textAlign: "right", fontSize: 13, fontWeight: 500 }}>
+                <span style={{ textAlign: "right", fontSize: TYPE.body, fontWeight: 500 }}>
                   {withHaste !== null ? (
                     <>
                       <span style={{ color: COLORS.gold }}>{nf.format(withHaste)}s</span>
-                      <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: COLORS.muted }}>
+                      <span style={{ display: "block", fontSize: TYPE.label, fontWeight: 400, color: COLORS.muted }}>
                         {t("Cooldowns.withHaste")}
                       </span>
                     </>
@@ -288,7 +288,7 @@ function ChampionCooldownPanel({
           })}
         </ul>
       ) : (
-        <p style={{ fontSize: 13, color: COLORS.muted }}>{t("Cooldowns.emptyState")}</p>
+        <p style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("Cooldowns.emptyState")}</p>
       )}
     </div>
   );

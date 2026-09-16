@@ -326,7 +326,10 @@ export interface RiftCompassApi {
   pickLeagueInstallDir: () => Promise<{ dir: string | null }>;
   login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
-  getSession: () => Promise<AccountUser | null>;
+  /** `endedByServer`: la sesión guardada se borró por un 401 (ronda 27); el login lo explica una vez. */
+  getSession: () => Promise<{ user: AccountUser | null; endedByServer: boolean }>;
+  /** riftcompass.com rechazó el token guardado: la app ya no tiene sesión (ronda 27). */
+  onSessionEnded: (cb: () => void) => void;
   getSavedProfiles: () => Promise<SavedProfilesResult>;
   toggleSavedProfile: (platform: string, gameName: string, tagLine: string, puuid?: string) => Promise<ToggleSavedProfileResult>;
   updateUsername: (username: string) => Promise<UpdateUsernameResult>;

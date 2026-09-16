@@ -9,6 +9,7 @@ import { aplicarItemSet, borrarNuestrosItemSets, type BuildParaSet } from "./ite
 import { champSelectSnapshot, connectionSnapshot, currentCreds, getLocalPuuid } from "./gameConnection";
 import { lcuRequest } from "./lcu";
 import * as settings from "./settings";
+import { rebuildTrayMenu } from "./tray";
 import { broadcast, getMainWindow, setOverlayInteractive, showOverlay, WINDOW_CHANNELS } from "./windows";
 
 const FLASH_ID = 4;
@@ -181,7 +182,11 @@ export function registerIpcHandlers(): void {
     if (dir) settings.settingsSetLeagueInstallDir(dir);
     return { dir };
   });
-  ipcMain.handle(CMD.SettingsSetLocale, (_e, { locale }: { locale: string }) => settings.settingsSetLocale(locale));
+  ipcMain.handle(CMD.SettingsSetLocale, (_e, { locale }: { locale: string }) => {
+    const next = settings.settingsSetLocale(locale);
+    rebuildTrayMenu();
+    return next;
+  });
   ipcMain.handle(CMD.SettingsSetFlashSide, (_e, { side }: { side: string }) => settings.settingsSetFlashSide(side));
   ipcMain.handle(CMD.SettingsSetAbilityBarCalibration, (_e, { calibration }: { calibration: unknown }) =>
     settings.settingsSetAbilityBarCalibration(calibration),

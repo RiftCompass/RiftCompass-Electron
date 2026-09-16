@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from "../shared/api";
 import { DraftAdvisor } from "./DraftAdvisor";
 import { useI18n } from "../i18n";
-import { COLORS, FONT_HEADING, cardStyle } from "../theme";
+import { COLORS, FONT_HEADING, cardStyle, TYPE } from "../theme";
 import { apiGet } from "../lib/api-fetch";
 import { LoadError } from "../tools/LoadError";
 import { fetchChampionMap, fetchLatestVersion, fetchRuneStyles, runeIconUrl, type ChampionMaps, type RuneStyle } from "../ddragon";
@@ -462,7 +462,7 @@ export function ChampSelectView() {
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
         <span style={{ fontFamily: FONT_HEADING, fontSize: 17 }}>{t("ChampSelect.title")}</span>
         {campeon ? (
-          <span style={{ fontSize: 12, color: COLORS.muted }}>
+          <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
             {campeon.name}
             {rol ? ` · ${t(`Profile.positions.${rol.toLowerCase()}`)}` : ""}
             {rolEsSupuesto ? ` (${t("ChampSelect.roleGuessed")})` : ""}
@@ -480,18 +480,18 @@ export function ChampSelectView() {
       </div>
 
       <div style={{ ...tarjeta, display: "flex", flexDirection: "column", gap: 8, order: 1 }}>
-        <span style={{ fontFamily: FONT_HEADING, fontSize: 15 }}>{t("ChampSelect.buildTitle")}</span>
+        <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading }}>{t("ChampSelect.buildTitle")}</span>
 
         {!campeon ? (
-          <p style={{ color: COLORS.muted, fontSize: 13, margin: 0 }}>{t("ChampSelect.pickFirst")}</p>
+          <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>{t("ChampSelect.pickFirst")}</p>
         ) : null}
         {campeon && buildStatus === "loading" ? (
-          <p style={{ color: COLORS.muted, fontSize: 13, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+          <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>{t("ProfileSearch.loading")}</p>
         ) : campeon && buildStatus === "error" ? (
           <LoadError error={buildError} onRetry={() => setBuildAttempt((n) => n + 1)} />
         ) : null}
         {campeon && buildStatus === "ready" && opciones.length === 0 ? (
-          <p style={{ color: COLORS.muted, fontSize: 13, margin: 0 }}>{t("ChampSelect.noBuilds")}</p>
+          <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>{t("ChampSelect.noBuilds")}</p>
         ) : null}
         {campeon && opciones.length > 0 ? (
           opciones.map((o) => (
@@ -512,11 +512,11 @@ export function ChampSelectView() {
                 gap: 2,
               }}
             >
-              <span style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: TYPE.body, display: "flex", alignItems: "center", gap: 6 }}>
                 {o.icono ? <img src={o.icono} alt="" style={{ width: 18, height: 18, borderRadius: 4 }} /> : null}
                 {o.etiqueta}
               </span>
-              <span style={{ fontSize: 11, color: COLORS.muted }}>
+              <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                 {o.origen === "guardada"
                   ? t("ChampSelect.fromSaved")
                   : o.origen === "alternativa"
@@ -533,7 +533,7 @@ export function ChampSelectView() {
           ))
         ) : null}
 
-        {fallo ? <span style={{ fontSize: 12, color: COLORS.destructive }}>{t("ChampSelect.applyFailed")}</span> : null}
+        {fallo ? <span style={{ fontSize: TYPE.caption, color: COLORS.destructive }}>{t("ChampSelect.applyFailed")}</span> : null}
       </div>
     </div>
   );

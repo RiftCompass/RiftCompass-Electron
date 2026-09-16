@@ -1,7 +1,7 @@
 import { useI18n } from "./i18n";
 import { formatRelativeTime } from "./lib/profile-analysis";
-import { API_BASE_URL } from "./shared/api";
-import { COLORS } from "./theme";
+import { webUrl } from "./shared/api";
+import { COLORS, TYPE } from "./theme";
 
 // The web's data-quality-note.tsx, here: how many tracked games sit behind
 // what a tool shows, from which patches and when the crawler last wrote,
@@ -20,11 +20,11 @@ export function DataQualityNote({ quality, patches }: { quality: DataQuality | u
   const patch = patches.join(" + ");
   const updated = quality.updatedAt ? formatRelativeTime(new Date(quality.updatedAt).getTime(), locale) : null;
   return (
-    <p style={{ fontSize: 11, color: COLORS.muted, margin: 0 }}>
+    <p style={{ fontSize: TYPE.label, color: COLORS.muted, margin: 0 }}>
       {updated ? t("DataQuality.summary", { games, patch, updated }) : t("DataQuality.summaryNoUpdate", { games, patch })}{" "}
       <button
-        onClick={() => window.riftcompass.openExternal(`${API_BASE_URL}/methodology`)}
-        style={{ background: "none", border: "none", color: COLORS.rose, fontSize: 11, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+        onClick={() => window.riftcompass.openExternal(webUrl(locale, "/methodology"))}
+        style={{ background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.label, cursor: "pointer", padding: 0, textDecoration: "underline" }}
       >
         {t("DataQuality.howWeCount")}
       </button>

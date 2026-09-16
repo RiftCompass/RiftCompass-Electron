@@ -87,6 +87,9 @@ interface PersistedSettings {
   // only stops the first-run default from overriding a user who
   // explicitly turned it off. Not exposed in AppSettings.
   autoLaunchConfigured: boolean;
+  // The first-close "still running in the tray" balloon was shown (round
+  // 27). Once, ever. Not exposed in AppSettings.
+  trayHintShown: boolean;
   flashSide: FlashSide;
   abilityBarCalibration: AbilityBarCalibration | null;
   overlayPanelPositions: OverlayPanelPositions;
@@ -115,6 +118,7 @@ function defaultPersisted(): PersistedSettings {
     locale: systemDefaultLocale(),
     leagueInstallDir: null,
     autoLaunchConfigured: false,
+    trayHintShown: false,
     flashSide: "left",
     abilityBarCalibration: null,
     overlayPanelPositions: DEFAULT_PANEL_POSITIONS,
@@ -151,6 +155,7 @@ function readPersisted(): PersistedSettings {
   };
   const locale = typeof parsed.locale === "string" && isLocale(parsed.locale) ? parsed.locale : fallback.locale;
   const autoLaunchConfigured = typeof parsed.autoLaunchConfigured === "boolean" ? parsed.autoLaunchConfigured : false;
+  const trayHintShown = typeof parsed.trayHintShown === "boolean" ? parsed.trayHintShown : false;
   const flashSide: FlashSide = parsed.flashSide === "left" || parsed.flashSide === "right" ? parsed.flashSide : fallback.flashSide;
   const rawCalibration = parsed.abilityBarCalibration as Record<string, unknown> | null | undefined;
   let abilityBarCalibration: AbilityBarCalibration | null = null;
@@ -171,7 +176,7 @@ function readPersisted(): PersistedSettings {
 
   const leagueInstallDir = typeof parsed.leagueInstallDir === "string" && parsed.leagueInstallDir.length > 0 ? parsed.leagueInstallDir : null;
 
-  return { overlayModules, locale, leagueInstallDir, autoLaunchConfigured, flashSide, abilityBarCalibration, overlayPanelPositions };
+  return { overlayModules, locale, leagueInstallDir, autoLaunchConfigured, trayHintShown, flashSide, abilityBarCalibration, overlayPanelPositions };
 }
 
 function writePersisted(next: PersistedSettings): void {
@@ -220,6 +225,14 @@ export function ensureDefaultAutoLaunch(): void {
 // isn't exposed as its own command, just read alongside applying.
 export function currentFlashSide(): FlashSide {
   return readPersisted().flashSide;
+}
+
+// True the first time only: marks the tray balloon as shown (tray.ts).
+export function markTrayHintShown(): boolean {
+  const persisted = readPersisted();
+  if (persisted.trayHintShown) return false;
+  writePersisted({ ...persisted, trayHintShown: true });
+  return true;
 }
 
 export function settingsGet(): AppSettings {

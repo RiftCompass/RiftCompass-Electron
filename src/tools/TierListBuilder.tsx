@@ -24,9 +24,9 @@ import { ALL_ROLES, rolesOf, primaryRoleOf, type ChampionRole } from "../lib/cha
 import { positionIconUrl } from "../lib/profile-analysis";
 import { useI18n } from "../i18n";
 import { LoadError } from "./LoadError";
-import { savedListError } from "../lib/api-fetch";
+import { savedListError, saveErrorMessage } from "../lib/api-fetch";
 import { useOpenAccountPanel } from "../account-panel";
-import { COLORS } from "../theme";
+import { COLORS, TYPE } from "../theme";
 import { API_BASE_URL } from "../shared/api";
 import type { AccountUser, SavedTierList } from "../riftcompass";
 
@@ -191,7 +191,7 @@ export function TierListBuilder() {
   }, [champions, tieredByRole]);
 
   useEffect(() => {
-    window.riftcompass.getSession().then(setUser);
+    window.riftcompass.getSession().then((session) => setUser(session.user));
   }, []);
 
   useEffect(() => {
@@ -379,7 +379,7 @@ export function TierListBuilder() {
                       border: "none",
                       borderBottom: `1px solid ${COLORS.cardBorder}`,
                       color: COLORS.text,
-                      fontSize: 15,
+                      fontSize: TYPE.subheading,
                       padding: "4px 2px",
                       minWidth: 180,
                     }}
@@ -416,13 +416,13 @@ export function TierListBuilder() {
                 </>
               )}
               {saveError ? (
-                <span style={{ fontSize: 13, color: COLORS.destructive }}>{t(`TierList.saveTierListErrors.${saveError}`)}</span>
+                <span style={{ fontSize: TYPE.body, color: COLORS.destructive }}>{saveErrorMessage(t, "TierList.saveTierListErrors", saveError)}</span>
               ) : null}
-              {saved ? <span style={{ fontSize: 13, color: COLORS.rose }}>{t("TierList.saveTierListSuccess")}</span> : null}
+              {saved ? <span style={{ fontSize: TYPE.body, color: COLORS.rose }}>{t("TierList.saveTierListSuccess")}</span> : null}
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-              <span style={{ fontSize: 13, color: COLORS.muted }}>{t("TierList.loginToSave")}</span>
+              <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("TierList.loginToSave")}</span>
               {openAccountPanel ? (
                 <button onClick={openAccountPanel} style={ghostButtonStyle(false)}>
                   {t("TierList.loginToSaveLink")}
@@ -440,9 +440,9 @@ export function TierListBuilder() {
             {savedTierListsError ? (
               <LoadError error={savedTierListsError} onRetry={loadSavedTierLists} />
             ) : savedTierLists === null ? (
-              <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
+              <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
             ) : savedTierLists.length === 0 ? (
-              <span style={{ fontSize: 13, color: COLORS.muted }}>{t("TierList.myTierListsEmpty")}</span>
+              <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("TierList.myTierListsEmpty")}</span>
             ) : (
               savedTierLists.map((tl) => {
                 // Vista previa como en la web (ronda 22): los dos primeros
@@ -453,10 +453,10 @@ export function TierListBuilder() {
                 return (
                 <div key={tl.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: TYPE.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {tl.name}
                     </span>
-                    <span style={{ fontSize: 12, color: COLORS.muted }}>{new Date(tl.createdAt).toLocaleDateString(locale)}</span>
+                    <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{new Date(tl.createdAt).toLocaleDateString(locale)}</span>
                     <button onClick={() => handleLoadSaved(tl)} style={ghostButtonStyle(false)}>
                       {t("TierList.load")}
                     </button>
@@ -465,7 +465,7 @@ export function TierListBuilder() {
                     </button>
                   </div>
                   {previewTiers.length === 0 ? (
-                    <span style={{ fontSize: 12, color: COLORS.muted }}>
+                    <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
                       {t("TierList.allUnranked", { count: tl.board[UNRANKED]?.length ?? 0 })}
                     </span>
                   ) : (
@@ -480,7 +480,7 @@ export function TierListBuilder() {
                             alignItems: "center",
                             justifyContent: "center",
                             borderRadius: 4,
-                            fontSize: 11,
+                            fontSize: TYPE.label,
                             fontWeight: 700,
                             color: "#fff",
                             background: TIER_COLORS[tier],
@@ -502,7 +502,7 @@ export function TierListBuilder() {
                             );
                           })}
                           {tl.board[tier].length > 8 ? (
-                            <span style={{ fontSize: 11, color: COLORS.muted }}>+{tl.board[tier].length - 8}</span>
+                            <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>+{tl.board[tier].length - 8}</span>
                           ) : null}
                         </div>
                       </div>
@@ -529,7 +529,7 @@ export function TierListBuilder() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-            <span style={{ fontSize: 13, color: COLORS.muted }}>{t("TierList.unrankedLabel")}</span>
+            <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("TierList.unrankedLabel")}</span>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                 <button onClick={() => setRoleFilter("ALL")} style={roleFilterPillStyle(roleFilter === "ALL")}>
@@ -563,7 +563,7 @@ export function TierListBuilder() {
                     border: "none",
                     borderBottom: `1px solid ${COLORS.cardBorder}`,
                     color: COLORS.text,
-                    fontSize: 13,
+                    fontSize: TYPE.body,
                     padding: "4px 4px 4px 22px",
                   }}
                 />
@@ -575,7 +575,7 @@ export function TierListBuilder() {
               of a tier row), so hiding it while a filter/search matches
               nothing would make that impossible until the filter is cleared. */}
           {championsStatus === "loading" ? (
-            <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+            <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
           ) : championsStatus === "error" ? (
             <LoadError message={t("Common.dataDragonError")} onRetry={() => setChampionsAttempt((n) => n + 1)} />
           ) : null}
@@ -627,7 +627,7 @@ function roleFilterPillStyle(active: boolean): React.CSSProperties {
     border: `1px solid ${active ? COLORS.rose : COLORS.cardBorder}`,
     background: active ? `${COLORS.rose}26` : "none",
     color: active ? COLORS.rose : COLORS.text,
-    fontSize: 12,
+    fontSize: TYPE.caption,
     cursor: "pointer",
   };
 }
@@ -669,7 +669,7 @@ function TierRow({
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 8,
-          fontSize: 20,
+          fontSize: TYPE.heading,
           fontWeight: 700,
           background: TIER_COLORS[id],
           color: COLORS.text,
@@ -745,7 +745,7 @@ function UnrankedPool({
         }}
       >
         {championIds.length === 0 && emptyLabel ? (
-          <span style={{ fontSize: 13, color: COLORS.muted, padding: 4 }}>{emptyLabel}</span>
+          <span style={{ fontSize: TYPE.body, color: COLORS.muted, padding: 4 }}>{emptyLabel}</span>
         ) : null}
         {championIds.map((champId) => {
           const champ = championById.get(champId);
@@ -853,7 +853,7 @@ const ChampionChip = forwardRef<
             alignItems: "center",
             justifyContent: "center",
             borderTopLeftRadius: 4,
-            fontSize: 9,
+            fontSize: TYPE.micro,
             fontWeight: 700,
             color: "#fff",
             background: TIER_COLORS[realTier],

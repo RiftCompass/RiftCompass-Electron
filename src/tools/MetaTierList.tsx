@@ -8,7 +8,7 @@ import { TIERS, TIER_COLORS, type Tier } from "../lib/tier-colors";
 import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
 import { useOpenTool } from "../tool-navigation";
-import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../theme";
+import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle, TYPE } from "../theme";
 import { LoadError } from "./LoadError";
 import { apiGet } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
@@ -148,7 +148,7 @@ export function MetaTierList() {
       {/* Only methodologyNote here: the tool header above this component
           already shows MetaTierList.intro (tool-meta.ts's introKey), the
           same pair the web's page prints. */}
-      <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("MetaTierList.methodologyNote")}</p>
+      <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("MetaTierList.methodologyNote")}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {RANK_TIERS.map((r) => (
           <button key={r} onClick={() => setRank(r)} style={pillStyle(rank === r, "compact")}>
@@ -174,18 +174,18 @@ export function MetaTierList() {
               border: "none",
               borderBottom: `1px solid ${COLORS.cardBorder}`,
               color: COLORS.text,
-              fontSize: 13,
+              fontSize: TYPE.body,
               padding: "4px 4px 4px 22px",
             }}
           />
         </div>
         {trimmedSearch && matchCount === 0 ? (
-          <span style={{ fontSize: 13, color: COLORS.muted }}>{t("MetaTierList.noMatches")}</span>
+          <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("MetaTierList.noMatches")}</span>
         ) : null}
       </div>
 
       {dataPatch && winrates && winrates.length > 0 && dataPatch.patch !== dataPatch.latestPatch ? (
-        <p style={{ fontSize: 13, color: COLORS.gold, margin: 0 }}>
+        <p style={{ fontSize: TYPE.body, color: COLORS.gold, margin: 0 }}>
           {t("MetaTierList.dataFromPatch", { patch: dataPatch.patch, current: dataPatch.latestPatch })}
         </p>
       ) : null}
@@ -195,7 +195,7 @@ export function MetaTierList() {
         loadStatus === "error" ? (
           <LoadError error={loadError} onRetry={() => setLoadAttempt((n) => n + 1)} />
         ) : (
-          <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+          <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
         )
       ) : (
         // flex+wrap+center instead of a CSS grid: with 5 role cards a
@@ -219,7 +219,7 @@ export function MetaTierList() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", marginTop: 14 }}>
                   {entries.length === 0 ? (
-                    <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("MetaTierList.noDataForRole")}</p>
+                    <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: 0 }}>{t("MetaTierList.noDataForRole")}</p>
                   ) : (
                     TIERS.filter((tier) => entries.some((e) => e.tier === tier)).map((tier, tierIdx) => {
                       const inTier = entries.filter((e) => e.tier === tier);

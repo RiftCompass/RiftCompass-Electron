@@ -18,7 +18,7 @@ import type { ChampionBuildRunes } from "../riftcompass";
 import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
 import { apiGet } from "../lib/api-fetch";
-import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../theme";
+import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle, TYPE } from "../theme";
 import { LoadError } from "./LoadError";
 import { AbilityBadge, RunePageView, SkillGrid, indexRunes } from "./build-visuals";
 
@@ -67,7 +67,7 @@ function winRateTone(winRate: number): "good" | "goodMild" | "badMild" | "bad" {
 
 const cardStyle = makeCardStyle({ borderRadius: 12, padding: 16 });
 const blockStyle = { display: "flex", flexDirection: "column" as const, gap: 10, borderRadius: 10, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.background}66`, padding: 12 };
-const labelStyle = { fontSize: 11, color: COLORS.muted };
+const labelStyle = { fontSize: TYPE.label, color: COLORS.muted };
 
 export function MatchupCard({
   champion,
@@ -171,13 +171,13 @@ export function MatchupCard({
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <img src={champion.iconUrl} alt="" style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${COLORS.cardBorder}` }} />
-          <span style={{ fontSize: 11, color: COLORS.muted, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("Matchups.cardVersus")}</span>
+          <span style={{ fontSize: TYPE.label, color: COLORS.muted, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("Matchups.cardVersus")}</span>
           <img src={enemy.iconUrl} alt="" style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${COLORS.cardBorder}` }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <h2 style={{ fontFamily: FONT_HEADING, fontSize: 17, fontWeight: 400, margin: 0 }}>
               {t("Matchups.cardTitle", { champion: champion.name, enemy: enemy.name })}
             </h2>
-            <span style={{ fontSize: 12, color: COLORS.muted }}>
+            <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
               {t(`Profile.positions.${role.toLowerCase()}`)}
               {data ? ` · ${t("ChampionBuilds.popularBuildSource", { patch: data.dataPatches.join(" + ") })}` : ""}
             </span>
@@ -194,15 +194,15 @@ export function MatchupCard({
         // anterior a la fase A: se trata como fallo de carga, con reintento.
         <LoadError error={error} onRetry={() => setAttempt((n) => n + 1)} />
       ) : status === "loading" || !matchup ? (
-        <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+        <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 12px" }}>
-              <span style={{ fontFamily: FONT_HEADING, fontSize: 30, lineHeight: 1.1, color: tone ? COLORS[tone] : COLORS.muted }}>
+              <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.display, lineHeight: 1.1, color: tone ? COLORS[tone] : COLORS.muted }}>
                 {matchup.winRate == null ? "–" : pct.format(matchup.winRate)}
               </span>
-              <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Matchups.cardWinrate", { champion: champion.name, enemy: enemy.name })}</span>
+              <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("Matchups.cardWinrate", { champion: champion.name, enemy: enemy.name })}</span>
               <span style={labelStyle}>{t("Matchups.games", { games: nf.format(matchup.games) })}</span>
             </div>
             {matchup.winRate != null ? (
@@ -216,7 +216,7 @@ export function MatchupCard({
 
           <div style={blockStyle}>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <h3 style={{ fontFamily: FONT_HEADING, fontSize: 15, fontWeight: 400, margin: 0 }}>{t("Matchups.cardBuildTitle", { enemy: enemy.name })}</h3>
+              <h3 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 }}>{t("Matchups.cardBuildTitle", { enemy: enemy.name })}</h3>
               <p style={{ ...labelStyle, margin: 0 }}>
                 {allGeneral
                   ? t("Matchups.cardBuildGeneral", { enemy: enemy.name, games: nf.format(matchup.build.vsGames), min: minGames, champion: champion.name })
@@ -226,7 +226,7 @@ export function MatchupCard({
               </p>
             </div>
             {pieces.length === 0 ? (
-              <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noBuildData")}</p>
+              <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noBuildData")}</p>
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: "1 1 320px", minWidth: 0 }}>
@@ -283,7 +283,7 @@ export function MatchupCard({
 
           <div style={blockStyle}>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <h3 style={{ fontFamily: FONT_HEADING, fontSize: 15, fontWeight: 400, margin: 0 }}>{t("ChampionBuilds.skillOrder")}</h3>
+              <h3 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 }}>{t("ChampionBuilds.skillOrder")}</h3>
               <p style={{ ...labelStyle, margin: 0 }}>{t("Matchups.cardSkillOrderGeneral", { champion: champion.name })}</p>
             </div>
             {matchup.skillOrder && matchup.skillOrder.path.length > 0 ? (
@@ -293,7 +293,7 @@ export function MatchupCard({
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {matchup.skillOrder.maxPriority.map((slot, index) => (
                       <span key={slot} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        {index > 0 ? <span style={{ fontSize: 11, color: COLORS.muted }}>&gt;</span> : null}
+                        {index > 0 ? <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>&gt;</span> : null}
                         <AbilityBadge slot={slot} iconUrl={abilityIcon(slot)} />
                       </span>
                     ))}
@@ -303,16 +303,16 @@ export function MatchupCard({
                 <SkillGrid path={matchup.skillOrder.path} abilityIcon={abilityIcon} t={t} />
               </div>
             ) : (
-              <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noSkillOrderData")}</p>
+              <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noSkillOrderData")}</p>
             )}
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
-            <button onClick={onSwap} style={{ background: "none", border: "none", color: COLORS.rose, fontSize: 12, cursor: "pointer", padding: 0 }}>
+            <button onClick={onSwap} style={{ background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}>
               {t("Matchups.cardSwap", { enemy: enemy.name })}
             </button>
             {onOpenEnemyBuilds ? (
-              <button onClick={onOpenEnemyBuilds} style={{ background: "none", border: "none", color: COLORS.rose, fontSize: 12, cursor: "pointer", padding: 0 }}>
+              <button onClick={onOpenEnemyBuilds} style={{ background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}>
                 {t("Matchups.cardEnemyPage", { enemy: enemy.name })}
               </button>
             ) : null}

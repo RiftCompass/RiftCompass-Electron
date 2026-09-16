@@ -154,7 +154,7 @@ export function PostGameReport({
             border: "none",
             borderRadius: 8,
             padding: "8px 14px",
-            fontSize: 12,
+            fontSize: TYPE.caption,
             fontWeight: 600,
             cursor: "pointer",
             background: `${COLORS.rose}26`,
@@ -183,29 +183,29 @@ export function PostGameReport({
           <span style={{ fontSize: TYPE.subheading, fontWeight: 700, color: match.win ? COLORS.goodMild : COLORS.badMild }}>
             {match.win ? t("PostGameReport.win") : t("PostGameReport.loss")}
           </span>
-          <span style={{ fontSize: 12, color: COLORS.muted }}>
+          <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
             {match.kills}/{match.deaths}/{match.assists} · {formatDuration(match.durationSeconds)}
           </span>
         </div>
         {note ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
             <span style={{ fontSize: TYPE.heading, fontWeight: 700, color: sentimentColor(note.scoreSentiment) }}>{formatDecimal(locale, note.score)}</span>
-            <span style={{ fontSize: 11, color: COLORS.muted }}>{t("PostGameReport.scoreLabel")}</span>
+            <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("PostGameReport.scoreLabel")}</span>
           </div>
         ) : null}
       </div>
 
       <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 10 }}>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("PostGameReport.breakdownTitle")}</span>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("PostGameReport.breakdownTitle")}</span>
         {note ? (
           <>
-            <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>{t("PostGameReport.breakdownSubtitle")}</p>
+            <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: "4px 0 0" }}>{t("PostGameReport.breakdownSubtitle")}</p>
             {note.nodes.map((node) => {
               const pair = formatDiagnosticPair(node, locale);
               const color = sentimentColor(ratioSentiment(node.ratio));
               return (
                 <div key={node.metric} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: TYPE.caption }}>
                     <span style={{ color: COLORS.text }}>{t(`Roadmap.${node.metric}.title`)}</span>
                     <span style={{ color: COLORS.muted }}>
                       <span style={{ color, fontWeight: 700 }}>
@@ -223,7 +223,7 @@ export function PostGameReport({
         ) : (
           // ARAM, Arena and the like: no lane opponent to measure against,
           // and a made-up benchmark would be worse than saying so.
-          <p style={{ fontSize: 12, color: COLORS.muted, margin: "4px 0 0" }}>{t("PostGameReport.noOpponent")}</p>
+          <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: "4px 0 0" }}>{t("PostGameReport.noOpponent")}</p>
         )}
       </div>
 
@@ -234,7 +234,7 @@ export function PostGameReport({
           border: "none",
           borderRadius: 8,
           padding: "8px 14px",
-          fontSize: 12,
+          fontSize: TYPE.caption,
           fontWeight: 600,
           cursor: "pointer",
           background: `${COLORS.rose}26`,

@@ -181,7 +181,9 @@ button:not(:disabled):active {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+[role="button"]:focus-visible,
+summary:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px #0c0a0d, 0 0 0 4px #e63977;
 }
@@ -380,5 +382,57 @@ details[open] > summary svg {
 
   .rc-shop-rail {
     position: static;
+  }
+}
+
+/* The other three two-column layouts that the web stacks under `sm`
+   (round 28): at the 640px window the app allows, the panel leaves ~340px
+   of content and these grids demanded 534 (draft boards), 280 + the pool
+   list (Champion Pool) and 368 (personality results / jungle camps), so
+   the right half was cut off by the main area's overflow-x: hidden. Same
+   container-query pattern as .rc-ab-grid and .rc-shop: the container is
+   the tool's own root, because the window can be wide with the account
+   panel eating a third of it. */
+.rc-stack {
+  container-type: inline-size;
+}
+
+.rc-draft-boards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@container (max-width: 559px) {
+  .rc-draft-boards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rc-pool-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+}
+
+@container (max-width: 639px) {
+  .rc-pool-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rc-two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@container (max-width: 399px) {
+  .rc-two-col {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rc-camps-grid {
+  grid-template-columns: minmax(0, 1fr) 220px;
+}
+
+@container (max-width: 479px) {
+  .rc-camps-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

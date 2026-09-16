@@ -11,7 +11,7 @@ import {
 } from "../lib/personality-test";
 import { positionIconUrl } from "../lib/profile-analysis";
 import { useI18n } from "../i18n";
-import { COLORS, FONT_HEADING, cardStyle as makeCardStyle } from "../theme";
+import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, TYPE } from "../theme";
 import { API_BASE_URL } from "../shared/api";
 import { RealWinrateBadge, type ChampionWinrate } from "../RealWinrateBadge";
 
@@ -101,10 +101,10 @@ export function PersonalityTest() {
 
   if (role === null) {
     return (
-      <div style={{ ...cardStyle, maxWidth: 620, margin: "0 auto", padding: 28 }}>
+      <div className="rc-stack" style={{ ...cardStyle, maxWidth: 620, margin: "0 auto", padding: 28 }}>
         <h2 style={cardTitleStyle}>{t("PersonalityTest.roleStepTitle")}</h2>
         <p style={cardSubtitleStyle}>{t("PersonalityTest.roleStepSubtitle")}</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(140px, 1fr))", gap: 10, marginTop: 18 }}>
+        <div className="rc-two-col" style={{ display: "grid", gap: 10, marginTop: 18 }}>
           {ROLES.map((r) => {
             const iconUrl = positionIconUrl(r);
             return (
@@ -145,7 +145,7 @@ export function PersonalityTest() {
   return (
     <div style={{ ...cardStyle, maxWidth: 620, margin: "0 auto", padding: 28 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("PersonalityTest.progress", { current: step + 1, total })}</span>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("PersonalityTest.progress", { current: step + 1, total })}</span>
         <div style={{ height: 4, borderRadius: 999, background: `${COLORS.background}99`, overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${((step + 1) / total) * 100}%`, borderRadius: 999, background: COLORS.rose, transition: "width 200ms" }} />
         </div>
@@ -159,7 +159,7 @@ export function PersonalityTest() {
         ))}
         <button
           onClick={handleBack}
-          style={{ alignSelf: "flex-start", marginTop: 6, background: "none", border: "none", color: COLORS.muted, fontSize: 12, cursor: "pointer", padding: 0 }}
+          style={{ alignSelf: "flex-start", marginTop: 6, background: "none", border: "none", color: COLORS.muted, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}
         >
           {t("PersonalityTest.back")}
         </button>
@@ -208,7 +208,7 @@ function Results({
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
           {AXES.map((axis) => (
             <div key={axis} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ width: 100, flexShrink: 0, fontSize: 13, color: COLORS.muted }}>{t(`PersonalityTest.axis.${axis}`)}</span>
+              <span style={{ width: 100, flexShrink: 0, fontSize: TYPE.body, color: COLORS.muted }}>{t(`PersonalityTest.axis.${axis}`)}</span>
               <div style={{ flex: 1, height: 8, borderRadius: 999, background: `${COLORS.background}99`, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${scores[axis] * 10}%`, borderRadius: 999, background: COLORS.rose }} />
               </div>
@@ -217,10 +217,10 @@ function Results({
         </div>
       </div>
 
-      <div style={cardStyle}>
+      <div className="rc-stack" style={cardStyle}>
         <h2 style={cardTitleStyle}>{t("PersonalityTest.resultsTitle")}</h2>
         <p style={cardSubtitleStyle}>{t("PersonalityTest.resultsSubtitle", { role: t(`Profile.positions.${role.toLowerCase()}`) })}</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(180px, 1fr))", gap: 8, marginTop: 12 }}>
+        <div className="rc-two-col" style={{ display: "grid", gap: 8, marginTop: 12 }}>
           {matches.map((m, i) => (
             <div
               key={m.champion.id}
@@ -250,8 +250,8 @@ function Results({
                 }}
               />
               <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{m.champion.name}</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: COLORS.muted }}>
+                <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{m.champion.name}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: TYPE.label, color: COLORS.muted }}>
                   {m.champion.tags.map((tag) => t(`GoldCalculator.categories.${tag.toLowerCase()}`)).join(" / ")}
                   <RealWinrateBadge winrate={winrateByChampion.get(m.champion.internalId)} label="PersonalityTest" />
                 </span>
@@ -281,7 +281,7 @@ const cardTitleStyle: React.CSSProperties = {
 };
 
 const cardSubtitleStyle: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: TYPE.body,
   color: COLORS.muted,
   marginTop: 6,
 };
@@ -292,6 +292,6 @@ const optionButtonStyle: React.CSSProperties = {
   border: `1px solid ${COLORS.cardBorder}`,
   background: "none",
   color: COLORS.text,
-  fontSize: 13,
+  fontSize: TYPE.body,
   cursor: "pointer",
 };

@@ -26,6 +26,7 @@ let champSelectWindow: BrowserWindow | null = null;
 // Re-exported so ipc.ts keeps one import for everything window-related;
 // the definition lives in its own module for the preload bundle's sake.
 import { WINDOW_CHANNELS } from "./window-channels";
+import { showTrayHintOnce } from "./tray";
 export { WINDOW_CHANNELS };
 
 // Sibling of tsconfig.electron.json's outDir — see package.json's "main".
@@ -159,6 +160,7 @@ export function createMainWindow(): BrowserWindow {
     if ((mainWindow as unknown as { __quitting?: boolean }).__quitting) return;
     e.preventDefault();
     mainWindow?.hide();
+    showTrayHintOnce();
   });
 
   // WindowControls.tsx's maximize/restore icon needs to reflect real OS

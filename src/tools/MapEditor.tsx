@@ -18,9 +18,9 @@ import { ChampionCombobox } from "../ChampionCombobox";
 import { championSquareUrl, fetchChampionMap, fetchLatestVersion, type ChampionInfo } from "../ddragon";
 import { useI18n } from "../i18n";
 import { useOpenAccountPanel } from "../account-panel";
-import { COLORS as THEME } from "../theme";
+import { COLORS as THEME, TYPE } from "../theme";
 import { LoadError } from "./LoadError";
-import { savedListError } from "../lib/api-fetch";
+import { savedListError, saveErrorMessage } from "../lib/api-fetch";
 import type { AccountUser, SavedMapSummary } from "../riftcompass";
 // The map image is imported as a module, not referenced by absolute path:
 // `<img src="/images/...">` works under Vite's dev server but breaks in a
@@ -468,7 +468,7 @@ export function MapEditor() {
   const [mapListOpen, setMapListOpen] = useState(false);
 
   useEffect(() => {
-    window.riftcompass.getSession().then(setUser);
+    window.riftcompass.getSession().then((session) => setUser(session.user));
   }, []);
 
   async function handleConfirmMapSave() {
@@ -1115,7 +1115,7 @@ export function MapEditor() {
                   border: `1px solid ${active ? (toolOption === "eraser" ? THEME.badMild : THEME.rose) : THEME.cardBorder}`,
                   background: active ? `${THEME.rose}26` : "none",
                   color: active ? THEME.rose : THEME.text,
-                  fontSize: 12,
+                  fontSize: TYPE.caption,
                   cursor: "pointer",
                 }}
               >
@@ -1177,7 +1177,7 @@ export function MapEditor() {
                 }}
               />
               {customColor === null ? (
-                <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: THEME.text, lineHeight: 1 }}>
+                <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: TYPE.body, fontWeight: 700, color: THEME.text, lineHeight: 1 }}>
                   +
                 </span>
               ) : null}
@@ -1204,7 +1204,7 @@ export function MapEditor() {
             <IconButton onClick={handleZoomOut} disabled={zoom <= MIN_ZOOM} label={t("MapEditor.zoomOut")}>
               <Minus size={13} />
             </IconButton>
-            <button onClick={handleZoomReset} style={{ minWidth: 46, background: "none", border: "none", color: THEME.muted, fontSize: 11, cursor: "pointer", padding: "0 4px" }}>
+            <button onClick={handleZoomReset} style={{ minWidth: 46, background: "none", border: "none", color: THEME.muted, fontSize: TYPE.label, cursor: "pointer", padding: "0 4px" }}>
               {new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(zoom)}
             </button>
             <IconButton onClick={handleZoomIn} disabled={zoom >= MAX_ZOOM} label={t("MapEditor.zoomIn")}>
@@ -1231,7 +1231,7 @@ export function MapEditor() {
       </div>
 
       {championsStatus === "loading" ? (
-        <p style={{ fontSize: 13, color: THEME.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+        <p style={{ fontSize: TYPE.body, color: THEME.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
       ) : championsStatus === "error" ? (
         <LoadError message={t("Common.dataDragonError")} onRetry={() => setChampionsAttempt((n) => n + 1)} />
       ) : null}
@@ -1265,7 +1265,7 @@ export function MapEditor() {
                     border: `1px solid ${THEME.cardBorder}`,
                     borderRadius: 8,
                     padding: "8px 12px",
-                    fontSize: 13,
+                    fontSize: TYPE.body,
                   }}
                 />
                 <button
@@ -1302,33 +1302,33 @@ export function MapEditor() {
                 </button>
               </>
             )}
-            {mapSaveError ? <span style={{ fontSize: 13, color: THEME.destructive }}>{t(`MapEditor.saveMapErrors.${mapSaveError}`)}</span> : null}
-            {mapSaveSuccess && !mapSaveOpen ? <span style={{ fontSize: 13, color: THEME.rose }}>{t("MapEditor.saveMapSuccess")}</span> : null}
+            {mapSaveError ? <span style={{ fontSize: TYPE.body, color: THEME.destructive }}>{saveErrorMessage(t, "MapEditor.saveMapErrors", mapSaveError)}</span> : null}
+            {mapSaveSuccess && !mapSaveOpen ? <span style={{ fontSize: TYPE.body, color: THEME.rose }}>{t("MapEditor.saveMapSuccess")}</span> : null}
           </div>
           {mapListOpen ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, borderRadius: 8, border: `1px solid ${THEME.cardBorder}`, background: `${THEME.card}66`, padding: 10 }}>
               {savedMapsError ? (
                 <LoadError error={savedMapsError} onRetry={loadSavedMaps} />
               ) : savedMaps === null ? (
-                <span style={{ fontSize: 13, color: THEME.muted }}>{t("Common.loadingSaved")}</span>
+                <span style={{ fontSize: TYPE.body, color: THEME.muted }}>{t("Common.loadingSaved")}</span>
               ) : savedMaps.length === 0 ? (
-                <span style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.myMapsEmpty")}</span>
+                <span style={{ fontSize: TYPE.body, color: THEME.muted }}>{t("MapEditor.myMapsEmpty")}</span>
               ) : (
                 savedMaps.map((map) => (
                   <div key={map.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span style={{ flex: 1, minWidth: 0, fontSize: TYPE.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {map.name}
                       </span>
                       {/* Cuántas cosas tiene el mapa, como en la web: es la
                           única pista, aparte del nombre, de cuál es cuál
                           (ronda 23). El t() de la app no hace plurales ICU. */}
-                      <span style={{ fontSize: 12, color: THEME.muted, flexShrink: 0 }}>
+                      <span style={{ fontSize: TYPE.caption, color: THEME.muted, flexShrink: 0 }}>
                         {map.strokeCount === 1
                           ? t("MapEditor.strokeCountOne")
                           : t("MapEditor.strokeCount", { count: new Intl.NumberFormat(locale).format(map.strokeCount) })}
                       </span>
-                      <span style={{ fontSize: 12, color: THEME.muted }}>{new Date(map.createdAt).toLocaleDateString(locale)}</span>
+                      <span style={{ fontSize: TYPE.caption, color: THEME.muted }}>{new Date(map.createdAt).toLocaleDateString(locale)}</span>
                       <button onClick={() => handleLoadMap(map.id)} style={pillButtonStyle(false, false)}>
                         {t("MapEditor.load")}
                       </button>
@@ -1347,7 +1347,7 @@ export function MapEditor() {
         </div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-          <span style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.loginToSave")}</span>
+          <span style={{ fontSize: TYPE.body, color: THEME.muted }}>{t("MapEditor.loginToSave")}</span>
           {openAccountPanel ? (
             <button onClick={openAccountPanel} style={pillButtonStyle(false)}>
               {t("MapEditor.loginToSaveLink")}
@@ -1422,7 +1422,7 @@ export function MapEditor() {
                   background: "rgba(12,10,13,0.92)",
                   border: `2px solid ${THEME.rose}`,
                   padding: "4px 8px",
-                  fontSize: 13,
+                  fontSize: TYPE.body,
                   fontWeight: 600,
                   outline: "none",
                 }}
@@ -1526,7 +1526,7 @@ export function MapEditor() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: "1 1 260px", maxWidth: 340 }}>
-          <label htmlFor="map-notes" style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.notesTitle")}</label>
+          <label htmlFor="map-notes" style={{ fontSize: TYPE.body, color: THEME.muted }}>{t("MapEditor.notesTitle")}</label>
           <textarea
             id="map-notes"
             value={notes}
@@ -1541,7 +1541,7 @@ export function MapEditor() {
               border: `1px solid ${THEME.cardBorder}`,
               background: `${THEME.card}99`,
               padding: "8px 12px",
-              fontSize: 13,
+              fontSize: TYPE.body,
               lineHeight: 1.6,
               color: THEME.text,
               outline: "none",
@@ -1596,7 +1596,7 @@ function pillButtonStyle(active: boolean, disabled?: boolean): React.CSSProperti
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    fontSize: 12,
+    fontSize: TYPE.caption,
     padding: "6px 12px",
     borderRadius: 6,
     border: `1px solid ${active ? THEME.rose : THEME.cardBorder}`,

@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ChampionInfo } from "./ddragon";
-import { COLORS } from "./theme";
+import { COLORS, TYPE } from "./theme";
 
 // A small search-by-text champion picker — native equivalent of the web
 // app's ChampionCombobox (src/components/champion-combobox.tsx), same
@@ -140,7 +140,7 @@ export function ChampionCombobox({
           }}
         >
           {results.length === 0 ? (
-            <div style={{ padding: 12, fontSize: 13, color: COLORS.muted }}>{noResultsLabel}</div>
+            <div style={{ padding: 12, fontSize: TYPE.body, color: COLORS.muted }}>{noResultsLabel}</div>
           ) : (
             results.map((c) => (
               <button
@@ -161,7 +161,7 @@ export function ChampionCombobox({
                 }}
               >
                 <img src={c.iconUrl} alt="" style={{ width: 22, height: 22, borderRadius: 5 }} />
-                <span style={{ fontSize: 13 }}>{c.name}</span>
+                <span style={{ fontSize: TYPE.body }}>{c.name}</span>
               </button>
             ))
           )}

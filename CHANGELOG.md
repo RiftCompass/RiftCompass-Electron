@@ -5,6 +5,31 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.12
+
+- Sesión: si riftcompass.com rechaza la sesión guardada (contraseña
+  cambiada, cierre desde otro dispositivo, caducidad a los 90 días), la app
+  lo dice al guardar ("Tu sesión se ha cerrado") y en Ajustes explica por
+  qué al volver a iniciar sesión, en vez de enseñar una clave interna o
+  aparecer sin sesión sin más. "Demasiados guardados seguidos" en las cinco
+  herramientas que guardan.
+- Bandeja: menú en el idioma de la app y, la primera vez que se cierra la
+  ventana con la X, un aviso de que la app sigue en la bandeja. Los botones
+  de la ventana tienen nombre en los cuatro idiomas.
+- Los enlaces a riftcompass.com (cuenta, contraseña olvidada, registro,
+  metodología, legales) abren la web en el idioma de la app, no en el de
+  Windows. Ajustes → Acerca de enseña la versión y enlaza al aviso legal,
+  privacidad y cookies.
+- Instalador: el acuerdo de licencia sale en español, francés, alemán o
+  inglés según el idioma de Windows, y cuenta qué escribe la app en el
+  cliente y qué llega a riftcompass.com.
+- Ventana estrecha (640 px): el Simulador de draft, el Champion Pool, el
+  Test de personalidad y Jungle XP apilan sus columnas en vez de recortarse.
+- Teclado: Escape o Alt+← vuelven atrás; al abrir una vista el foco va a su
+  título; el anillo de foco cubre también las tarjetas de la Meta Tier List
+  y los desplegables. Gris secundario igual al de la web y escala de tamaños
+  de texto unificada.
+
 ## 0.3.11
 
 - Resumen post-partida: si riftcompass.com no responde o hay demasiadas

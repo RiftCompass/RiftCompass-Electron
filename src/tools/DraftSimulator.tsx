@@ -6,9 +6,9 @@ import { ALL_ROLES, rolesOf, type ChampionRole } from "../lib/champion-roles";
 import { positionIconUrl } from "../lib/profile-analysis";
 import { useI18n } from "../i18n";
 import { LoadError } from "./LoadError";
-import { savedListError } from "../lib/api-fetch";
+import { savedListError, saveErrorMessage } from "../lib/api-fetch";
 import { useOpenAccountPanel } from "../account-panel";
-import { COLORS } from "../theme";
+import { COLORS, TYPE } from "../theme";
 import type { AccountUser, SavedDraft } from "../riftcompass";
 
 // Same draft flow and champion grid as the web's draft-simulator.tsx, with
@@ -49,7 +49,7 @@ export function DraftSimulator() {
   const [draftLoaded, setDraftLoaded] = useState(false);
 
   useEffect(() => {
-    window.riftcompass.getSession().then(setUser);
+    window.riftcompass.getSession().then((session) => setUser(session.user));
   }, []);
 
   // Carga, fallo y rejilla vacía son tres estados distintos (ronda 22): sin
@@ -166,8 +166,8 @@ export function DraftSimulator() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(260px, 1fr))", gap: 14 }}>
+    <div className="rc-stack" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className="rc-draft-boards" style={{ display: "grid", gap: 14 }}>
         <TeamBoard team="blue" bans={slotsFor("blue", "ban")} picks={slotsFor("blue", "pick")} championById={championById} />
         <TeamBoard team="red" bans={slotsFor("red", "ban")} picks={slotsFor("red", "pick")} championById={championById} />
       </div>
@@ -236,7 +236,7 @@ export function DraftSimulator() {
                     border: `1px solid ${COLORS.cardBorder}`,
                     borderRadius: 8,
                     padding: "8px 12px",
-                    fontSize: 13,
+                    fontSize: TYPE.body,
                   }}
                 />
                 <button
@@ -274,22 +274,22 @@ export function DraftSimulator() {
                 </button>
               </>
             )}
-            {saveError ? <span style={{ fontSize: 13, color: COLORS.destructive }}>{t(`Draft.saveDraftErrors.${saveError}`)}</span> : null}
-            {saveSuccess && !saveOpen ? <span style={{ fontSize: 13, color: COLORS.rose }}>{t("Draft.saveDraftSuccess")}</span> : null}
+            {saveError ? <span style={{ fontSize: TYPE.body, color: COLORS.destructive }}>{saveErrorMessage(t, "Draft.saveDraftErrors", saveError)}</span> : null}
+            {saveSuccess && !saveOpen ? <span style={{ fontSize: TYPE.body, color: COLORS.rose }}>{t("Draft.saveDraftSuccess")}</span> : null}
           </div>
           {listOpen ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, borderRadius: 8, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}66`, padding: 10 }}>
               {savedDraftsError ? (
                 <LoadError error={savedDraftsError} onRetry={loadSavedDrafts} />
               ) : savedDrafts === null ? (
-                <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
+                <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
               ) : savedDrafts.length === 0 ? (
-                <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Draft.myDraftsEmpty")}</span>
+                <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("Draft.myDraftsEmpty")}</span>
               ) : (
                 savedDrafts.map((draft) => (
                   <div key={draft.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                      <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: TYPE.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {draft.name}
                       </span>
                       {/* Sin esto, la lista era solo nombre y fecha y no daba
@@ -322,7 +322,7 @@ export function DraftSimulator() {
                         })}
                       </div>
                     </div>
-                    <span style={{ fontSize: 12, color: COLORS.muted }}>{new Date(draft.createdAt).toLocaleDateString(locale)}</span>
+                    <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{new Date(draft.createdAt).toLocaleDateString(locale)}</span>
                     <button
                       onClick={() => {
                         setSelections(draft.selections);
@@ -343,7 +343,7 @@ export function DraftSimulator() {
         </div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-          <span style={{ fontSize: 13, color: COLORS.muted }}>{t("Draft.loginToSave")}</span>
+          <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("Draft.loginToSave")}</span>
           {openAccountPanel ? (
             <button onClick={openAccountPanel} style={buttonStyle(false)}>
               {t("Draft.loginToSaveLink")}
@@ -365,7 +365,7 @@ export function DraftSimulator() {
               border: `1px solid ${COLORS.cardBorder}`,
               borderRadius: 8,
               padding: "8px 12px",
-              fontSize: 13,
+              fontSize: TYPE.body,
             }}
           />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
@@ -403,7 +403,7 @@ export function DraftSimulator() {
           }}
         >
           {championsStatus === "loading" ? (
-            <span style={{ fontSize: 13, color: COLORS.muted, padding: 4 }}>{t("ProfileSearch.loading")}</span>
+            <span style={{ fontSize: TYPE.body, color: COLORS.muted, padding: 4 }}>{t("ProfileSearch.loading")}</span>
           ) : championsStatus === "error" ? (
             <div style={{ padding: 4 }}>
               <LoadError message={t("Common.dataDragonError")} onRetry={() => setChampionsAttempt((n) => n + 1)} />
@@ -442,7 +442,7 @@ export function DraftSimulator() {
 
 function buttonStyle(disabled: boolean): React.CSSProperties {
   return {
-    fontSize: 12,
+    fontSize: TYPE.caption,
     padding: "6px 12px",
     borderRadius: 6,
     border: `1px solid ${COLORS.cardBorder}`,
@@ -459,7 +459,7 @@ function rolePillStyle(active: boolean): React.CSSProperties {
     border: `1px solid ${active ? COLORS.rose : COLORS.cardBorder}`,
     background: active ? `${COLORS.rose}1a` : "none",
     color: active ? COLORS.rose : COLORS.muted,
-    fontSize: 12,
+    fontSize: TYPE.caption,
     cursor: "pointer",
   };
 }
@@ -504,9 +504,9 @@ function TeamBoard({
         padding: 14,
       }}
     >
-      <span style={{ fontSize: 13, fontWeight: 600, color: style.text }}>{t(team === "blue" ? "Draft.blueTeam" : "Draft.redTeam")}</span>
+      <span style={{ fontSize: TYPE.body, fontWeight: 600, color: style.text }}>{t(team === "blue" ? "Draft.blueTeam" : "Draft.redTeam")}</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Draft.bans")}</span>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Draft.bans")}</span>
         <div style={{ display: "flex", gap: 6 }}>
           {bans.map((id, i) => (
             <ChampionSlot key={i} championId={id} championById={championById} muted />
@@ -514,7 +514,7 @@ function TeamBoard({
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Draft.picks")}</span>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Draft.picks")}</span>
         <div style={{ display: "flex", gap: 6 }}>
           {picks.map((id, i) => (
             <ChampionSlot key={i} championId={id} championById={championById} />
