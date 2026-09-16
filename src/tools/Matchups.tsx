@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChampionCombobox } from "../ChampionCombobox";
-import { fetchChampionMap, toDDragonId, type ChampionInfo } from "../ddragon";
+import { fetchChampionMap, fetchLatestVersion, toDDragonId, type ChampionInfo } from "../ddragon";
 import { POOL_ROLES } from "../lib/champion-pool-builder";
 import { primaryRoleOf } from "../lib/champion-roles";
 import { type PersonalityRole } from "../lib/personality-test";
@@ -12,6 +12,7 @@ import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../
 import { LoadError } from "./LoadError";
 import { apiGet } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
+import { MatchupCard } from "./MatchupCard";
 
 // Ported from the web's /tools/matchups: one champion in one position seen
 // from both sides, straight from /api/v1/champion-matchups. Left, how the
@@ -76,11 +77,16 @@ export function Matchups() {
   const [loadError, setLoadError] = useState<unknown>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [sort, setSort] = useState<MatchupSort>("winrate");
+  // La ficha de un matchup concreto (fase A de matchups-v2.md): el rival
+  // pulsado en el tablero. Se cierra al cambiar de campeón, posición o rango.
+  const [vs, setVs] = useState<ChampionInfo | null>(null);
+  const [version, setVersion] = useState("");
 
   useEffect(() => {
     fetchChampionMap()
       .then((m) => setChampions(Object.values(m.byInternalId)))
       .catch(() => setChampions([]));
+    fetchLatestVersion().then(setVersion).catch(() => setVersion(""));
   }, []);
 
   // Opened from another tool on a champion (Champion Builds, Meta Tier
@@ -130,7 +136,7 @@ export function Matchups() {
   const nameOf = (row: MatchupRow) => lookup(row.championName)?.name ?? row.championName;
   const pick = (row: MatchupRow) => {
     const info = lookup(row.championName);
-    if (info) setChampion(info);
+    if (info) setVs(info);
   };
 
   const chip = (row: MatchupRow) => {
@@ -261,7 +267,10 @@ export function Matchups() {
           // la web y como al pulsar un rival del tablero (ronda 21). Tampoco
           // se suelta al vaciar el selector: en este combobox cambiar de
           // campeón pasa siempre por vaciarlo primero.
-          onChange={setChampion}
+          onChange={(c) => {
+            setChampion(c);
+            setVs(null);
+          }}
           placeholder={t("Matchups.championPlaceholder")}
           noResultsLabel={t("Matchups.noChampionMatches")}
         />
@@ -271,7 +280,7 @@ export function Matchups() {
         {(POOL_ROLES as PersonalityRole[]).map((r) => {
           const iconUrl = positionIconUrl(r);
           return (
-            <button key={r} onClick={() => setRole(r)} style={{ ...pillStyle(effectiveRole === r, "compact"), display: "flex", alignItems: "center", gap: 6 }}>
+            <button key={r} onClick={() => { setRole(r); setVs(null); }} style={{ ...pillStyle(effectiveRole === r, "compact"), display: "flex", alignItems: "center", gap: 6 }}>
               {iconUrl ? <img src={iconUrl} alt="" style={{ width: 14, height: 14 }} /> : null}
               {t(`Profile.positions.${r.toLowerCase()}`)}
             </button>
@@ -281,7 +290,7 @@ export function Matchups() {
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
         <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Matchups.rank")}</span>
         {RANK_TIERS.map((r) => (
-          <button key={r} onClick={() => setRank(r)} style={pillStyle(rank === r, "compact")}>
+          <button key={r} onClick={() => { setRank(r); setVs(null); }} style={pillStyle(rank === r, "compact")}>
             {t(`MetaTierList.rankTiers.${r}`)}
           </button>
         ))}
@@ -317,6 +326,20 @@ export function Matchups() {
               </span>
             </div>
           </div>
+          {vs && effectiveRole ? (
+            <MatchupCard
+              champion={champion}
+              enemy={vs}
+              role={effectiveRole}
+              rank={rank}
+              version={version}
+              onClose={() => setVs(null)}
+              onSwap={() => {
+                setChampion(vs);
+                setVs(champion);
+              }}
+            />
+          ) : null}
           <div style={{ ...cardStyle, display: "flex", flexWrap: "wrap", gap: 20 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 200, paddingRight: 20, borderRight: `1px solid ${COLORS.cardBorder}` }}>
               <span style={labelStyle}>{t("Matchups.laneWinrate")}</span>
