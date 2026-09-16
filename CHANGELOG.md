@@ -5,6 +5,14 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.11
+
+- Resumen post-partida: si riftcompass.com no responde o hay demasiadas
+  peticiones, lo dice (con la espera que toque) y ofrece reintentar, en vez
+  de "Riot puede tardar un poco"; ese mensaje queda solo para cuando la
+  partida de verdad no ha llegado todavía. Duración "32:14" y nota "7,5"
+  como en el historial; el retrato lleva el nombre visible del campeón.
+
 ## 0.3.10
 
 - Overlay: en la selección de campeón los compañeros salen como "Aliado 2",
