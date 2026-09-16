@@ -13,7 +13,9 @@ import type { ChampionMasteryEntry } from "../riftcompass";
 import { computeChampionOverview, type ChampionOverviewStats } from "../lib/profile-analysis";
 import { fetchProfile } from "../profile/ProfileShared";
 import { API_BASE_URL } from "../shared/api";
-import { COLORS, TYPE, cardStyle as makeCardStyle } from "../theme";
+import { COLORS, TYPE, cardStyle as makeCardStyle, pillStyle } from "../theme";
+import { apiGet } from "../lib/api-fetch";
+import { LoadError } from "../tools/LoadError";
 import { useI18n } from "../i18n";
 import type { LcuIdentity } from "../riftcompass";
 
@@ -58,7 +60,8 @@ interface DraftAdvisorProps {
 }
 
 export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: DraftAdvisorProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const nf = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const [phase, setPhase] = useState<string>("None");
   const [myTeam, setMyTeam] = useState<ChampSelectPlayer[]>([]);
   const [theirTeam, setTheirTeam] = useState<ChampSelectPlayer[]>([]);
@@ -91,7 +94,8 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
   // Sin esto, un fallo de red y una descarga en curso se comunicaban los dos
   // con el mismo "aun no hay datos suficientes", que es una afirmacion sobre
   // la muestra del crawler, no sobre la red.
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
 
   // Same lazy champion-map fetch OverlayView.tsx uses — no point spending
   // the ~500KB champion.json fetch outside champ select.
@@ -99,28 +103,37 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
     if (phase !== "ChampSelect" || Object.keys(champions.byId).length > 0) return;
     fetchChampionMap()
       .then(setChampions)
-      .catch(() => {
+      .catch((err: unknown) => {
         // Offline or Data Dragon hiccup: say so instead of looking empty.
-        setLoadFailed(true);
+        setLoadError(err);
       });
-  }, [phase, champions]);
+  }, [phase, champions, attempt]);
 
   // One fetch per champ select: reset on leaving it, fetch once on entering.
+  // Un 429 llega con su espera y un fallo ofrece reintento (ronda 25):
+  // antes un fallo dejaba el consejero muerto para todo el champ select.
   useEffect(() => {
     if (phase !== "ChampSelect") {
       setRoleWinrates(null);
-      setLoadFailed(false);
+      setLoadError(null);
       return;
     }
-    if (roleWinrates !== null) return;
-    fetch(`${API_BASE_URL}/api/v1/champion-winrates`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((data) => setRoleWinrates(data.winrates ?? []))
-      .catch(() => {
+    let cancelled = false;
+    setRoleWinrates(null);
+    setLoadError(null);
+    apiGet<{ winrates?: ChampionWinrateEntry[] }>(`${API_BASE_URL}/api/v1/champion-winrates`)
+      .then((data) => {
+        if (!cancelled) setRoleWinrates(data.winrates ?? []);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
         setRoleWinrates([]);
-        setLoadFailed(true);
+        setLoadError(err);
       });
-  }, [phase, roleWinrates]);
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, attempt]);
 
   const localPlayer = myTeam.find((p) => p.cellId === localCellId);
   // Cuando el cliente asigna posición, manda el cliente.
@@ -141,11 +154,18 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
       return;
     }
     const params = new URLSearchParams({ role: posicion.toUpperCase(), enemy: enemyChampionName });
-    fetch(`${API_BASE_URL}/api/v1/champion-matchup?${params}`)
-      .then((r) => r.json())
-      .then((data) => setMatchups(data.matchups ?? []))
-      .catch(() => setMatchups([]));
-  }, [phase, posicion, enemyChampionName]);
+    let cancelled = false;
+    apiGet<{ matchups?: LaneMatchupEntry[] }>(`${API_BASE_URL}/api/v1/champion-matchup?${params}`)
+      .then((data) => {
+        if (!cancelled) setMatchups(data.matchups ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setMatchups([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, posicion, enemyChampionName, attempt]);
 
   // The player's own real winrate per champion, from their own recent
   // match history — Infinity instead of the profile summary's default
@@ -254,16 +274,8 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
             <button
               key={p}
               onClick={() => onElegirPosicion(p)}
-              style={{
-                padding: "5px 10px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: activa ? 700 : 500,
-                cursor: "pointer",
-                color: activa ? COLORS.text : COLORS.muted,
-                background: activa ? "rgba(120,57,172,0.28)" : "rgba(255,255,255,0.04)",
-                border: `1px solid ${activa ? COLORS.good : COLORS.cardBorder}`,
-              }}
+              aria-pressed={activa}
+              style={pillStyle(activa, "compact")}
             >
               {t(`Profile.positions.${p}`)}
             </button>
@@ -291,13 +303,13 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
 
       {suggestions.length === 0 ? (
         <div style={cardStyle}>
-          <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>
-            {loadFailed
-              ? t("DraftAdvisor.error")
-              : stillLoading
-                ? t("DraftAdvisor.loading")
-                : t("DraftAdvisor.empty")}
-          </p>
+          {loadError ? (
+            <LoadError error={loadError} onRetry={() => setAttempt((n) => n + 1)} />
+          ) : (
+            <p style={{ color: COLORS.muted, fontSize: TYPE.body, margin: 0 }}>
+              {stillLoading ? t("DraftAdvisor.loading") : t("DraftAdvisor.empty")}
+            </p>
+          )}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -321,11 +333,21 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
                   {s.matchupWinRate !== undefined && s.matchupGames !== undefined
                     ? t(s.matchupSpecific ? "DraftAdvisor.matchupLabel" : "DraftAdvisor.roleWideLabel", {
                         percent: Math.round(s.matchupWinRate * 100),
-                        games: s.matchupGames,
+                        games: nf.format(s.matchupGames),
                       })
                     : t("DraftAdvisor.matchupNone")}
                 </span>
                 <span style={{ fontSize: 11, color: COLORS.muted }}>{etiquetaPersonal(s)}</span>
+                {/* La maestría mueve el orden (masteryLogit): se enseña para
+                    que se vea por qué (ronda 25); nada mientras el cliente
+                    no haya contestado la lista. */}
+                {mastery.length > 0 ? (
+                  <span style={{ fontSize: 11, color: COLORS.muted }}>
+                    {s.masteryPoints
+                      ? t("DraftAdvisor.masteryLabel", { level: s.masteryLevel ?? 0, points: nf.format(s.masteryPoints) })
+                      : t("DraftAdvisor.masteryNone")}
+                  </span>
+                ) : null}
               </div>
               <span
                 style={{

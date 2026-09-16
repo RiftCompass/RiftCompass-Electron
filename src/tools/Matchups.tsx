@@ -4,7 +4,7 @@ import { fetchChampionMap, fetchLatestVersion, toDDragonId, type ChampionInfo } 
 import { POOL_ROLES } from "../lib/champion-pool-builder";
 import { primaryRoleOf } from "../lib/champion-roles";
 import { type PersonalityRole } from "../lib/personality-test";
-import { positionIconUrl } from "../lib/profile-analysis";
+import { formatPercent, positionIconUrl } from "../lib/profile-analysis";
 import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
 import { useOpenTool, useRequestedChampion } from "../tool-navigation";
@@ -66,6 +66,7 @@ const cardStyle = makeCardStyle({ borderRadius: 12, padding: 16 });
 
 export function Matchups() {
   const { t, locale } = useI18n();
+  const nf = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const openTool = useOpenTool();
   const requested = useRequestedChampion();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
@@ -160,7 +161,7 @@ export function Matchups() {
       >
         {info ? <img src={info.iconUrl} alt="" style={{ width: 22, height: 22, borderRadius: 999 }} /> : null}
         <span style={{ maxWidth: 96, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nameOf(row)}</span>
-        <span style={{ fontWeight: 700, color: COLORS[winRateTone(row.winRate)] }}>{Math.round(row.winRate * 100)}%</span>
+        <span style={{ fontWeight: 700, color: COLORS[winRateTone(row.winRate)] }}>{formatPercent(locale, row.winRate)}</span>
       </button>
     );
   };
@@ -203,8 +204,8 @@ export function Matchups() {
                     </button>
                     <WinRateBar winRate={row.winRate} />
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 700, textAlign: "right", color: COLORS[tone], fontVariantNumeric: "tabular-nums" }}>{Math.round(row.winRate * 100)}%</span>
-                  <span style={{ fontSize: 11, color: COLORS.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{t("Matchups.games", { games: row.games })}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, textAlign: "right", color: COLORS[tone], fontVariantNumeric: "tabular-nums" }}>{formatPercent(locale, row.winRate)}</span>
+                  <span style={{ fontSize: 11, color: COLORS.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{t("Matchups.games", { games: nf.format(row.games) })}</span>
                 </div>
               );
             })}
@@ -280,7 +281,7 @@ export function Matchups() {
         {(POOL_ROLES as PersonalityRole[]).map((r) => {
           const iconUrl = positionIconUrl(r);
           return (
-            <button key={r} onClick={() => { setRole(r); setVs(null); }} style={{ ...pillStyle(effectiveRole === r, "compact"), display: "flex", alignItems: "center", gap: 6 }}>
+            <button key={r} onClick={() => { setRole(r); setVs(null); }} aria-pressed={effectiveRole === r} style={{ ...pillStyle(effectiveRole === r, "compact"), display: "flex", alignItems: "center", gap: 6 }}>
               {iconUrl ? <img src={iconUrl} alt="" style={{ width: 14, height: 14 }} /> : null}
               {t(`Profile.positions.${r.toLowerCase()}`)}
             </button>
@@ -290,7 +291,7 @@ export function Matchups() {
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
         <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Matchups.rank")}</span>
         {RANK_TIERS.map((r) => (
-          <button key={r} onClick={() => { setRank(r); setVs(null); }} style={pillStyle(rank === r, "compact")}>
+          <button key={r} onClick={() => { setRank(r); setVs(null); }} aria-pressed={rank === r} style={pillStyle(rank === r, "compact")}>
             {t(`MetaTierList.rankTiers.${r}`)}
           </button>
         ))}
@@ -338,6 +339,9 @@ export function Matchups() {
                 setChampion(vs);
                 setVs(champion);
               }}
+              onOpenEnemyBuilds={
+                openTool ? () => openTool({ toolId: "championBuilds", championInternalId: vs.internalId, role: effectiveRole, rank }) : undefined
+              }
             />
           ) : null}
           <div style={{ ...cardStyle, display: "flex", flexWrap: "wrap", gap: 20 }}>
@@ -346,7 +350,7 @@ export function Matchups() {
               <span style={{ fontFamily: FONT_HEADING, fontSize: 30, lineHeight: 1.1, color: summaryWinRate === null ? COLORS.muted : summaryWinRate >= 0.5 ? COLORS.good : COLORS.bad }}>
                 {summaryWinRate === null ? "–" : new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryWinRate)}
               </span>
-              <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Matchups.summaryGames", { games: summaryGames, rivals: solidAs.length })}</span>
+              <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Matchups.summaryGames", { games: nf.format(summaryGames), rivals: solidAs.length })}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: "1 1 320px", minWidth: 0 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -362,7 +366,7 @@ export function Matchups() {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Matchups.sortBy")}</span>
             {(["winrate", "games"] as const).map((option) => (
-              <button key={option} onClick={() => setSort(option)} style={pillStyle(sort === option, "compact")}>
+              <button key={option} onClick={() => setSort(option)} aria-pressed={sort === option} style={pillStyle(sort === option, "compact")}>
                 {t(option === "games" ? "Matchups.sortGames" : "Matchups.sortWinrate")}
               </button>
             ))}

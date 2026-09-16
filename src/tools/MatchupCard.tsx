@@ -77,6 +77,7 @@ export function MatchupCard({
   version,
   onClose,
   onSwap,
+  onOpenEnemyBuilds,
 }: {
   champion: ChampionInfo;
   enemy: ChampionInfo;
@@ -85,6 +86,8 @@ export function MatchupCard({
   version: string;
   onClose: () => void;
   onSwap: () => void;
+  /** Abre al rival en Builds de campeón (el "abrir la página del rival" de la web). */
+  onOpenEnemyBuilds?: () => void;
 }) {
   const { t, locale } = useI18n();
   const [data, setData] = useState<MatchupCardResponse | null>(null);
@@ -297,7 +300,7 @@ export function MatchupCard({
                   </span>
                   <span style={labelStyle}>{t("Matchups.games", { games: nf.format(matchup.skillOrder.sampleGames) })}</span>
                 </div>
-                <SkillGrid path={matchup.skillOrder.path} abilityIcon={abilityIcon} />
+                <SkillGrid path={matchup.skillOrder.path} abilityIcon={abilityIcon} t={t} />
               </div>
             ) : (
               <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noSkillOrderData")}</p>
@@ -308,6 +311,11 @@ export function MatchupCard({
             <button onClick={onSwap} style={{ background: "none", border: "none", color: COLORS.rose, fontSize: 12, cursor: "pointer", padding: 0 }}>
               {t("Matchups.cardSwap", { enemy: enemy.name })}
             </button>
+            {onOpenEnemyBuilds ? (
+              <button onClick={onOpenEnemyBuilds} style={{ background: "none", border: "none", color: COLORS.rose, fontSize: 12, cursor: "pointer", padding: 0 }}>
+                {t("Matchups.cardEnemyPage", { enemy: enemy.name })}
+              </button>
+            ) : null}
           </div>
         </>
       )}

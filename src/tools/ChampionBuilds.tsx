@@ -30,11 +30,11 @@ import {
 } from "../ddragon";
 import { ChampionCombobox } from "../ChampionCombobox";
 import { damageTypeOf } from "../lib/champion-damage-type";
-import { positionIconUrl } from "../lib/profile-analysis";
+import { formatPercent, positionIconUrl } from "../lib/profile-analysis";
 import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
 import { useOpenAccountPanel } from "../account-panel";
-import { useRequestedChampion } from "../tool-navigation";
+import { useOpenTool, useRequestedChampion } from "../tool-navigation";
 import { LoadError } from "./LoadError";
 import { apiGet } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
@@ -193,6 +193,7 @@ export function ChampionBuilds() {
   const openAccountPanel = useOpenAccountPanel();
   // Set when the Meta Tier List sent the user here on a champion.
   const requestedChampion = useRequestedChampion();
+  const openTool = useOpenTool();
 
   const [version, setVersion] = useState("");
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
@@ -487,7 +488,7 @@ export function ChampionBuilds() {
             </div>
             {roleSample && roleSample.games >= MIN_GAMES_FOR_WINRATE ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, marginLeft: "auto" }}>
-                <span style={{ fontFamily: FONT_HEADING, fontSize: 18 }}>{winRatePercent(roleSample.games, roleSample.wins)}%</span>
+                <span style={{ fontFamily: FONT_HEADING, fontSize: 18 }}>{formatPercent(locale, winRatePercent(roleSample.games, roleSample.wins) / 100)}</span>
                 <span style={{ fontSize: 11, color: COLORS.muted, textAlign: "right" }}>
                   {t("ChampionBuilds.winRateIn", {
                     position: t(`Profile.positions.${role.toLowerCase()}`),
@@ -509,6 +510,7 @@ export function ChampionBuilds() {
                     setRole(option);
                     setRoleTouched(true);
                   }}
+                  aria-pressed={option === role}
                   style={{ ...pillStyle(option === role, "compact"), display: "flex", alignItems: "center", gap: 6 }}
                 >
                   {icon ? <img src={icon} alt="" style={{ width: 13, height: 13, opacity: 0.85 }} /> : null}
@@ -522,7 +524,7 @@ export function ChampionBuilds() {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 12, color: COLORS.muted, marginRight: 2 }}>{t("ChampionBuilds.rank")}</span>
             {RANK_TIERS.map((tier) => (
-              <button key={tier} onClick={() => setRank(tier)} style={pillStyle(tier === rank, "compact")}>
+              <button key={tier} onClick={() => setRank(tier)} aria-pressed={tier === rank} style={pillStyle(tier === rank, "compact")}>
                 {t(`MetaTierList.rankTiers.${tier}`)}
               </button>
             ))}
@@ -544,6 +546,17 @@ export function ChampionBuilds() {
               {board ? (
                 <span style={{ fontSize: 11, color: COLORS.muted }}>
                   {t("ChampionBuilds.popularBuildSource", { patch: board.patch })}
+                  {openTool && champion ? (
+                    <>
+                      {" · "}
+                      <button
+                        onClick={() => openTool({ toolId: "matchups", championInternalId: champion.internalId, role, rank })}
+                        style={{ background: "none", border: "none", color: COLORS.rose, fontSize: 11, cursor: "pointer", padding: 0 }}
+                      >
+                        {t("ChampionBuilds.openMatchups")}
+                      </button>
+                    </>
+                  ) : null}
                 </span>
               ) : null}
             </div>
@@ -699,7 +712,7 @@ export function ChampionBuilds() {
                     </span>
                   ))}
                 </div>
-                <SkillGrid path={board.skillOrder.path} abilityIcon={abilityIcon} />
+                <SkillGrid path={board.skillOrder.path} abilityIcon={abilityIcon} t={t} />
               </>
             )}
           </div>
@@ -932,10 +945,12 @@ function OptionRow({
   gamesLabel: string;
   children: React.ReactNode;
 }) {
+  const { locale } = useI18n();
   const rate = winRatePercent(games, wins);
   return (
     <button
       onClick={onSelect}
+      aria-pressed={selected}
       style={{
         display: "flex",
         flexWrap: "wrap",
@@ -952,7 +967,7 @@ function OptionRow({
     >
       {children}
       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: rate >= 53 ? COLORS.gold : COLORS.muted }}>{rate}%</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: rate >= 53 ? COLORS.gold : COLORS.muted }}>{formatPercent(locale, rate / 100)}</span>
         <span style={{ fontSize: 11, color: COLORS.muted }}>{gamesLabel}</span>
       </span>
     </button>
@@ -1350,7 +1365,7 @@ function BuildEditor({
             </button>
           ) : null}
         </div>
-        <SkillGrid path={editorPath} abilityIcon={abilityIcon} onSet={setLevel} />
+        <SkillGrid path={editorPath} abilityIcon={abilityIcon} onSet={setLevel} t={t} />
       </div>
 
       <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>

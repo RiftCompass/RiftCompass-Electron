@@ -119,9 +119,11 @@ export function SkillGrid({
   path,
   abilityIcon,
   onSet,
+  t,
 }: {
   path: { level: number; skillSlot: number }[];
   abilityIcon: (slot: number) => string | null;
+  t: Translate;
   onSet?: (level: number, slot: number) => void;
 }) {
   const bySlotLevel = new Map(path.map((step) => [step.level, step.skillSlot]));
@@ -154,12 +156,21 @@ export function SkillGrid({
                 fontWeight: 700,
                 cursor: onSet ? "pointer" : "default",
               } as const;
+              // Las celdas vacías pintan la letra en transparente: un lector
+              // de pantalla leía 72 letras por rejilla (ronda 25). La web las
+              // esconde igual y nombra los botones editables.
               return onSet ? (
-                <button key={level} onClick={() => onSet(level, slot)} style={cell}>
+                <button
+                  key={level}
+                  onClick={() => onSet(level, slot)}
+                  aria-label={t("ChampionBuilds.setSkillAtLevel", { skill: SKILL_KEYS[slot], level })}
+                  aria-pressed={active}
+                  style={cell}
+                >
                   {SKILL_KEYS[slot]}
                 </button>
               ) : (
-                <span key={level} style={cell}>
+                <span key={level} aria-hidden={!active} style={cell}>
                   {SKILL_KEYS[slot]}
                 </span>
               );

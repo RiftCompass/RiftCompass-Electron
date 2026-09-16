@@ -5,6 +5,29 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.10
+
+- Overlay: en la selección de campeón los compañeros salen como "Aliado 2",
+  "Aliado 3"… en vez de su Riot ID, como exigen las normas de Riot para
+  clasificatoria. El resaltado de la habilidad a subir funciona con todos
+  los campeones (con "Kai'Sa", "Maestro Yi" y los nombres traducidos no
+  aparecía nunca). CS/min y la diferencia de oro con el formato del idioma.
+- Ventana de selección de campeón: mientras carga la build dice "Cargando…"
+  y, si falla (sin red, demasiadas peticiones), lo dice y ofrece
+  reintentar; antes ponía "Todavía no hay build". El consejero de draft
+  también reintenta y enseña la maestría con cada campeón, que ya contaba
+  para el orden sin verse.
+- Matchups: la ficha ofrece "Abrir {rival} en Builds de campeón", y Builds
+  de campeón ofrece "Abrir en Matchups". La frase de la build general dice
+  lo que pasa de verdad ("ninguna build concreta llega a 20 partidas
+  contra…"). Porcentajes y partidas con el formato del idioma en todo el
+  tablero y en Builds.
+- Colores: la build aplicada y las píldoras del consejero en el rosa de la
+  app. Francés: trato de usted en la ventana de selección.
+- Accesibilidad: las píldoras de posición, rango y orden anuncian cuál
+  está pulsada; la rejilla de habilidades ya no lee 72 letras invisibles y
+  sus celdas editables tienen nombre.
+
 ## 0.3.9
 
 - Perfil: si no se puede cargar (límite de Riot, red), aparece "Reintentar"
