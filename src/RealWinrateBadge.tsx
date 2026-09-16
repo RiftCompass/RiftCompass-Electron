@@ -20,7 +20,7 @@ export function RealWinrateBadge({
   /** i18n namespace that owns `realWinrate` / `realWinrateTooltip`. */
   label: "PersonalityTest" | "ChampionPoolBuilder";
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   if (!winrate) return null;
   return (
     <span
@@ -35,7 +35,7 @@ export function RealWinrateBadge({
       }}
       title={t(`${label}.realWinrateTooltip`)}
     >
-      {t(`${label}.realWinrate`, { rate: Math.round(winrate.winRate * 100), games: winrate.games })}
+      {t(`${label}.realWinrate`, { rate: Math.round(winrate.winRate * 100), games: new Intl.NumberFormat(locale).format(winrate.games) })}
     </span>
   );
 }

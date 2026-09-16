@@ -497,6 +497,9 @@ export const en = {
     filterAll: "All",
   },
   MapEditor: {
+    loadConfirm: "Replace the current map with this one? Unsaved changes will be lost.",
+    strokeCountOne: "1 element",
+    strokeCount: "{count} elements",
     loginToSaveLink: "Log in",
     intro: "Sketch rotations, ganks, and plays directly on Summoner's Rift.",
     championSearchNoResults: "No champions found.",
@@ -728,6 +731,9 @@ export const en = {
     },
   },
   ChampionPoolBuilder: {
+    moveUp: "Move up",
+    moveDown: "Move down",
+    remove: "Remove",
     intro: "Build a focused pool of up to 6 champions per role: core picks you'll play most, flex picks for coverage, and one pocket pick. Saved automatically on this device.",
     realWinrate: "{rate}% real WR ({games} games)",
     realWinrateTooltip: "Real win rate from RiftCompass's own tracked matches. Sample is still small and growing.",
