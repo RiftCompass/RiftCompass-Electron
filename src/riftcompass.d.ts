@@ -172,7 +172,9 @@ export interface SavedMapSummary {
 
 export type SaveMapResult = { ok: true; maps: SavedMapSummary[] } | { ok: false; error: string };
 
-export type LoadMapResult = { ok: true; strokes: unknown[]; notes: string } | { ok: false; error: string };
+export type LoadMapResult =
+  | { ok: true; strokes: unknown[]; notes: string }
+  | { ok: false; error: string; retryAfterSeconds?: number | null };
 
 // Backend-synced (riftcompass.com's saved_builds) — same real data as the
 // web's own Gold Calculator save / "Mis builds". `items` is the six-slot
