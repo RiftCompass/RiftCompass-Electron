@@ -370,6 +370,10 @@ export async function accountGetSavedMap(id: string): Promise<unknown> {
   if (ok && data?.strokes !== undefined) {
     return { ...data, ok: true };
   }
+  if (res.status === 429) {
+    const fromBody = typeof data?.retryAfterSeconds === "number" ? data.retryAfterSeconds : null;
+    return { ok: false, error: "rateLimited", retryAfterSeconds: fromBody ?? (Number(res.headers.get("retry-after")) || null) };
+  }
   return err(data?.error ?? "unknown");
 }
 

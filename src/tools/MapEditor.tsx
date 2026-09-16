@@ -404,6 +404,16 @@ export function MapEditor() {
   const openAccountPanel = useOpenAccountPanel();
   const [version, setVersion] = useState("");
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
+  // Carga, fallo y "sin resultados" son tres estados distintos (ronda 23):
+  // sin esto, con Data Dragon caído el combobox decía "No se encontraron
+  // campeones" a cualquier letra y los campeones colocados eran anillos vacíos.
+  const [championsStatus, setChampionsStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [championsAttempt, setChampionsAttempt] = useState(0);
+  // Mapa guardado abierto ahora mismo, si lo hay: mientras está cargado el
+  // autoguardado no toca el borrador del dispositivo (el `isDraftMap` de la
+  // web), y "Cargar" pide confirmación si hay algo dibujado (ronda 23).
+  const [loadedMapId, setLoadedMapId] = useState<string | null>(null);
+  const [loadMapError, setLoadMapError] = useState<{ id: string; error: Error } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
   const drawingRef = useRef<Stroke | null>(null);
@@ -474,6 +484,7 @@ export function MapEditor() {
     setMapSaveOpen(false);
     setMapName("");
     setMapSaveSuccess(true);
+    setLoadedMapId(null);
   }
 
   async function toggleMapList() {
@@ -490,8 +501,14 @@ export function MapEditor() {
   }
 
   async function handleLoadMap(id: string) {
+    if ((strokes.length > 0 || notes.trim()) && !window.confirm(t("MapEditor.loadConfirm"))) return;
+    setLoadMapError(null);
     const result = await window.riftcompass.getSavedMap(id);
-    if (!result.ok) return;
+    if (!result.ok) {
+      setLoadMapError({ id, error: savedListError({ error: result.error, retryAfterSeconds: result.retryAfterSeconds ?? null }) });
+      return;
+    }
+    setLoadedMapId(id);
     setSelectedTextIndex(null);
     setStrokes(
       (result.strokes as Stroke[]).map((s) => (s.type === "text" && !s.size ? { ...s, size: TEXT_DEFAULT_SIZE } : s)),
@@ -531,9 +548,22 @@ export function MapEditor() {
   }, [tool]);
 
   useEffect(() => {
-    fetchLatestVersion().then(setVersion);
-    fetchChampionMap().then((m) => setChampions(Object.values(m.byInternalId)));
-  }, []);
+    let cancelled = false;
+    setChampionsStatus("loading");
+    Promise.all([fetchLatestVersion(), fetchChampionMap()])
+      .then(([v, m]) => {
+        if (cancelled) return;
+        setVersion(v);
+        setChampions(Object.values(m.byInternalId));
+        setChampionsStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setChampionsStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [championsAttempt]);
 
   useEffect(() => {
     try {
@@ -553,7 +583,7 @@ export function MapEditor() {
   }, []);
 
   useEffect(() => {
-    if (!draftLoaded) return;
+    if (!draftLoaded || loadedMapId) return;
     try {
       if (strokes.length > 0 || notes.trim()) {
         localStorage.setItem(DRAFT_KEY, JSON.stringify({ strokes, notes }));
@@ -563,7 +593,7 @@ export function MapEditor() {
     } catch {
       // Ignore write failures.
     }
-  }, [strokes, notes, draftLoaded]);
+  }, [strokes, notes, draftLoaded, loadedMapId]);
 
   function ensureChampionImage(championId: string) {
     if (championImagesRef.current.has(championId) || !version) return;
@@ -958,6 +988,7 @@ export function MapEditor() {
     setSelectedTextIndex(null);
     setStrokes([]);
     setRedoStack([]);
+    setLoadedMapId(null);
   }
 
   function handleZoomIn() {
@@ -1174,7 +1205,7 @@ export function MapEditor() {
               <Minus size={13} />
             </IconButton>
             <button onClick={handleZoomReset} style={{ minWidth: 46, background: "none", border: "none", color: THEME.muted, fontSize: 11, cursor: "pointer", padding: "0 4px" }}>
-              {Math.round(zoom * 100)}%
+              {new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(zoom)}
             </button>
             <IconButton onClick={handleZoomIn} disabled={zoom >= MAX_ZOOM} label={t("MapEditor.zoomIn")}>
               <Plus size={13} />
@@ -1199,7 +1230,12 @@ export function MapEditor() {
         </div>
       </div>
 
-      {tool === "champion" ? (
+      {championsStatus === "loading" ? (
+        <p style={{ fontSize: 13, color: THEME.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+      ) : championsStatus === "error" ? (
+        <LoadError message={t("Common.dataDragonError")} onRetry={() => setChampionsAttempt((n) => n + 1)} />
+      ) : null}
+      {tool === "champion" && championsStatus === "ready" ? (
         <div style={{ maxWidth: 280 }}>
           <ChampionCombobox
             champions={champions}
@@ -1279,17 +1315,30 @@ export function MapEditor() {
                 <span style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.myMapsEmpty")}</span>
               ) : (
                 savedMaps.map((map) => (
-                  <div key={map.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {map.name}
-                    </span>
-                    <span style={{ fontSize: 12, color: THEME.muted }}>{new Date(map.createdAt).toLocaleDateString(locale)}</span>
-                    <button onClick={() => handleLoadMap(map.id)} style={pillButtonStyle(false, false)}>
-                      {t("MapEditor.load")}
-                    </button>
-                    <button onClick={() => handleDeleteMap(map.id)} title={t("MapEditor.delete")} style={pillButtonStyle(false, false)}>
-                      <X size={13} />
-                    </button>
+                  <div key={map.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {map.name}
+                      </span>
+                      {/* Cuántas cosas tiene el mapa, como en la web: es la
+                          única pista, aparte del nombre, de cuál es cuál
+                          (ronda 23). El t() de la app no hace plurales ICU. */}
+                      <span style={{ fontSize: 12, color: THEME.muted, flexShrink: 0 }}>
+                        {map.strokeCount === 1
+                          ? t("MapEditor.strokeCountOne")
+                          : t("MapEditor.strokeCount", { count: new Intl.NumberFormat(locale).format(map.strokeCount) })}
+                      </span>
+                      <span style={{ fontSize: 12, color: THEME.muted }}>{new Date(map.createdAt).toLocaleDateString(locale)}</span>
+                      <button onClick={() => handleLoadMap(map.id)} style={pillButtonStyle(false, false)}>
+                        {t("MapEditor.load")}
+                      </button>
+                      <button onClick={() => handleDeleteMap(map.id)} title={t("MapEditor.delete")} style={pillButtonStyle(false, false)}>
+                        <X size={13} />
+                      </button>
+                    </div>
+                    {loadMapError?.id === map.id ? (
+                      <LoadError error={loadMapError.error} onRetry={() => handleLoadMap(map.id)} />
+                    ) : null}
                   </div>
                 ))
               )}
@@ -1477,8 +1526,9 @@ export function MapEditor() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: "1 1 260px", maxWidth: 340 }}>
-          <label style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.notesTitle")}</label>
+          <label htmlFor="map-notes" style={{ fontSize: 13, color: THEME.muted }}>{t("MapEditor.notesTitle")}</label>
           <textarea
+            id="map-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder={t("MapEditor.notesPlaceholder")}

@@ -13,6 +13,9 @@ import {
 } from "../lib/champion-pool-builder";
 import { type PersonalityRole } from "../lib/personality-test";
 import { useI18n } from "../i18n";
+import { LoadError } from "./LoadError";
+import { DataQualityNote, type DataQuality } from "../DataQualityNote";
+import { positionIconUrl } from "../lib/profile-analysis";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle } from "../theme";
 import { API_BASE_URL } from "../shared/api";
 import { RealWinrateBadge, type ChampionWinrate } from "../RealWinrateBadge";
@@ -25,28 +28,57 @@ import { RealWinrateBadge, type ChampionWinrate } from "../RealWinrateBadge";
 const STORAGE_KEY = "riftcompass-overlay:champion-pool:v1";
 
 export function ChampionPoolBuilder() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
+  // Carga, fallo y pool son tres estados distintos (ronda 23): con la lista
+  // sin cargar y seis ids guardados se leía "La pool está completa" junto a
+  // seis huecos vacíos.
+  const [championsStatus, setChampionsStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [championsAttempt, setChampionsAttempt] = useState(0);
   const [role, setRole] = useState<PersonalityRole>("TOP");
+  // Los tags de Data Dragon vienen en en_US; los seis están traducidos como
+  // categorías de la Calculadora de oro (ronda 21 la línea del nombre, ronda
+  // 23 el resto).
+  const className = (tag: string) => t(`GoldCalculator.categories.${tag.toLowerCase()}`);
   const [pools, setPools] = useState<PoolsByRole>(emptyPools());
   const [loaded, setLoaded] = useState(false);
   const [pendingChampion, setPendingChampion] = useState<ChampionInfo | null>(null);
 
   useEffect(() => {
-    fetchChampionMap().then((m) => setChampions(Object.values(m.byInternalId)));
-  }, []);
+    let cancelled = false;
+    setChampionsStatus("loading");
+    fetchChampionMap()
+      .then((m) => {
+        if (cancelled) return;
+        setChampions(Object.values(m.byInternalId));
+        setChampionsStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setChampionsStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [championsAttempt]);
 
   // Solo datos del parche actual, como en la web: sin `?patch=` la API
   // cae al último parche con muestra, y aquí es preferible no enseñar
-  // nada a enseñar un winrate de otro parche sin avisar.
+  // nada a enseñar un winrate de otro parche sin avisar. `dataQuality`
+  // y el parche se guardan para la nota de calidad, como en la web.
   const [winrates, setWinrates] = useState<ChampionWinrate[]>([]);
+  const [dataQuality, setDataQuality] = useState<{ quality: DataQuality; patch: string } | null>(null);
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/v1/champion-winrates`)
       .then((r) => r.json())
-      .then((data: { winrates: ChampionWinrate[]; patch?: string; latestPatch?: string }) =>
-        setWinrates(data.patch === data.latestPatch ? (data.winrates ?? []) : []),
-      )
-      .catch(() => setWinrates([]));
+      .then((data: { winrates: ChampionWinrate[]; patch?: string; latestPatch?: string; dataQuality?: DataQuality }) => {
+        const current = data.patch === data.latestPatch;
+        setWinrates(current ? (data.winrates ?? []) : []);
+        setDataQuality(current && data.dataQuality && data.patch ? { quality: data.dataQuality, patch: data.patch } : null);
+      })
+      .catch(() => {
+        setWinrates([]);
+        setDataQuality(null);
+      });
   }, []);
   const winrateByChampion = useMemo(
     () => new Map(winrates.filter((w) => w.role === role).map((w) => [toDDragonId(w.championName), w])),
@@ -83,8 +115,9 @@ export function ChampionPoolBuilder() {
   const currentIds = pools[role];
   const currentPool = currentIds.map((id) => championById.get(id)).filter((c): c is ChampionInfo => !!c);
   const analysis = analyzePool(currentPool);
-  const isFull = currentIds.length >= MAX_POOL_SIZE;
-  const alreadyIn = !!pendingChampion && currentIds.includes(pendingChampion.internalId);
+  const ready = championsStatus === "ready";
+  const isFull = ready && currentIds.length >= MAX_POOL_SIZE;
+  const alreadyIn = ready && !!pendingChampion && currentIds.includes(pendingChampion.internalId);
   const slotRecs = isFull
     ? { core: [], flex: [], pocket: [] }
     : recommendForSlots(currentPool, champions, role);
@@ -93,7 +126,7 @@ export function ChampionPoolBuilder() {
   // Everything recomputes from the live pool, so taking a suggestion
   // immediately refills and re-adapts the lists.
   const recGroups = [
-    { id: "core" as const, show: currentIds.length < 3, items: slotRecs.core.map((r) => ({ champion: r.champion, reason: t("ChampionPoolBuilder.recommendationReason", { tag: r.missingTag }) })) },
+    { id: "core" as const, show: currentIds.length < 3, items: slotRecs.core.map((r) => ({ champion: r.champion, reason: t("ChampionPoolBuilder.recommendationReason", { tag: className(r.missingTag) }) })) },
     { id: "flex" as const, show: currentIds.length >= 3 && currentIds.length < 5, items: slotRecs.flex.map((r) => ({ champion: r.champion, reason: t("ChampionPoolBuilder.flexReason", { roles: r.extraRoles.map((x) => t(`Profile.positions.${x.toLowerCase()}`)).join(", ") }) })) },
     { id: "pocket" as const, show: currentIds.length === 5, items: slotRecs.pocket.map((r) => ({ champion: r.champion, reason: t("ChampionPoolBuilder.pocketReason", { difficulty: r.champion.difficulty }) })) },
   ].filter((g) => g.show && g.items.length > 0);
@@ -133,15 +166,21 @@ export function ChampionPoolBuilder() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {dataQuality ? <DataQualityNote quality={dataQuality.quality} patches={[dataQuality.patch]} /> : null}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {POOL_ROLES.map((r) => {
           const count = pools[r].length;
           const active = role === r;
+          const iconUrl = positionIconUrl(r);
           return (
             <button
               key={r}
               onClick={() => setRole(r)}
+              aria-pressed={active}
               style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
                 padding: "7px 14px",
                 borderRadius: 999,
                 border: `1px solid ${active ? COLORS.rose : COLORS.cardBorder}`,
@@ -151,6 +190,7 @@ export function ChampionPoolBuilder() {
                 cursor: "pointer",
               }}
             >
+              {iconUrl ? <img src={iconUrl} alt="" style={{ width: 14, height: 14 }} /> : null}
               {t(`Profile.positions.${r.toLowerCase()}`)}
               {count > 0 ? <span style={{ color: COLORS.muted }}> ({count})</span> : null}
             </button>
@@ -163,6 +203,14 @@ export function ChampionPoolBuilder() {
           <h2 style={cardTitleStyle}>{t("ChampionPoolBuilder.poolTitle")}</h2>
           <p style={cardSubtitleStyle}>{t("ChampionPoolBuilder.poolIntro")}</p>
 
+          {championsStatus === "loading" ? (
+            <p style={{ fontSize: 13, color: COLORS.muted, marginTop: 14 }}>{t("ProfileSearch.loading")}</p>
+          ) : championsStatus === "error" ? (
+            <div style={{ marginTop: 14 }}>
+              <LoadError message={t("Common.dataDragonError")} onRetry={() => setChampionsAttempt((n) => n + 1)} />
+            </div>
+          ) : (
+          <>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 14 }}>
             <div style={{ maxWidth: 280, flex: 1 }}>
               <ChampionCombobox
@@ -215,13 +263,13 @@ export function ChampionPoolBuilder() {
                         <span style={{ fontSize: 11, color: COLORS.muted }}>{champion.tags.map((tag) => t(`GoldCalculator.categories.${tag.toLowerCase()}`)).join(" / ")}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
-                        <IconButton onClick={() => handleMove(index, -1)} disabled={index === 0}>
+                        <IconButton onClick={() => handleMove(index, -1)} disabled={index === 0} label={t("ChampionPoolBuilder.moveUp")}>
                           <CaretUp size={15} />
                         </IconButton>
-                        <IconButton onClick={() => handleMove(index, 1)} disabled={index === currentPool.length - 1}>
+                        <IconButton onClick={() => handleMove(index, 1)} disabled={index === currentPool.length - 1} label={t("ChampionPoolBuilder.moveDown")}>
                           <CaretDown size={15} />
                         </IconButton>
-                        <IconButton onClick={() => handleRemove(champion.internalId)}>
+                        <IconButton onClick={() => handleRemove(champion.internalId)} label={t("ChampionPoolBuilder.remove")}>
                           <X size={15} />
                         </IconButton>
                       </div>
@@ -233,6 +281,8 @@ export function ChampionPoolBuilder() {
               );
             })}
           </div>
+          </>
+          )}
 
           {currentPool.length > 0 ? (
             <button onClick={handleClearRole} style={{ ...smallButtonStyle(false), width: "fit-content", marginTop: 14 }}>
@@ -284,13 +334,13 @@ export function ChampionPoolBuilder() {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {analysis.uniqueTags.map((tag) => (
                     <span key={tag} style={{ borderRadius: 999, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}99`, padding: "4px 10px", fontSize: 11 }}>
-                      {tag}
+                      {className(tag)}
                     </span>
                   ))}
                 </div>
                 {analysis.dominantTag ? (
                   <p style={{ fontSize: 12, color: COLORS.gold, marginTop: 4 }}>
-                    {t("ChampionPoolBuilder.dominantTagWarning", { tag: analysis.dominantTag })}
+                    {t("ChampionPoolBuilder.dominantTagWarning", { tag: className(analysis.dominantTag) })}
                   </p>
                 ) : null}
               </div>
@@ -302,7 +352,7 @@ export function ChampionPoolBuilder() {
                     <div style={{ height: "100%", width: `${analysis.averageDifficulty * 10}%`, borderRadius: 999, background: COLORS.rose }} />
                   </div>
                   <span style={{ width: 32, flexShrink: 0, textAlign: "right", fontSize: 12, color: COLORS.muted }}>
-                    {analysis.averageDifficulty.toFixed(1)}
+                    {new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(analysis.averageDifficulty)}
                   </span>
                 </div>
               ) : null}
@@ -314,11 +364,13 @@ export function ChampionPoolBuilder() {
   );
 }
 
-function IconButton({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+function IconButton({ onClick, disabled, label, children }: { onClick: () => void; disabled?: boolean; label: string; children: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      title={label}
+      aria-label={label}
       style={{
         width: 26,
         height: 26,
