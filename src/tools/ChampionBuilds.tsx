@@ -36,10 +36,10 @@ import { useI18n } from "../i18n";
 import { useOpenAccountPanel } from "../account-panel";
 import { useOpenTool, useRequestedChampion } from "../tool-navigation";
 import { LoadError } from "./LoadError";
-import { apiGet } from "../lib/api-fetch";
+import { apiGet, saveErrorMessage } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 import { AbilityBadge, RunePageView, SKILL_KEYS, SkillGrid, type Translate } from "./build-visuals";
-import { COLORS, FONT_HEADING, cardStyle, inputStyle, pillStyle } from "../theme";
+import { COLORS, FONT_HEADING, cardStyle, inputStyle, pillStyle, TYPE } from "../theme";
 
 // The desktop half of the web's champion pages (/champions/<champion>):
 // same public endpoint (/api/v1/champion-builds), same saved builds in the
@@ -225,7 +225,7 @@ export function ChampionBuilds() {
   const [itemQuery, setItemQuery] = useState("");
 
   useEffect(() => {
-    window.riftcompass.getSession().then(setUser);
+    window.riftcompass.getSession().then((session) => setUser(session.user));
   }, []);
 
   useEffect(() => {
@@ -439,9 +439,9 @@ export function ChampionBuilds() {
   }
 
   const card = cardStyle();
-  const sectionTitle = { fontFamily: FONT_HEADING, fontSize: 15, fontWeight: 400, margin: 0 } as const;
+  const sectionTitle = { fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 } as const;
   const subTitle = {
-    fontSize: 11,
+    fontSize: TYPE.label,
     fontWeight: 600,
     letterSpacing: 0.6,
     textTransform: "uppercase" as const,
@@ -467,7 +467,7 @@ export function ChampionBuilds() {
       </div>
 
       {!champion ? (
-        <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.pickChampion")}</p>
+        <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.pickChampion")}</p>
       ) : (
         <>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
@@ -480,16 +480,16 @@ export function ChampionBuilds() {
                 />
               ) : null}
               <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                <h2 style={{ fontFamily: FONT_HEADING, fontSize: 20, fontWeight: 400, margin: 0 }}>{champion.name}</h2>
+                <h2 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>{champion.name}</h2>
                 {damageType ? (
-                  <span style={{ fontSize: 12, color: COLORS.muted }}>{t(`ChampionBuilds.damageTypes.${damageType}`)}</span>
+                  <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t(`ChampionBuilds.damageTypes.${damageType}`)}</span>
                 ) : null}
               </div>
             </div>
             {roleSample && roleSample.games >= MIN_GAMES_FOR_WINRATE ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, marginLeft: "auto" }}>
                 <span style={{ fontFamily: FONT_HEADING, fontSize: 18 }}>{formatPercent(locale, winRatePercent(roleSample.games, roleSample.wins) / 100)}</span>
-                <span style={{ fontSize: 11, color: COLORS.muted, textAlign: "right" }}>
+                <span style={{ fontSize: TYPE.label, color: COLORS.muted, textAlign: "right" }}>
                   {t("ChampionBuilds.winRateIn", {
                     position: t(`Profile.positions.${role.toLowerCase()}`),
                     games: roleSample.games.toLocaleString(locale),
@@ -522,7 +522,7 @@ export function ChampionBuilds() {
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 12, color: COLORS.muted, marginRight: 2 }}>{t("ChampionBuilds.rank")}</span>
+            <span style={{ fontSize: TYPE.caption, color: COLORS.muted, marginRight: 2 }}>{t("ChampionBuilds.rank")}</span>
             {RANK_TIERS.map((tier) => (
               <button key={tier} onClick={() => setRank(tier)} aria-pressed={tier === rank} style={pillStyle(tier === rank, "compact")}>
                 {t(`MetaTierList.rankTiers.${tier}`)}
@@ -531,11 +531,11 @@ export function ChampionBuilds() {
           </div>
 
           {board && (board.dataPatches?.length ?? 1) > 1 ? (
-            <p style={{ fontSize: 13, color: COLORS.gold, margin: 0 }}>
+            <p style={{ fontSize: TYPE.body, color: COLORS.gold, margin: 0 }}>
               {t("ChampionBuilds.dataFromPatches", { patches: board.patch, current: board.currentPatch })}
             </p>
           ) : board && board.patch !== board.currentPatch ? (
-            <p style={{ fontSize: 13, color: COLORS.gold, margin: 0 }}>
+            <p style={{ fontSize: TYPE.body, color: COLORS.gold, margin: 0 }}>
               {t("ChampionBuilds.dataFromPatch", { patch: board.patch, current: board.currentPatch })}
             </p>
           ) : null}
@@ -544,14 +544,14 @@ export function ChampionBuilds() {
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
               <h2 style={sectionTitle}>{t("ChampionBuilds.popularBuild")}</h2>
               {board ? (
-                <span style={{ fontSize: 11, color: COLORS.muted }}>
+                <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                   {t("ChampionBuilds.popularBuildSource", { patch: board.patch })}
                   {openTool && champion ? (
                     <>
                       {" · "}
                       <button
                         onClick={() => openTool({ toolId: "matchups", championInternalId: champion.internalId, role, rank })}
-                        style={{ background: "none", border: "none", color: COLORS.rose, fontSize: 11, cursor: "pointer", padding: 0 }}
+                        style={{ background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.label, cursor: "pointer", padding: 0 }}
                       >
                         {t("ChampionBuilds.openMatchups")}
                       </button>
@@ -566,10 +566,10 @@ export function ChampionBuilds() {
               boardStatus === "error" ? (
                 <LoadError error={boardError} onRetry={() => setBoardAttempt((n) => n + 1)} />
               ) : (
-                <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+                <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
               )
             ) : board.runePages.length === 0 && board.itemCores.length === 0 ? (
-              <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noBuildData")}</p>
+              <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noBuildData")}</p>
             ) : (
               <>
                 {board.runePages.length > 0 ? (
@@ -671,7 +671,7 @@ export function ChampionBuilds() {
                     </>
                   ) : user === null ? (
                     <>
-                      <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ChampionBuilds.loginToSave")}</span>
+                      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ChampionBuilds.loginToSave")}</span>
                       {openAccountPanel ? (
                         <button onClick={openAccountPanel} style={pillStyle(false, "compact")}>
                           {t("ChampionBuilds.loginToSaveLink")}
@@ -688,7 +688,7 @@ export function ChampionBuilds() {
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
               <h2 style={sectionTitle}>{t("ChampionBuilds.skillOrder")}</h2>
               {board && board.skillOrder.sampleGames > 0 ? (
-                <span style={{ fontSize: 11, color: COLORS.muted }}>
+                <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                   {t("ChampionBuilds.games", { games: board.skillOrder.sampleGames })}
                 </span>
               ) : null}
@@ -697,17 +697,17 @@ export function ChampionBuilds() {
               boardStatus === "error" ? (
                 <LoadError error={boardError} onRetry={() => setBoardAttempt((n) => n + 1)} />
               ) : (
-                <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+                <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
               )
             ) : board.skillOrder.path.length === 0 ? (
-              <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noSkillOrderData")}</p>
+              <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noSkillOrderData")}</p>
             ) : (
               <>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ChampionBuilds.maxOrder")}</span>
+                  <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ChampionBuilds.maxOrder")}</span>
                   {board.skillOrder.maxPriority.map((slot, index) => (
                     <span key={slot} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {index > 0 ? <span style={{ fontSize: 11, color: COLORS.muted }}>&gt;</span> : null}
+                      {index > 0 ? <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>&gt;</span> : null}
                       <AbilityBadge slot={slot} iconUrl={abilityIcon(slot)} />
                     </span>
                   ))}
@@ -733,13 +733,13 @@ export function ChampionBuilds() {
             </div>
 
             {error && draft === null ? (
-              <span style={{ fontSize: 12, color: COLORS.destructive }}>{t(`ChampionBuilds.errors.${error}`)}</span>
+              <span style={{ fontSize: TYPE.caption, color: COLORS.destructive }}>{saveErrorMessage(t, "ChampionBuilds.errors", error)}</span>
             ) : null}
 
             {user === null ? (
-              <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.loginToSave")}</p>
+              <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.loginToSave")}</p>
             ) : championBuilds.length === 0 ? (
-              <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noSavedBuilds")}</p>
+              <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noSavedBuilds")}</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {championBuilds.map((build) => (
@@ -758,12 +758,12 @@ export function ChampionBuilds() {
                   >
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
                       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>{build.name}</span>
-                        <span style={{ fontSize: 11, color: COLORS.muted }}>
+                        <span style={{ fontSize: TYPE.body, fontWeight: 600 }}>{build.name}</span>
+                        <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                           {t(`Profile.positions.${build.role.toLowerCase()}`)}
                         </span>
                         {build.source === "crawler" && build.sourcePatch ? (
-                          <span style={{ fontSize: 11, color: COLORS.muted }}>
+                          <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                             {t("ChampionBuilds.fromTrackedGames", { patch: build.sourcePatch })}
                           </span>
                         ) : null}
@@ -795,11 +795,11 @@ export function ChampionBuilds() {
                         ))}
                       </div>
                       {build.skillPriority && build.skillPriority.length > 0 ? (
-                        <span style={{ fontSize: 11, color: COLORS.muted }}>
+                        <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                           {t("ChampionBuilds.maxOrder")}: {build.skillPriority.map((slot) => SKILL_KEYS[slot]).join(" > ")}
                         </span>
                       ) : null}
-                      {build.notes ? <span style={{ fontSize: 11, color: COLORS.muted }}>{build.notes}</span> : null}
+                      {build.notes ? <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{build.notes}</span> : null}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <button
@@ -858,7 +858,7 @@ export function ChampionBuilds() {
 // final"): salida, terminados en orden de compra y situacionales, cada uno
 // con su muestra en el tooltip. Puerto del ItemPlanView de la ficha web.
 const PLAN_SUBTITLE: React.CSSProperties = {
-  fontSize: 11,
+  fontSize: TYPE.label,
   fontWeight: 600,
   letterSpacing: 0.6,
   textTransform: "uppercase" as const,
@@ -896,7 +896,7 @@ function ItemPlanView({ plan, version, catalog }: { plan: ItemPlan; version: str
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
             {plan.itemOrder.map((e, i) => (
               <span key={e.slot} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                {i > 0 ? <span style={{ fontSize: 11, color: COLORS.muted }}>→</span> : null}
+                {i > 0 ? <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>→</span> : null}
                 {icon(e.itemId, t("ChampionBuilds.games", { games: e.games }))}
               </span>
             ))}
@@ -967,8 +967,8 @@ function OptionRow({
     >
       {children}
       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: rate >= 53 ? COLORS.gold : COLORS.muted }}>{formatPercent(locale, rate / 100)}</span>
-        <span style={{ fontSize: 11, color: COLORS.muted }}>{gamesLabel}</span>
+        <span style={{ fontSize: TYPE.caption, fontWeight: 700, color: rate >= 53 ? COLORS.gold : COLORS.muted }}>{formatPercent(locale, rate / 100)}</span>
+        <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{gamesLabel}</span>
       </span>
     </button>
   );
@@ -1059,7 +1059,7 @@ function BuildEditor({
     .map((slot, index) => ({ level: index + 1, skillSlot: slot }))
     .filter((step) => step.skillSlot > 0);
 
-  const label = { fontSize: 11, color: COLORS.muted, margin: 0 } as const;
+  const label = { fontSize: TYPE.label, color: COLORS.muted, margin: 0 } as const;
   const runeButton = (picked: boolean) => ({
     border: `1px solid ${picked ? COLORS.rose : "transparent"}`,
     background: "none",
@@ -1223,7 +1223,7 @@ function BuildEditor({
           );
         })}
         {incompleteRunes ? (
-          <span style={{ fontSize: 11, color: COLORS.gold }}>{t("ChampionBuilds.runesIncomplete")}</span>
+          <span style={{ fontSize: TYPE.label, color: COLORS.gold }}>{t("ChampionBuilds.runesIncomplete")}</span>
         ) : null}
       </div>
 
@@ -1258,7 +1258,7 @@ function BuildEditor({
         <p style={label}>{t("ChampionBuilds.items")}</p>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
           {draft.items.length === 0 ? (
-            <span style={{ fontSize: 11, color: COLORS.muted }}>{t("ChampionBuilds.noItemsYet")}</span>
+            <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("ChampionBuilds.noItemsYet")}</span>
           ) : (
             draft.items.map((id, index) => (
               <button
@@ -1289,7 +1289,7 @@ function BuildEditor({
               border: "none",
               borderBottom: `1px solid ${COLORS.cardBorder}`,
               color: COLORS.text,
-              fontSize: 13,
+              fontSize: TYPE.body,
               padding: "4px 4px 4px 22px",
             }}
           />
@@ -1323,27 +1323,27 @@ function BuildEditor({
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <p style={label}>{t("ChampionBuilds.skillOrder")}</p>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ChampionBuilds.maxOrder")}</span>
+          <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ChampionBuilds.maxOrder")}</span>
           {[1, 2, 3].map((slot) => {
             const position = draft.skillPriority.indexOf(slot);
             return (
               <button key={slot} onClick={() => togglePriority(slot)} style={pillStyle(position >= 0, "compact")}>
                 {SKILL_KEYS[slot]}
-                {position >= 0 ? <span style={{ fontSize: 9, marginLeft: 3 }}>{position + 1}</span> : null}
+                {position >= 0 ? <span style={{ fontSize: TYPE.micro, marginLeft: 3 }}>{position + 1}</span> : null}
               </button>
             );
           })}
           {draft.skillPriority.length > 0 ? (
             <button
               onClick={() => patch({ skillPriority: [] })}
-              style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer" }}
+              style={{ background: "none", border: "none", color: COLORS.muted, fontSize: TYPE.label, cursor: "pointer" }}
             >
               {t("ChampionBuilds.clear")}
             </button>
           ) : null}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ChampionBuilds.levelByLevel")}</span>
+          <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ChampionBuilds.levelByLevel")}</span>
           {popularPath.length > 0 ? (
             <button
               onClick={() => {
@@ -1351,7 +1351,7 @@ function BuildEditor({
                 for (const step of popularPath) filled[step.level - 1] = step.skillSlot;
                 patch({ skillOrder: filled });
               }}
-              style={{ background: "none", border: "none", color: COLORS.rose, fontSize: 11, cursor: "pointer" }}
+              style={{ background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.label, cursor: "pointer" }}
             >
               {t("ChampionBuilds.copyPopularOrder")}
             </button>
@@ -1359,7 +1359,7 @@ function BuildEditor({
           {draft.skillOrder ? (
             <button
               onClick={() => patch({ skillOrder: null })}
-              style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer" }}
+              style={{ background: "none", border: "none", color: COLORS.muted, fontSize: TYPE.label, cursor: "pointer" }}
             >
               {t("ChampionBuilds.clear")}
             </button>
@@ -1380,7 +1380,7 @@ function BuildEditor({
         />
       </label>
 
-      {error ? <span style={{ fontSize: 12, color: COLORS.destructive }}>{t(`ChampionBuilds.errors.${error}`)}</span> : null}
+      {error ? <span style={{ fontSize: TYPE.caption, color: COLORS.destructive }}>{saveErrorMessage(t, "ChampionBuilds.errors", error)}</span> : null}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button

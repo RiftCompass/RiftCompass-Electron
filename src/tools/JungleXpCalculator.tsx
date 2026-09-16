@@ -14,7 +14,7 @@ import {
   type RouteEntry,
 } from "../lib/jungle-xp";
 import { useI18n } from "../i18n";
-import { COLORS, FONT_HEADING } from "../theme";
+import { COLORS, FONT_HEADING, TYPE } from "../theme";
 
 // One accent per clear, used for the reference table's column groups and
 // the clears legend below it (mirrors the color-coded design of the
@@ -43,12 +43,12 @@ export function JungleXpCalculator() {
     result.toNext === null ? 1 : result.intoLevel / (result.intoLevel + result.toNext);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 900 }}>
+    <div className="rc-stack" style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 900 }}>
       {/* Route simulator */}
       <div style={sectionStyle}>
         <span style={sectionTitleStyle}>{t("JungleXpCalculator.simTitle")}</span>
-        <span style={{ fontSize: 13, color: COLORS.muted }}>{t("JungleXpCalculator.simSubtitle")}</span>
-        <span style={{ fontSize: 12, color: COLORS.gold }}>{t("JungleXpCalculator.firstCampRule")}</span>
+        <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("JungleXpCalculator.simSubtitle")}</span>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.gold }}>{t("JungleXpCalculator.firstCampRule")}</span>
 
         <div
           style={{
@@ -104,7 +104,7 @@ export function JungleXpCalculator() {
                   <img src={camp.iconUrl} alt="" style={{ width: 44, height: 44, borderRadius: 9 }} />
                   <span
                     style={{
-                      fontSize: 11,
+                      fontSize: TYPE.label,
                       textAlign: "center",
                       lineHeight: 1.2,
                       minHeight: 27,
@@ -115,7 +115,7 @@ export function JungleXpCalculator() {
                   >
                     {t(`JungleXpCalculator.camps.${camp.id}`)}
                   </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: disabled ? COLORS.muted : COLORS.gold }}>
+                  <span style={{ fontSize: TYPE.caption, fontWeight: 700, color: disabled ? COLORS.muted : COLORS.gold }}>
                     {disabled ? "—" : `+${xp}`}
                   </span>
                 </button>
@@ -138,7 +138,7 @@ export function JungleXpCalculator() {
                     border: `1px solid ${override !== undefined ? `${COLORS.rose}66` : COLORS.cardBorder}`,
                     borderRadius: 7,
                     padding: "3px 4px",
-                    fontSize: 11,
+                    fontSize: TYPE.label,
                     cursor: "pointer",
                   }}
                 >
@@ -154,10 +154,10 @@ export function JungleXpCalculator() {
           })}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 220px", gap: 16, alignItems: "start" }}>
+        <div className="rc-camps-grid" style={{ display: "grid", gap: 16, alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 12, color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.6 }}>
+              <span style={{ fontSize: TYPE.caption, color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.6 }}>
                 {t("JungleXpCalculator.routeLabel")}
               </span>
               {route.length > 0 && (
@@ -174,7 +174,7 @@ export function JungleXpCalculator() {
               )}
             </div>
             {route.length === 0 ? (
-              <span style={{ fontSize: 13, color: `${COLORS.muted}bb` }}>{t("JungleXpCalculator.routeEmpty")}</span>
+              <span style={{ fontSize: TYPE.body, color: `${COLORS.muted}bb` }}>{t("JungleXpCalculator.routeEmpty")}</span>
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {result.steps.map((step, i) => {
@@ -198,7 +198,7 @@ export function JungleXpCalculator() {
                     >
                       <span style={{ fontSize: 10, color: COLORS.muted, width: 14, textAlign: "center" }}>{i + 1}</span>
                       <img src={camp.iconUrl} alt="" style={{ width: 22, height: 22, borderRadius: 5 }} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.gold }}>+{step.xpGained}</span>
+                      <span style={{ fontSize: TYPE.label, fontWeight: 700, color: COLORS.gold }}>+{step.xpGained}</span>
                     </button>
                   );
                 })}
@@ -207,18 +207,18 @@ export function JungleXpCalculator() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <span style={{ fontFamily: FONT_HEADING, fontSize: 30, color: COLORS.gold, lineHeight: 1 }}>
+            <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.display, color: COLORS.gold, lineHeight: 1 }}>
               {t("JungleXpCalculator.levelReached", { level: result.level })}
             </span>
             <div style={{ height: 8, borderRadius: 999, background: `${COLORS.background}99`, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${Math.round(progress * 100)}%`, borderRadius: 999, background: COLORS.gold }} />
             </div>
-            <span style={{ fontSize: 12, color: COLORS.muted }}>
+            <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
               {result.toNext === null
                 ? t("JungleXpCalculator.simMaxed")
                 : t("JungleXpCalculator.toNextLevel", { xp: result.toNext, level: result.level + 1 })}
             </span>
-            <span style={{ fontSize: 12, color: COLORS.muted }}>
+            <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
               {t("JungleXpCalculator.xpTotal", { xp: result.totalXp })}
             </span>
           </div>
@@ -242,7 +242,7 @@ export function JungleXpCalculator() {
                     alt=""
                     style={{ width: 48, height: 48, borderRadius: 9, border: `1px solid ${COLORS.gold}55` }}
                   />
-                  <span style={{ fontSize: 11, color: COLORS.muted }}>
+                  <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                     {t("JungleXpCalculator.smiteTreatsCount", { n: treats })}
                   </span>
                 </div>
@@ -259,19 +259,19 @@ export function JungleXpCalculator() {
                           alt=""
                           style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${active ? `${COLORS.gold}88` : COLORS.cardBorder}`, flexShrink: 0 }}
                         />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: active ? COLORS.gold : COLORS.text }}>
+                        <span style={{ fontSize: TYPE.body, fontWeight: 600, color: active ? COLORS.gold : COLORS.text }}>
                           {t(`JungleXpCalculator.smiteStages.${stage.id}`)}
                         </span>
-                        <span style={{ fontSize: 12, color: COLORS.muted }}>
+                        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
                           {stage.treats === 0
                             ? t("JungleXpCalculator.smiteBaseTreats")
                             : t("JungleXpCalculator.smiteTreats", { n: stage.treats })}
                         </span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.gold }}>
+                        <span style={{ fontSize: TYPE.body, fontWeight: 700, color: COLORS.gold }}>
                           {t("JungleXpCalculator.smiteDamage", { dmg: stage.damage })}
                         </span>
                         {stage.hitsNearby && (
-                          <span style={{ fontSize: 12, color: COLORS.muted }}>{t("JungleXpCalculator.smiteNearby")}</span>
+                          <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("JungleXpCalculator.smiteNearby")}</span>
                         )}
                       </div>
                     );
@@ -294,7 +294,7 @@ export function JungleXpCalculator() {
           style={{ overflowX: "auto", borderRadius: 12, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}d9` }}
           onMouseLeave={() => setHover(null)}
         >
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: TYPE.body }}>
             <thead>
               <tr>
                 <th style={{ ...thStyle, textAlign: "left", paddingLeft: 14 }}>{t("JungleXpCalculator.campHeader")}</th>
@@ -331,7 +331,7 @@ export function JungleXpCalculator() {
                       <img src={camp.iconUrl} alt="" style={{ width: 26, height: 26, borderRadius: 6 }} />
                       <span>{t(`JungleXpCalculator.camps.${camp.id}`)}</span>
                       {camp.optimalPath && (
-                        <span style={{ fontSize: 9, fontWeight: 700, color: COLORS.gold, border: `1px solid ${COLORS.gold}66`, borderRadius: 999, padding: "1px 6px" }}>
+                        <span style={{ fontSize: TYPE.micro, fontWeight: 700, color: COLORS.gold, border: `1px solid ${COLORS.gold}66`, borderRadius: 999, padding: "1px 6px" }}>
                           {t("JungleXpCalculator.optimalPath")}
                         </span>
                       )}
@@ -368,17 +368,17 @@ export function JungleXpCalculator() {
           {JUNGLE_CLEAR_ORDER.map((clear, i) => (
             <span key={clear.clear} style={{ display: "inline-flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ width: 8, height: 8, borderRadius: 999, background: CLEAR_COLORS[i], alignSelf: "center" }} />
-              <span style={{ fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase", color: COLORS.muted }}>
+              <span style={{ fontSize: TYPE.label, letterSpacing: 0.6, textTransform: "uppercase", color: COLORS.muted }}>
                 {t(`JungleXpCalculator.clears.c${clear.clear}`)}
               </span>
-              <span style={{ fontFamily: FONT_HEADING, fontSize: 15, color: CLEAR_COLORS[i] }}>
+              <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading, color: CLEAR_COLORS[i] }}>
                 {clear.levels.map((lvl) => t("JungleXpCalculator.level", { level: lvl })).join(" – ")}
               </span>
             </span>
           ))}
         </div>
 
-        <p style={{ fontSize: 11, color: `${COLORS.muted}bb`, margin: 0, lineHeight: 1.6 }}>{t("JungleXpCalculator.footnote")}</p>
+        <p style={{ fontSize: TYPE.label, color: `${COLORS.muted}bb`, margin: 0, lineHeight: 1.6 }}>{t("JungleXpCalculator.footnote")}</p>
       </div>
     </div>
   );
@@ -392,7 +392,7 @@ const sectionStyle: React.CSSProperties = {
 
 const sectionTitleStyle: React.CSSProperties = {
   fontFamily: FONT_HEADING,
-  fontSize: 13,
+  fontSize: TYPE.body,
   letterSpacing: 1.2,
   textTransform: "uppercase",
   color: COLORS.muted,
@@ -401,7 +401,7 @@ const sectionTitleStyle: React.CSSProperties = {
 const thStyle: React.CSSProperties = {
   padding: "10px 10px",
   fontFamily: FONT_HEADING,
-  fontSize: 11,
+  fontSize: TYPE.label,
   fontWeight: 400,
   letterSpacing: 0.8,
   textTransform: "uppercase",
@@ -420,6 +420,6 @@ const miniButtonStyle: React.CSSProperties = {
   border: `1px solid ${COLORS.cardBorder}`,
   background: "none",
   color: COLORS.muted,
-  fontSize: 11,
+  fontSize: TYPE.label,
   cursor: "pointer",
 };

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CaretRight, Path, ShieldWarning, Sword, X, type Icon } from "@phosphor-icons/react";
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
 import { DiagnosticBar, formatDiagnosticPair } from "./ProfileDetail";
-import { COLORS, FONT_HEADING, inputStyle } from "../theme";
+import { COLORS, FONT_HEADING, inputStyle, TYPE } from "../theme";
 import { useI18n } from "../i18n";
 import { formatTierRank, PLATFORM_LABELS } from "../lib/rank-lp";
 import {
@@ -117,16 +117,16 @@ export function ProfileCompareEntry({ initialTarget }: { initialTarget?: Profile
       <ChampionSplashAccent championId="Nami" opacity={16} style={{ bottom: -60, left: -60, width: 460, height: 300, transform: "rotate(2deg)" }} />
       <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 20 }}>
         <div>
-          <h1 style={{ fontFamily: FONT_HEADING, fontSize: 22, fontWeight: 400, margin: 0 }}>{t("ProfileSearch.compareTitle")}</h1>
-          <p style={{ color: COLORS.muted, fontSize: 13, marginTop: 6 }}>{t("ProfileSearch.compareIntro")}</p>
+          <h1 tabIndex={-1} style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0, outline: "none" }}>{t("ProfileSearch.compareTitle")}</h1>
+          <p style={{ color: COLORS.muted, fontSize: TYPE.body, marginTop: 6 }}>{t("ProfileSearch.compareIntro")}</p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: COLORS.muted }}>
+          <span style={{ fontSize: TYPE.label, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: COLORS.muted }}>
             {t("ProfileSearch.comparePreviewEyebrow")}
           </span>
           <ul style={{ display: "flex", flexDirection: "column", gap: 10, margin: 0, padding: 0, listStyle: "none" }}>
             {COMPARE_PREVIEW_ITEMS.map(({ key, Icon }) => (
-              <li key={key} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+              <li key={key} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: TYPE.body }}>
                 <Icon size={15} color={COLORS.rose} style={{ flexShrink: 0 }} />
                 <span>{t(`ProfileSearch.${key}`)}</span>
               </li>
@@ -187,7 +187,7 @@ export function ProfileCompareEntry({ initialTarget }: { initialTarget?: Profile
             {t("ProfileSearch.compareStart")}
           </button>
         </div>
-        {formError ? <span style={{ fontSize: 12, color: COLORS.destructive }}>{formError}</span> : null}
+        {formError ? <span style={{ fontSize: TYPE.caption, color: COLORS.destructive }}>{formError}</span> : null}
       </div>
     </div>
   );
@@ -222,7 +222,7 @@ function CompareSlot({
     // state — see ProfileCompareEntry's handleCompare for why.
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontSize: 13, color: COLORS.muted, fontWeight: 600 }}>{label}</span>
+        <span style={{ fontSize: TYPE.body, color: COLORS.muted, fontWeight: 600 }}>{label}</span>
         {showRemove ? (
           <button
             onClick={onRemove}
@@ -265,7 +265,7 @@ function PlatformBadge({ platform }: { platform: string }) {
   return (
     <span
       style={{
-        fontSize: 11,
+        fontSize: TYPE.label,
         color: COLORS.muted,
         border: `1px solid ${COLORS.cardBorder}`,
         borderRadius: 999,
@@ -349,7 +349,7 @@ function ProfileCompareResult({ targets, onReset }: { targets: ProfileTarget[]; 
     <div style={{ maxWidth: 1100, margin: "40px auto 0", display: "flex", flexDirection: "column", gap: 16 }}>
       <button
         onClick={onReset}
-        style={{ display: "flex", alignItems: "center", gap: 6, alignSelf: "flex-start", background: "none", border: "none", color: COLORS.muted, fontSize: 13, cursor: "pointer", padding: 0 }}
+        style={{ display: "flex", alignItems: "center", gap: 6, alignSelf: "flex-start", background: "none", border: "none", color: COLORS.muted, fontSize: TYPE.body, cursor: "pointer", padding: 0 }}
       >
         <X size={14} /> {t("ProfileSearch.searchAgain")}
       </button>
@@ -377,7 +377,7 @@ function ProfileCompareResult({ targets, onReset }: { targets: ProfileTarget[]; 
             style={{ right: -690, top: 0, width: 1040, height: 680, transform: "rotate(1deg)" }}
           />
         ) : null}
-        <h1 style={{ fontFamily: FONT_HEADING, fontSize: 22, fontWeight: 400, margin: 0 }}>
+        <h1 tabIndex={-1} style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0, outline: "none" }}>
           {targets.map((target, i) => {
             const slot = slots[i];
             return (
@@ -421,7 +421,7 @@ function ProfileCompareResult({ targets, onReset }: { targets: ProfileTarget[]; 
               {successful.length === 2 && (
                 <div style={cardStyle}>
                   <span style={{ fontSize: 16, fontWeight: 600 }}>{t("ProfileSearch.headToHead")}</span>
-                  <p style={{ fontSize: 13, color: COLORS.muted, margin: "4px 0 12px" }}>
+                  <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: "4px 0 12px" }}>
                     {t("ProfileSearch.headToHeadIntro", {
                       count: Math.min(
                         successfulProfiles[0].profile.recentMatches.length,
@@ -444,7 +444,7 @@ function ProfileCompareResult({ targets, onReset }: { targets: ProfileTarget[]; 
         ) : (
           // Antes desaparecia todo sin una palabra y la pantalla se quedaba
           // en dos columnas y vacio. La web si explica el hueco.
-          <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.cannotCompare")}</p>
+          <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.cannotCompare")}</p>
         )}
       </div>
     </div>
@@ -483,10 +483,10 @@ function ComparePlayerSlot({
         <PlatformBadge platform={target.platform} />
       </div>
       {slot.kind === "loading" ? (
-        <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+        <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-          <p style={{ fontSize: 12, color: COLORS.destructive, margin: 0 }}>
+          <p style={{ fontSize: TYPE.caption, color: COLORS.destructive, margin: 0 }}>
             {t(`ProfileSearch.errors.${errorMessageKey(slot.error, slot.status)}`)}
           </p>
           <RetryCountdownButton
@@ -512,11 +512,11 @@ function CompareSkillCard({ profiles, accents }: { profiles: ProfileApiResponse[
   return (
     <div style={cardStyle}>
       <span style={{ fontSize: 16, fontWeight: 700 }}>{t("ProfileSearch.sideBySideTitle")}</span>
-      <p style={{ fontSize: 13, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.sideBySideSubtitle")}</p>
+      <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.sideBySideSubtitle")}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 12 }}>
         {DIAGNOSTIC_METRICS.map((metric) => (
           <div key={metric} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 13, color: COLORS.muted }}>{t(`Roadmap.${metric}.short`)}</span>
+            <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t(`Roadmap.${metric}.short`)}</span>
             {diagnostics.map((diagnostic, pi) => {
               const accent = accents[pi];
               const node = diagnostic.ready ? diagnostic.nodes.find((n) => n.metric === metric) : undefined;
@@ -526,7 +526,7 @@ function CompareSkillCard({ profiles, accents }: { profiles: ProfileApiResponse[
                   <div style={{ flex: 1, height: 6, borderRadius: 999, background: `${COLORS.background}99`, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${value === null ? 0 : (value / SIDE_BY_SIDE_CEILING) * 100}%`, borderRadius: 999, background: accent }} />
                   </div>
-                  <span style={{ width: 42, flexShrink: 0, fontSize: 12, color: accent, textAlign: "right" }}>{value === null ? "—" : `${value}%`}</span>
+                  <span style={{ width: 42, flexShrink: 0, fontSize: TYPE.caption, color: accent, textAlign: "right" }}>{value === null ? "—" : `${value}%`}</span>
                 </div>
               );
             })}
@@ -535,7 +535,7 @@ function CompareSkillCard({ profiles, accents }: { profiles: ProfileApiResponse[
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 14 }}>
         {profiles.map((p, pi) => (
-          <span key={pi} style={{ fontSize: 12, color: accents[pi] }}>
+          <span key={pi} style={{ fontSize: TYPE.caption, color: accents[pi] }}>
             {p.profile.gameName}#{p.profile.tagLine}
           </span>
         ))}
@@ -560,14 +560,14 @@ function CompareSharedFocus({ profiles }: { profiles: ProfileApiResponse[] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 6 }}>
       <h2 style={{ fontFamily: FONT_HEADING, fontSize: 17, fontWeight: 400, margin: 0 }}>{t("ProfileSearch.sharedFocusTitle")}</h2>
       {shared.length === 0 ? (
-        <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>
+        <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>
           {t("ProfileSearch.sharedFocusNone", {
             count: Math.min(...profiles.map((p) => p.profile.recentMatches.length)),
           })}
         </p>
       ) : (
         shared.map((node) => (
-          <p key={node.metric} style={{ fontSize: 13, margin: 0, borderLeft: `2px solid ${COLORS.badMild}`, paddingLeft: 10, lineHeight: 1.5 }}>
+          <p key={node.metric} style={{ fontSize: TYPE.body, margin: 0, borderLeft: `2px solid ${COLORS.badMild}`, paddingLeft: 10, lineHeight: 1.5 }}>
             {t(`ProfileSearch.sharedTips.${node.metric}`)}
           </p>
         ))
@@ -593,7 +593,7 @@ function CompareRankLine({
   const emblem = entry ? rankEmblemUrl(entry.tier) : null;
   const roleIcon = topRole && topRole.games > 0 ? positionIconUrl(topRole.position) : null;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 12, color: COLORS.muted }}>
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: TYPE.caption, color: COLORS.muted }}>
       {emblem && <img src={emblem} alt="" style={{ width: 18, height: 18 }} />}
       <span>
         {label}: {entry ? `${formatTierRank(entry.tier, entry.rank)} · ${new Intl.NumberFormat(locale).format(entry.leaguePoints)} LP · ${winRate}% WR` : t("ProfileSearch.unranked")}
@@ -699,7 +699,7 @@ function RoadmapComparisonCard({ profiles, accents }: { profiles: ProfileApiResp
   return (
     <div style={{ ...cardStyle, backgroundImage: gradientImage }}>
       <span style={{ fontSize: 16, fontWeight: 700 }}>{t("ProfileSearch.roadmapComparisonTitle")}</span>
-      <p style={{ fontSize: 13, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.roadmapComparisonSubtitle")}</p>
+      <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: "4px 0 0" }}>{t("ProfileSearch.roadmapComparisonSubtitle")}</p>
 
       <ul style={{ display: "flex", flexDirection: "column", gap: 4, margin: "12px 0 0", padding: 0, listStyle: "none" }}>
         {profiles.map((p, i) => {
@@ -775,7 +775,7 @@ function RoadmapMetricRow({
         borderTop: isLast ? undefined : `1px solid ${COLORS.cardBorder}66`,
       }}
     >
-      <span style={{ fontSize: 13, fontWeight: 600 }}>{t(`Roadmap.${metric}.title`)}</span>
+      <span style={{ fontSize: TYPE.body, fontWeight: 600 }}>{t(`Roadmap.${metric}.title`)}</span>
       {showNames ? (
         <div style={columnGrid}>
           {profiles.map((p, i) => (
@@ -783,7 +783,7 @@ function RoadmapMetricRow({
               key={i}
               title={p.profile.gameName}
               style={{
-                fontSize: 11,
+                fontSize: TYPE.label,
                 fontWeight: 600,
                 color: accents[i],
                 overflow: "hidden",
@@ -799,13 +799,13 @@ function RoadmapMetricRow({
       <div style={{ ...columnGrid, rowGap: 8 }}>
         {profiles.map((_, i) => {
           const cell = cells[i];
-          if (!cell) return <span key={i} style={{ fontSize: 13, color: COLORS.muted }}>—</span>;
+          if (!cell) return <span key={i} style={{ fontSize: TYPE.body, color: COLORS.muted }}>—</span>;
           const pair = formatDiagnosticPair(cell.node, locale);
           return (
             <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: 13 }}>
+              <span style={{ fontSize: TYPE.body }}>
                 <span style={{ fontWeight: 600 }}>{pair.value}</span>{" "}
-                <span style={{ fontSize: 11, color: COLORS.muted }}>
+                <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                   · {referenceLabel} {pair.reference}
                 </span>
               </span>
@@ -818,7 +818,7 @@ function RoadmapMetricRow({
           the tips don't visually clutter the screen — a native <details>
           needs no state here. */}
       <details>
-        <summary style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: COLORS.muted, cursor: "pointer", listStyle: "none" }}>
+        <summary style={{ display: "flex", alignItems: "center", gap: 4, fontSize: TYPE.label, color: COLORS.muted, cursor: "pointer", listStyle: "none" }}>
           <CaretRight size={12} />
           {t("ProfileSearch.roadmapTips")}
         </summary>
@@ -827,7 +827,7 @@ function RoadmapMetricRow({
             const cell = cells[i];
             if (!cell) return null;
             return (
-              <li key={i} style={{ fontSize: 12, color: COLORS.muted }}>
+              <li key={i} style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
                 <span style={{ fontWeight: 600, color: accents[i] }}>{p.profile.gameName}:</span> {t(tipKey(cell.node, cell.diagnostic))}
               </li>
             );
@@ -875,13 +875,13 @@ function HeadToHeadTable({
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                fontSize: 15,
+                fontSize: TYPE.subheading,
                 padding: "10px 0",
                 borderTop: i > 0 ? `1px solid ${COLORS.cardBorder}66` : "none",
               }}
             >
               <span style={{ width: 64, flexShrink: 0, fontWeight: aWins ? 700 : 400, color: aWins ? colorA : COLORS.text }}>{formatDecimal(locale, s.valueA)}</span>
-              <span style={{ flex: 1, textAlign: "center", color: COLORS.muted, fontSize: 12 }}>{t(`ProfileSearch.h2h.${s.key}`)}</span>
+              <span style={{ flex: 1, textAlign: "center", color: COLORS.muted, fontSize: TYPE.caption }}>{t(`ProfileSearch.h2h.${s.key}`)}</span>
               <span style={{ width: 64, flexShrink: 0, textAlign: "right", fontWeight: bWins ? 700 : 400, color: bWins ? colorB : COLORS.text }}>{formatDecimal(locale, s.valueB)}</span>
             </div>
           );

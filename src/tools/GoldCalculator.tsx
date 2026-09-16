@@ -27,10 +27,10 @@ import {
 import { fetchItemCatalog, fetchLatestVersion, itemIconUrl, type ItemCatalog, type ItemSummary } from "../ddragon";
 import { useI18n } from "../i18n";
 import { LoadError } from "./LoadError";
-import { savedListError } from "../lib/api-fetch";
+import { savedListError, saveErrorMessage } from "../lib/api-fetch";
 import { useOpenAccountPanel } from "../account-panel";
 import type { AccountUser, SavedBuild } from "../riftcompass";
-import { COLORS, FONT_HEADING } from "../theme";
+import { COLORS, FONT_HEADING, TYPE } from "../theme";
 import {
   CLASS_ITEM_IDS,
   isShopBoots,
@@ -138,7 +138,7 @@ export function GoldCalculator() {
   const [buildListOpen, setBuildListOpen] = useState(false);
 
   useEffect(() => {
-    window.riftcompass.getSession().then(setUser);
+    window.riftcompass.getSession().then((session) => setUser(session.user));
   }, []);
 
   useEffect(() => {
@@ -304,7 +304,7 @@ export function GoldCalculator() {
         }}
       >
         {version && (
-          <span style={{ fontSize: 11, color: COLORS.muted, padding: "0 14px 8px", letterSpacing: 0.4 }}>
+          <span style={{ fontSize: TYPE.label, color: COLORS.muted, padding: "0 14px 8px", letterSpacing: 0.4 }}>
             {t("GoldCalculator.patch", { version })}
           </span>
         )}
@@ -327,7 +327,7 @@ export function GoldCalculator() {
                     border: "none",
                     background: active ? `${COLORS.rose}1f` : "none",
                     color: active ? COLORS.rose : COLORS.muted,
-                    fontSize: 12,
+                    fontSize: TYPE.caption,
                     cursor: "pointer",
                     textAlign: "left",
                   }}
@@ -384,7 +384,7 @@ export function GoldCalculator() {
         >
           {grouped.map(({ group, items }) => (
             <div key={group} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <span style={{ fontFamily: FONT_HEADING, fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase", color: COLORS.muted }}>
+              <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.body, letterSpacing: 1.2, textTransform: "uppercase", color: COLORS.muted }}>
                 {t(`GoldCalculator.groups.${group}`)}
               </span>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(52px, 1fr))", gap: 8 }}>
@@ -430,7 +430,7 @@ export function GoldCalculator() {
             </div>
           ))}
           {catalogStatus === "loading" ? (
-            <span style={{ fontSize: 13, color: COLORS.muted, textAlign: "center", padding: 24 }}>
+            <span style={{ fontSize: TYPE.body, color: COLORS.muted, textAlign: "center", padding: 24 }}>
               {t("ProfileSearch.loading")}
             </span>
           ) : catalogStatus === "error" ? (
@@ -438,7 +438,7 @@ export function GoldCalculator() {
               <LoadError message={t("Common.dataDragonError")} onRetry={() => setCatalogAttempt((n) => n + 1)} />
             </div>
           ) : grouped.length === 0 ? (
-            <span style={{ fontSize: 13, color: COLORS.muted, textAlign: "center", padding: 24 }}>
+            <span style={{ fontSize: TYPE.body, color: COLORS.muted, textAlign: "center", padding: 24 }}>
               {t("GoldCalculator.noResults")}
             </span>
           ) : null}
@@ -471,7 +471,7 @@ export function GoldCalculator() {
                 border: `1px solid ${supportRole ? COLORS.rose : COLORS.cardBorder}`,
                 background: supportRole ? `${COLORS.rose}26` : "none",
                 color: supportRole ? COLORS.rose : COLORS.muted,
-                fontSize: 11,
+                fontSize: TYPE.label,
                 cursor: "pointer",
               }}
             >
@@ -532,14 +532,14 @@ export function GoldCalculator() {
             {/* The same coin the web puts here. It is the headline figure of
                 the whole tool, and without the icon it leaned entirely on
                 being the big gold number. */}
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.muted }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: TYPE.body, color: COLORS.muted }}>
               <Coins size={15} color={COLORS.gold} />
               {t("GoldCalculator.buildTotal")}
             </span>
-            <span style={{ fontFamily: FONT_HEADING, fontSize: 20, color: COLORS.gold, fontWeight: 400 }}>{buildTotal}</span>
+            <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, color: COLORS.gold, fontWeight: 400 }}>{buildTotal}</span>
           </div>
           {build.length === 0 && (
-            <span style={{ fontSize: 12, color: COLORS.muted }}>{t("GoldCalculator.buildEmpty")}</span>
+            <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("GoldCalculator.buildEmpty")}</span>
           )}
 
           {user ? (
@@ -560,7 +560,7 @@ export function GoldCalculator() {
                       border: `1px solid ${COLORS.cardBorder}`,
                       borderRadius: 8,
                       padding: "7px 10px",
-                      fontSize: 13,
+                      fontSize: TYPE.body,
                     }}
                   />
                   <button
@@ -596,20 +596,20 @@ export function GoldCalculator() {
                   <button onClick={toggleBuildList} style={saveButtonStyle(false)}>
                     {t("GoldCalculator.myBuilds")}
                   </button>
-                  {saved && <span style={{ fontSize: 12, color: COLORS.rose }}>{t("GoldCalculator.saveBuildSuccess")}</span>}
+                  {saved && <span style={{ fontSize: TYPE.caption, color: COLORS.rose }}>{t("GoldCalculator.saveBuildSuccess")}</span>}
                 </div>
               )}
               {saveError && (
-                <span style={{ fontSize: 12, color: COLORS.destructive }}>{t(`GoldCalculator.saveBuildErrors.${saveError}`)}</span>
+                <span style={{ fontSize: TYPE.caption, color: COLORS.destructive }}>{saveErrorMessage(t, "GoldCalculator.saveBuildErrors", saveError)}</span>
               )}
               {buildListOpen && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {savedBuildsError ? (
                     <LoadError error={savedBuildsError} onRetry={loadSavedBuilds} />
                   ) : savedBuilds === null ? (
-                    <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
+                    <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Common.loadingSaved")}</span>
                   ) : savedBuilds.length === 0 ? (
-                    <span style={{ fontSize: 12, color: COLORS.muted }}>{t("GoldCalculator.myBuildsEmpty")}</span>
+                    <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("GoldCalculator.myBuildsEmpty")}</span>
                   ) : (
                     savedBuilds.map((sb) => {
                       const total = catalog
@@ -628,11 +628,11 @@ export function GoldCalculator() {
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
+                          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: TYPE.caption }}>
                             {sb.name}
                           </span>
-                          <span style={{ fontSize: 11, color: COLORS.gold, flexShrink: 0 }}>{total}</span>
-                          <span style={{ fontSize: 11, color: COLORS.muted, flexShrink: 0 }}>{new Date(sb.createdAt).toLocaleDateString(locale)}</span>
+                          <span style={{ fontSize: TYPE.label, color: COLORS.gold, flexShrink: 0 }}>{total}</span>
+                          <span style={{ fontSize: TYPE.label, color: COLORS.muted, flexShrink: 0 }}>{new Date(sb.createdAt).toLocaleDateString(locale)}</span>
                           <button onClick={() => handleLoadBuild(sb)} style={saveButtonStyle(true)}>
                             {t("GoldCalculator.load")}
                           </button>
@@ -673,7 +673,7 @@ export function GoldCalculator() {
             // Describing where the account button lives was a dead end; the
             // web offers the link itself right here, so this does too.
             <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, borderTop: `1px solid ${COLORS.cardBorder}`, paddingTop: 10 }}>
-              <span style={{ fontSize: 12, color: COLORS.muted }}>{t("GoldCalculator.loginToSave")}</span>
+              <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("GoldCalculator.loginToSave")}</span>
               {openAccountPanel ? (
                 <button onClick={openAccountPanel} style={saveButtonStyle(false)}>
                   {t("GoldCalculator.loginToSaveLink")}
@@ -721,7 +721,7 @@ export function GoldCalculator() {
               />
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <span style={{ fontFamily: FONT_HEADING, fontSize: 16, fontWeight: 400 }}>{selected.name}</span>
-                <span style={{ fontSize: 15, fontWeight: 700, color: COLORS.gold }}>{selected.totalGold}</span>
+                <span style={{ fontSize: TYPE.subheading, fontWeight: 700, color: COLORS.gold }}>{selected.totalGold}</span>
               </div>
             </div>
 
@@ -738,7 +738,7 @@ export function GoldCalculator() {
                 border: `1px solid ${canAddSelected ? COLORS.gold : COLORS.cardBorder}`,
                 background: canAddSelected ? `${COLORS.gold}1a` : "none",
                 color: canAddSelected ? COLORS.gold : COLORS.muted,
-                fontSize: 13,
+                fontSize: TYPE.body,
                 fontWeight: 500,
                 cursor: canAddSelected ? "pointer" : "default",
               }}
@@ -750,7 +750,7 @@ export function GoldCalculator() {
             {selected.stats.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 {selected.stats.map((line) => (
-                  <span key={line} style={{ fontSize: 13, color: COLORS.text }}>
+                  <span key={line} style={{ fontSize: TYPE.body, color: COLORS.text }}>
                     {line}
                   </span>
                 ))}
@@ -760,7 +760,7 @@ export function GoldCalculator() {
             {selected.from.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={detailLabelStyle}>{t("GoldCalculator.buildPath")}</span>
-                <span style={{ fontSize: 12, color: COLORS.muted }}>
+                <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
                   {t("GoldCalculator.combineCost", { cost: selected.baseGold })}
                 </span>
                 <div style={{ display: "flex", flexDirection: "column" }}>
@@ -780,7 +780,7 @@ export function GoldCalculator() {
               borderRadius: 14,
               border: `1px dashed ${COLORS.cardBorder}`,
               color: `${COLORS.muted}bb`,
-              fontSize: 13,
+              fontSize: TYPE.body,
               minHeight: 120,
               textAlign: "center",
               padding: 24,
@@ -824,7 +824,7 @@ function BuildTreeNode({
           borderRadius: 6,
           background: "none",
           color: COLORS.text,
-          fontSize: 12,
+          fontSize: TYPE.caption,
           cursor: "pointer",
           textAlign: "left",
         }}
@@ -850,7 +850,7 @@ function saveButtonStyle(primary: boolean): React.CSSProperties {
     border: `1px solid ${primary ? COLORS.gold : COLORS.cardBorder}`,
     background: primary ? `${COLORS.gold}1a` : "none",
     color: primary ? COLORS.gold : COLORS.muted,
-    fontSize: 12,
+    fontSize: TYPE.caption,
     fontWeight: 500,
     cursor: "pointer",
   };
@@ -858,7 +858,7 @@ function saveButtonStyle(primary: boolean): React.CSSProperties {
 
 const detailLabelStyle: React.CSSProperties = {
   fontFamily: FONT_HEADING,
-  fontSize: 11,
+  fontSize: TYPE.label,
   letterSpacing: 1.2,
   textTransform: "uppercase",
   color: COLORS.muted,
@@ -874,7 +874,7 @@ function categoryPillStyle(active: boolean): React.CSSProperties {
     border: `1px solid ${active ? COLORS.rose : COLORS.cardBorder}`,
     background: active ? `${COLORS.rose}26` : "none",
     color: active ? COLORS.rose : COLORS.text,
-    fontSize: 12,
+    fontSize: TYPE.caption,
     cursor: "pointer",
   };
 }

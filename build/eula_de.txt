@@ -1,0 +1,68 @@
+RiftCompass Desktop - Endbenutzer-Lizenzvereinbarung
+
+Mit der Installation von RiftCompass akzeptierst du die folgenden
+Bedingungen.
+
+1. Was diese App macht
+
+RiftCompass ist eine Begleit-App für League of Legends: Informationen in
+der Championauswahl und ein optionales Overlay im Spiel, gelesen aus dem
+League-Client auf deinem eigenen PC. Beim Wählen eines Champions schreibt
+sie außerdem die empfohlene Runenseite, Zauber und das Item-Set in den
+Client. Sie verwendet dasselbe Kontosystem wie riftcompass.com.
+
+2. Keine Verbindung zu Riot Games
+
+RiftCompass wird nicht von Riot Games unterstützt und gibt nicht die
+Ansichten oder Meinungen von Riot Games oder von Personen wieder, die
+offiziell an der Produktion oder Verwaltung von League of Legends
+beteiligt sind. League of Legends und Riot Games sind Marken oder
+eingetragene Marken von Riot Games, Inc. Champion- und Spieldaten stammen
+aus den öffentlichen Entwicklerwerkzeugen von Riot Games und dem lokal
+auf deinem Rechner laufenden League-Client und werden gemäß den
+Entwicklerbedingungen und der Fan-Content-Richtlinie von Riot verwendet.
+
+3. Was auf deinem PC bleibt und was riftcompass.com erreicht
+
+Aus dem League-Client gelesene Daten (Championauswahl, Spielstatus, deine
+letzten Spiele und Meisterschaft) werden auf deinem PC verarbeitet und
+nie an Dritte gesendet. Wenn du dich mit einem RiftCompass-Konto
+anmeldest, erhält riftcompass.com: was du ausdrücklich speicherst
+(Profile, Drafts, Karten, Tier Lists, Builds); deine Spieler-ID (PUUID)
+am Ende jedes Spiels, damit dein Rang erfasst wird; sowie Champion und
+Position, die für Build-Empfehlungen nötig sind. Nie Daten deiner
+Mitspieler oder Gegner. Anonyme Fehlerberichte (ohne IP, ohne Konto, ohne
+Client-Daten) gehen an Sentry; die Datenschutzerklärung führt genau auf,
+was sie enthalten.
+
+4. Lizenz und Nutzung
+
+RiftCompass ist Open-Source-Software unter der MIT-Lizenz. Der Quellcode
+ist öffentlich unter https://github.com/RiftCompass/RiftCompass-Electron
+verfügbar, und du darfst ihn gemäß dieser Lizenz verwenden, kopieren,
+verändern und weitergeben. Name und Logo von RiftCompass sind nicht von
+der Lizenz abgedeckt. Du darfst die App nicht verwenden, um gegen die
+Nutzungsbedingungen oder die Richtlinie für Drittanbieter-Anwendungen von
+Riot Games zu verstoßen. Du kannst die App jederzeit über die
+Windows-Einstellungen oder das Deinstallationsprogramm in ihrem
+Installationsordner entfernen.
+
+5. Keine Gewährleistung, beschränkte Haftung
+
+RiftCompass wird „wie besehen" ohne jegliche Gewährleistung
+bereitgestellt. Client und API von Riot liegen außerhalb unserer
+Kontrolle, daher garantieren wir keinen unterbrechungs- oder fehlerfreien
+Betrieb. Soweit gesetzlich zulässig, haftet der Entwickler nicht für
+indirekte Schäden oder Folgeschäden aus der Nutzung der App.
+
+6. Datenschutz und vollständige rechtliche Bedingungen
+
+Impressum, Datenschutzerklärung und Cookie-Richtlinie, die für dein
+RiftCompass-Konto und riftcompass.com gelten, gelten hier gleichermaßen
+und sind unter https://riftcompass.com/legal verfügbar. Diese
+Vereinbarung betrifft speziell die Desktop-App; jene Seiten bleiben die
+maßgebliche Quelle für Datenschutz und Kontobedingungen.
+
+7. Kontakt
+
+Fragen zu dieser Vereinbarung: riftcompass@gmail.com.

@@ -1,5 +1,5 @@
 import { useI18n } from "../i18n";
-import { COLORS, FONT_HEADING } from "../theme";
+import { COLORS, FONT_HEADING, TYPE } from "../theme";
 
 // CommunityDragon HUD portraits — same asset family the Map Editor's
 // minion tool already uses.
@@ -113,11 +113,11 @@ export function WaveTimer() {
               style={{ width: 52, height: 52, borderRadius: 10, border: `1px solid ${COLORS.cardBorder}`, flexShrink: 0 }}
             />
             <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-              <span style={{ fontSize: 13, color: COLORS.muted }}>{card.name}</span>
-              <span style={{ fontFamily: FONT_HEADING, fontSize: 20, color: COLORS.gold }}>
+              <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{card.name}</span>
+              <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, color: COLORS.gold }}>
                 {t("WaveTimer.goldAmount", { amount: card.gold })}
               </span>
-              {card.note && <span style={{ fontSize: 11, color: COLORS.muted }}>{card.note}</span>}
+              {card.note && <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{card.note}</span>}
             </div>
           </div>
         ))}
@@ -131,7 +131,7 @@ export function WaveTimer() {
           overflowX: "auto",
         }}
       >
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: TYPE.body }}>
           <thead>
             <tr>
               {[
@@ -147,7 +147,7 @@ export function WaveTimer() {
                     textAlign: "left",
                     padding: "12px 16px",
                     fontFamily: FONT_HEADING,
-                    fontSize: 11,
+                    fontSize: TYPE.label,
                     fontWeight: 400,
                     letterSpacing: 1.1,
                     textTransform: "uppercase",
@@ -164,7 +164,7 @@ export function WaveTimer() {
           <tbody>
             {PHASES.map((phase, i) => (
               <tr key={phase.range} style={{ borderBottom: i < PHASES.length - 1 ? `1px solid ${COLORS.cardBorder}` : "none" }}>
-                <td style={{ padding: "14px 16px", fontFamily: FONT_HEADING, fontSize: 15, color: COLORS.text, whiteSpace: "nowrap" }}>
+                <td style={{ padding: "14px 16px", fontFamily: FONT_HEADING, fontSize: TYPE.subheading, color: COLORS.text, whiteSpace: "nowrap" }}>
                   {phase.range}
                 </td>
                 <td style={{ padding: "14px 16px", color: COLORS.text, whiteSpace: "nowrap" }}>
@@ -196,11 +196,11 @@ export function WaveTimer() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={{ fontFamily: FONT_HEADING, fontSize: 11, letterSpacing: 1.1, textTransform: "uppercase", color: COLORS.muted }}>
+        <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.label, letterSpacing: 1.1, textTransform: "uppercase", color: COLORS.muted }}>
           {t("WaveTimer.notesTitle")}
         </span>
         {[t("WaveTimer.noteCannon"), t("WaveTimer.noteLanes")].map((note) => (
-          <span key={note} style={{ fontSize: 13, color: COLORS.text, lineHeight: 1.5 }}>
+          <span key={note} style={{ fontSize: TYPE.body, color: COLORS.text, lineHeight: 1.5 }}>
             {note}
           </span>
         ))}

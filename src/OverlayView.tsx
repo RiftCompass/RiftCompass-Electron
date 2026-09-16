@@ -34,7 +34,7 @@ const cardStyle: React.CSSProperties = {
 
 const headingStyle: React.CSSProperties = {
   color: MUTED,
-  fontSize: 11,
+  fontSize: TYPE.label,
   textTransform: "uppercase",
   letterSpacing: 0.8,
   fontFamily: "'Russo One', sans-serif",
@@ -809,7 +809,7 @@ export function OverlayView() {
 
   return (
     <div
-      style={{ position: "relative", width: "100vw", height: "100vh", fontSize: 13 }}
+      style={{ position: "relative", width: "100vw", height: "100vh", fontSize: TYPE.body }}
       onClick={calibrationStep ? handleCalibrationClick : undefined}
     >
       {calibrationStep ? (
@@ -824,7 +824,7 @@ export function OverlayView() {
             cursor: "crosshair",
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600, color: ROSE }}>
+          <span style={{ fontSize: TYPE.body, fontWeight: 600, color: ROSE }}>
             {t("Overlay.calibrationClick", { ability: calibrationStep.toUpperCase() })}
           </span>
         </div>
@@ -858,7 +858,7 @@ export function OverlayView() {
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {isLocal ? t("Overlay.you") : t("Overlay.ally", { n: index + 1 })}
                   </span>
-                  <span style={{ color: MUTED, fontSize: 11 }}>
+                  <span style={{ color: MUTED, fontSize: TYPE.label }}>
                     {position} · {champ?.name ?? t("Overlay.lockingIn")}
                   </span>
                 </div>
@@ -872,7 +872,7 @@ export function OverlayView() {
                         border: "none",
                         borderRadius: 8,
                         padding: "6px 10px",
-                        fontSize: 11,
+                        fontSize: TYPE.label,
                         fontWeight: 600,
                         cursor: importState === "idle" || importState === "error" ? "pointer" : "default",
                         background: `${ROSE}26`,
@@ -926,7 +926,7 @@ export function OverlayView() {
                       border: "none",
                       borderRadius: 8,
                       padding: "6px 10px",
-                      fontSize: 11,
+                      fontSize: TYPE.label,
                       fontWeight: 600,
                       cursor: applyBuildState === "idle" || applyBuildState === "error" ? "pointer" : "default",
                       background: `${ROSE}26`,
@@ -1081,7 +1081,7 @@ export function OverlayView() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {localRankIcon ? <img src={localRankIcon} alt="" style={{ width: 20, height: 20 }} /> : null}
             <span style={headingStyle}>{t("Overlay.csPerMinLabel")}</span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: localCsPerMin >= localCsTarget ? GOOD : BAD }}>
+            <span style={{ fontSize: TYPE.caption, fontWeight: 600, color: localCsPerMin >= localCsTarget ? GOOD : BAD }}>
               <span style={{ fontWeight: 700, marginRight: 3 }}>{localCsPerMin >= localCsTarget ? "▲" : "▼"}</span>
               {nf.format(localCsPerMin)} <span style={{ color: MUTED, fontWeight: 400 }}>/ {nf.format(localCsTarget)}</span>
             </span>
@@ -1135,7 +1135,7 @@ export function OverlayView() {
                   <LaneChampion champ={row.mine ? championInfoFor(champions, row.mine) : undefined} align="right" />
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 60 }}>
                     {icon ? <img src={icon} alt="" style={{ width: 12, height: 12, opacity: 0.6, marginBottom: 2 }} /> : null}
-                    <span style={{ fontSize: 12, fontWeight: 700, color: diff === null ? MUTED : diff > 0 ? GOOD : diff < 0 ? BAD : MUTED }}>
+                    <span style={{ fontSize: TYPE.caption, fontWeight: 700, color: diff === null ? MUTED : diff > 0 ? GOOD : diff < 0 ? BAD : MUTED }}>
                       {diff === null ? "—" : `${diff > 0 ? "+" : ""}${nf.format(diff)}`}
                     </span>
                   </div>

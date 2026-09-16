@@ -8,7 +8,7 @@ import { formatPercent, positionIconUrl } from "../lib/profile-analysis";
 import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
 import { useOpenTool, useRequestedChampion } from "../tool-navigation";
-import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle } from "../theme";
+import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, pillStyle, TYPE } from "../theme";
 import { LoadError } from "./LoadError";
 import { apiGet } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
@@ -155,7 +155,7 @@ export function Matchups() {
           border: `1px solid ${COLORS.cardBorder}`,
           background: "rgba(255,255,255,0.03)",
           color: COLORS.text,
-          fontSize: 12,
+          fontSize: TYPE.caption,
           cursor: info ? "pointer" : "default",
         }}
       >
@@ -168,7 +168,7 @@ export function Matchups() {
 
   const list = (rows: MatchupRow[], thinRows: MatchupRow[]) => {
     if (rows.length === 0 && thinRows.length === 0) {
-      return <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("Matchups.noData")}</p>;
+      return <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("Matchups.noData")}</p>;
     }
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -189,7 +189,7 @@ export function Matchups() {
                     borderBottom: i < rows.length - 1 ? `1px solid ${COLORS.cardBorder}` : "none",
                   }}
                 >
-                  <span style={{ fontSize: 11, color: `${COLORS.muted}b3`, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{i + 1}</span>
+                  <span style={{ fontSize: TYPE.label, color: `${COLORS.muted}b3`, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{i + 1}</span>
                   {info ? (
                     <img src={info.iconUrl} alt="" style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${COLORS.cardBorder}` }} />
                   ) : (
@@ -198,14 +198,14 @@ export function Matchups() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
                     <button
                       onClick={info ? () => pick(row) : undefined}
-                      style={{ textAlign: "left", background: "none", border: "none", color: COLORS.text, fontSize: 13, lineHeight: 1.2, cursor: info ? "pointer" : "default", padding: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      style={{ textAlign: "left", background: "none", border: "none", color: COLORS.text, fontSize: TYPE.body, lineHeight: 1.2, cursor: info ? "pointer" : "default", padding: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                     >
                       {nameOf(row)}
                     </button>
                     <WinRateBar winRate={row.winRate} />
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 700, textAlign: "right", color: COLORS[tone], fontVariantNumeric: "tabular-nums" }}>{formatPercent(locale, row.winRate)}</span>
-                  <span style={{ fontSize: 11, color: COLORS.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{t("Matchups.games", { games: nf.format(row.games) })}</span>
+                  <span style={{ fontSize: TYPE.body, fontWeight: 700, textAlign: "right", color: COLORS[tone], fontVariantNumeric: "tabular-nums" }}>{formatPercent(locale, row.winRate)}</span>
+                  <span style={{ fontSize: TYPE.label, color: COLORS.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{t("Matchups.games", { games: nf.format(row.games) })}</span>
                 </div>
               );
             })}
@@ -213,7 +213,7 @@ export function Matchups() {
         ) : null}
         {thinRows.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <p style={{ fontSize: 11, color: COLORS.muted, margin: 0 }}>{t("Matchups.thinSample", { min: minGames })}</p>
+            <p style={{ fontSize: TYPE.label, color: COLORS.muted, margin: 0 }}>{t("Matchups.thinSample", { min: minGames })}</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {thinRows.map((row) => {
                 const info = lookup(row.championName);
@@ -221,7 +221,7 @@ export function Matchups() {
                   <button
                     key={row.championName}
                     onClick={info ? () => pick(row) : undefined}
-                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 8px 2px 2px", borderRadius: 999, border: `1px solid ${COLORS.cardBorder}`, background: "transparent", color: COLORS.muted, fontSize: 11, cursor: info ? "pointer" : "default" }}
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 8px 2px 2px", borderRadius: 999, border: `1px solid ${COLORS.cardBorder}`, background: "transparent", color: COLORS.muted, fontSize: TYPE.label, cursor: info ? "pointer" : "default" }}
                   >
                     {info ? <img src={info.iconUrl} alt="" style={{ width: 18, height: 18, borderRadius: 999, opacity: 0.7 }} /> : null}
                     {nameOf(row)}
@@ -239,8 +239,8 @@ export function Matchups() {
   const column = (rows: MatchupRow[], titleKey: "asChampionTitle" | "againstChampionTitle", hintKey: "asChampionHint" | "againstChampionHint") => (
     <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 12, flex: "1 1 320px", minWidth: 0 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <h2 style={{ fontFamily: FONT_HEADING, fontSize: 15, fontWeight: 400, margin: 0 }}>{t(`Matchups.${titleKey}`, { champion: champion?.name ?? "" })}</h2>
-        <p style={{ fontSize: 11, color: COLORS.muted, margin: 0 }}>{t(`Matchups.${hintKey}`, { champion: champion?.name ?? "" })}</p>
+        <h2 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 }}>{t(`Matchups.${titleKey}`, { champion: champion?.name ?? "" })}</h2>
+        <p style={{ fontSize: TYPE.label, color: COLORS.muted, margin: 0 }}>{t(`Matchups.${hintKey}`, { champion: champion?.name ?? "" })}</p>
       </div>
       {list(solid(rows), thin(rows))}
     </div>
@@ -254,11 +254,11 @@ export function Matchups() {
   const solidAs = data ? sortRows(data.asChampion.filter((r) => r.games >= minGames), "winrate") : [];
   const best = solidAs.filter((r) => r.winRate >= 0.5).slice(0, 4);
   const worst = [...solidAs].reverse().filter((r) => r.winRate < 0.5).slice(0, 4);
-  const labelStyle = { fontSize: 11, color: COLORS.muted, textTransform: "uppercase" as const, letterSpacing: "0.04em" };
+  const labelStyle = { fontSize: TYPE.label, color: COLORS.muted, textTransform: "uppercase" as const, letterSpacing: "0.04em" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("Matchups.methodologyNote", { min: data?.minGames ?? 20 })}</p>
+      <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("Matchups.methodologyNote", { min: data?.minGames ?? 20 })}</p>
 
       <div style={{ maxWidth: 320 }}>
         <ChampionCombobox
@@ -289,7 +289,7 @@ export function Matchups() {
         })}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Matchups.rank")}</span>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Matchups.rank")}</span>
         {RANK_TIERS.map((r) => (
           <button key={r} onClick={() => { setRank(r); setVs(null); }} aria-pressed={rank === r} style={pillStyle(rank === r, "compact")}>
             {t(`MetaTierList.rankTiers.${r}`)}
@@ -298,11 +298,11 @@ export function Matchups() {
       </div>
 
       {!champion || !effectiveRole ? (
-        <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("Matchups.pickChampion")}</p>
+        <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("Matchups.pickChampion")}</p>
       ) : loadStatus === "error" ? (
         <LoadError error={loadError} onRetry={() => setLoadAttempt((n) => n + 1)} />
       ) : data === null ? (
-        <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
+        <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
       ) : (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -311,14 +311,14 @@ export function Matchups() {
               <span style={{ fontFamily: FONT_HEADING, fontSize: 17 }}>
                 {champion.name} · {t(`Profile.positions.${effectiveRole.toLowerCase()}`)}
               </span>
-              <span style={{ fontSize: 12, color: COLORS.muted }}>
+              <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
                 {t("ChampionBuilds.popularBuildSource", { patch: data.dataPatches.join(" + ") })}
                 {openTool ? (
                   <>
                     {" · "}
                     <button
                       onClick={() => openTool({ toolId: "championBuilds", championInternalId: champion.internalId, role: effectiveRole, rank })}
-                      style={{ background: "none", border: "none", color: COLORS.rose, fontSize: 12, cursor: "pointer", padding: 0 }}
+                      style={{ background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}
                     >
                       {t("Matchups.openChampionBuilds")}
                     </button>
@@ -347,24 +347,24 @@ export function Matchups() {
           <div style={{ ...cardStyle, display: "flex", flexWrap: "wrap", gap: 20 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 200, paddingRight: 20, borderRight: `1px solid ${COLORS.cardBorder}` }}>
               <span style={labelStyle}>{t("Matchups.laneWinrate")}</span>
-              <span style={{ fontFamily: FONT_HEADING, fontSize: 30, lineHeight: 1.1, color: summaryWinRate === null ? COLORS.muted : summaryWinRate >= 0.5 ? COLORS.good : COLORS.bad }}>
+              <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.display, lineHeight: 1.1, color: summaryWinRate === null ? COLORS.muted : summaryWinRate >= 0.5 ? COLORS.good : COLORS.bad }}>
                 {summaryWinRate === null ? "–" : new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryWinRate)}
               </span>
-              <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Matchups.summaryGames", { games: nf.format(summaryGames), rivals: solidAs.length })}</span>
+              <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Matchups.summaryGames", { games: nf.format(summaryGames), rivals: solidAs.length })}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: "1 1 320px", minWidth: 0 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelStyle}>{t("Matchups.bestMatchups")}</span>
-                {best.length === 0 ? <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Matchups.noneYet")}</span> : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{best.map(chip)}</div>}
+                {best.length === 0 ? <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Matchups.noneYet")}</span> : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{best.map(chip)}</div>}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelStyle}>{t("Matchups.worstMatchups")}</span>
-                {worst.length === 0 ? <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Matchups.noneYet")}</span> : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{worst.map(chip)}</div>}
+                {worst.length === 0 ? <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Matchups.noneYet")}</span> : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{worst.map(chip)}</div>}
               </div>
             </div>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 12, color: COLORS.muted }}>{t("Matchups.sortBy")}</span>
+            <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Matchups.sortBy")}</span>
             {(["winrate", "games"] as const).map((option) => (
               <button key={option} onClick={() => setSort(option)} aria-pressed={sort === option} style={pillStyle(sort === option, "compact")}>
                 {t(option === "games" ? "Matchups.sortGames" : "Matchups.sortWinrate")}

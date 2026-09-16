@@ -236,7 +236,9 @@ const api: RiftCompassApi = {
   login: (email: string, password: string): Promise<LoginResult> =>
     tryInvoke(CMD.AccountLogin, { email, password }, () => ({ ok: false as const, error: NO_BACKEND })),
   logout: (): Promise<void> => tryInvoke(CMD.AccountLogout, undefined, () => undefined),
-  getSession: (): Promise<AccountUser | null> => tryInvoke(CMD.AccountGetSession, undefined, () => null),
+  getSession: (): Promise<{ user: AccountUser | null; endedByServer: boolean }> =>
+    tryInvoke(CMD.AccountGetSession, undefined, () => ({ user: null, endedByServer: false })),
+  onSessionEnded: (cb) => subscribe(EVT.AccountSessionEnded, cb),
   getSavedProfiles: (): Promise<SavedProfilesResult> =>
     tryInvoke(CMD.AccountGetSavedProfiles, undefined, () => ({ ok: true as const, folders: [], profiles: [] })),
   toggleSavedProfile: (platform: string, gameName: string, tagLine: string, puuid?: string): Promise<ToggleSavedProfileResult> =>

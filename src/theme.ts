@@ -8,9 +8,10 @@ export const COLORS = {
   card: "#17121a",
   cardBorder: "rgba(255,255,255,0.08)",
   rose: "#e63977",
-  roseMild: "#b093c8",
   text: "#f7f3f5",
-  muted: "#9a94a0",
+  // The web's --muted-foreground, hex for hex (round 28): the app carried
+  // a colder, darker grey from its first commit on every secondary text.
+  muted: "#a599a5",
   // The web's --gold, not League's own muted client gold: the two sat side
   // by side across Gold Calculator, Wave Timer and Jungle XP and read as two
   // different brands.
@@ -40,11 +41,13 @@ export const FONT_BODY = "'Manrope', -apple-system, 'Segoe UI', Roboto, Helvetic
 // 22/24/26px for the exact same semantic role). Pick from this list
 // instead of inventing a new number.
 export const TYPE = {
+  micro: 9,
   label: 11,
+  caption: 12,
   body: 13,
   subheading: 15,
   heading: 20,
-  display: 26,
+  display: 30,
 } as const;
 
 // Shared inline-style builders. Previously copy-pasted (byte-for-byte in

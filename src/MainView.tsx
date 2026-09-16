@@ -20,7 +20,7 @@ import {
   User,
   type Icon,
 } from "@phosphor-icons/react";
-import { API_BASE_URL } from "./shared/api";
+import { webUrl } from "./shared/api";
 import { ProfileScreen } from "./profile/ProfileDetail";
 import { ProfileCompareEntry } from "./profile/ProfileCompare";
 import { parseRiotId, PlatformSelect, type ProfileTarget } from "./profile/ProfileShared";
@@ -168,7 +168,7 @@ const toolNavButtonStyle: React.CSSProperties = {
   background: "none",
   border: "none",
   color: COLORS.muted,
-  fontSize: 13,
+  fontSize: TYPE.body,
   cursor: "pointer",
   padding: 0,
 };
@@ -252,9 +252,20 @@ export function MainView() {
     setPanel("compare");
   }
 
+  // `sessionNotice` (ronda 27): la sesión guardada la rechazó el servidor
+  // (401), y el formulario de login lo dice una vez en vez de aparecer sin
+  // explicación. Cualquier llamada con token puede detectarlo (account.ts).
+  const [sessionNotice, setSessionNotice] = useState(false);
   useEffect(() => {
     window.riftcompass.onLcuConnection(setLcuStatus);
-    window.riftcompass.getSession().then(setUser);
+    window.riftcompass.getSession().then((session) => {
+      setUser(session.user);
+      if (session.endedByServer) setSessionNotice(true);
+    });
+    window.riftcompass.onSessionEnded(() => {
+      setUser(null);
+      setSessionNotice(true);
+    });
   }, []);
 
   // Once the client connects and the logged-in player's identity is
@@ -360,6 +371,31 @@ export function MainView() {
     });
   }, []);
 
+  // On every real view switch the container remounts (the key below) and
+  // the control that was pressed is gone, so focus fell to <body>: the
+  // new view's title takes it instead, like Next does on the web (round
+  // 28). Keyboard "Back": Escape and Alt+Left mirror the mouse side
+  // buttons, except inside a field or a combobox, which own their Escape.
+  const viewRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    viewRef.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
+  }, [panel, openToolId]);
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const back = (e.key === "Escape" && !e.altKey) || (e.key === "ArrowLeft" && e.altKey);
+      if (!back) return;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (target && (target.closest("input, textarea, select, [role=combobox], [role=listbox], [aria-expanded=true]") || target.isContentEditable)) return;
+      if (panelRef.current === "tools" && !openToolIdRef.current) return;
+      e.preventDefault();
+      if (panelRef.current === "tools" && openToolIdRef.current) backOneTool();
+      else goHome();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Mouse back/forward side buttons step back — button 3/4 are the
   // XButton1/XButton2 side buttons most mice map to back/forward. There's
   // no real forward destination here (a couple of flat panels plus the
@@ -402,13 +438,13 @@ export function MainView() {
       >
         {/* pointerEvents none so clicks fall through to the drag region —
             the indicator is display-only, same as under Electron. */}
-        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: COLORS.muted, pointerEvents: "none" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: TYPE.label, color: COLORS.muted, pointerEvents: "none" }}>
           <span
             style={{
               width: 7,
               height: 7,
               borderRadius: 999,
-              background: lcuStatus === "connected" ? "#2f9d68" : COLORS.muted,
+              background: lcuStatus === "connected" ? COLORS.rose : COLORS.muted,
             }}
           />
           {lcuStatus === "connected" ? t("Common.leagueConnected") : t("Common.leagueNotDetected")}
@@ -425,9 +461,17 @@ export function MainView() {
           {/* key changes on every real view switch (not on data reloading
               within the same view), so React remounts this div and its
               rc-view-enter animation replays — see global.css for why. */}
-          <div key={panel === "tools" ? (openTool ? `tool-${openTool.id}` : "tools") : panel} className="rc-view-enter">
+          <div ref={viewRef} key={panel === "tools" ? (openTool ? `tool-${openTool.id}` : "tools") : panel} className="rc-view-enter">
           {panel === "settings" ? (
-            <Settings user={user} onUserChange={setUser} onExit={goHome} />
+            <Settings
+              user={user}
+              onUserChange={(next) => {
+                if (next) setSessionNotice(false);
+                setUser(next);
+              }}
+              sessionNotice={sessionNotice}
+              onExit={goHome}
+            />
           ) : panel === "profile" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Same back-to-menu control every tool screen has; also
@@ -446,7 +490,7 @@ export function MainView() {
                   background: "none",
                   border: "none",
                   color: COLORS.muted,
-                  fontSize: 13,
+                  fontSize: TYPE.body,
                   cursor: "pointer",
                   padding: 0,
                 }}
@@ -474,7 +518,7 @@ export function MainView() {
                   background: "none",
                   border: "none",
                   color: COLORS.muted,
-                  fontSize: 13,
+                  fontSize: TYPE.body,
                   cursor: "pointer",
                   padding: 0,
                 }}
@@ -500,7 +544,7 @@ export function MainView() {
                   background: "none",
                   border: "none",
                   color: COLORS.muted,
-                  fontSize: 13,
+                  fontSize: TYPE.body,
                   cursor: "pointer",
                   padding: 0,
                 }}
@@ -509,7 +553,7 @@ export function MainView() {
               </button>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <Sword size={22} color={COLORS.rose} />
-                <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
+                <h1 tabIndex={-1} style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0, outline: "none" }}>
                   {t("DraftAdvisor.title")}
                 </h1>
               </div>
@@ -530,7 +574,7 @@ export function MainView() {
                   background: "none",
                   border: "none",
                   color: COLORS.muted,
-                  fontSize: 13,
+                  fontSize: TYPE.body,
                   cursor: "pointer",
                   padding: 0,
                 }}
@@ -539,7 +583,7 @@ export function MainView() {
               </button>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <FlagCheckered size={22} color={COLORS.rose} />
-                <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
+                <h1 tabIndex={-1} style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0, outline: "none" }}>
                   {t("PostGameReport.title")}
                 </h1>
               </div>
@@ -589,7 +633,7 @@ export function MainView() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <openTool.icon size={22} color={openTool.accent} />
-                <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
+                <h1 tabIndex={-1} style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0, outline: "none" }}>
                   {t(`ToolsIndex.${openTool.id}.title`)}
                 </h1>
               </div>
@@ -648,7 +692,7 @@ export function MainView() {
           {user ? (
             <button onClick={() => setPanel("settings")} style={navProfileRowStyle}>
               <Avatar user={user} size={30} />
-              <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: TYPE.body, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {user.username ?? t("Common.myAccount")}
               </span>
             </button>
@@ -669,7 +713,7 @@ export function MainView() {
               >
                 <User size={14} />
               </div>
-              <span style={{ fontSize: 13, fontWeight: 500 }}>{t("Auth.loginButton")}</span>
+              <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{t("Auth.loginButton")}</span>
             </button>
           ) : null}
 
@@ -695,7 +739,7 @@ export function MainView() {
                   border: `1px solid ${COLORS.cardBorder}`,
                   borderRadius: 8,
                   padding: "7px 10px 7px 28px",
-                  fontSize: 12,
+                  fontSize: TYPE.caption,
                 }}
               />
             </div>
@@ -734,7 +778,7 @@ function navRowStyle(active: boolean): React.CSSProperties {
     border: "none",
     background: active ? `${COLORS.rose}26` : "transparent",
     color: active ? COLORS.rose : COLORS.muted,
-    fontSize: 13,
+    fontSize: TYPE.body,
     fontWeight: active ? 600 : 500,
     textAlign: "left",
     cursor: "pointer",
@@ -987,7 +1031,7 @@ function SavedProfilesPanel({
 
   const header = (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
-      <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: COLORS.muted }}>
+      <span style={{ fontSize: TYPE.label, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: COLORS.muted }}>
         {t("SavedProfiles.title")}
       </span>
       <div style={{ display: "flex", gap: 4 }}>
@@ -1021,7 +1065,7 @@ function SavedProfilesPanel({
               <div style={{ height: 1, background: COLORS.cardBorder, margin: "4px 0" }} />
               <NewFolderControl onCreate={handleCreateGroup} />
               {folderError ? (
-                <p style={{ fontSize: 11, color: COLORS.destructive, margin: "2px 8px 4px" }}>
+                <p style={{ fontSize: TYPE.label, color: COLORS.destructive, margin: "2px 8px 4px" }}>
                   {t(`SavedProfiles.folderErrors.${folderError}`)}
                 </p>
               ) : null}
@@ -1094,7 +1138,7 @@ function SavedProfilesPanel({
         border: `1px solid ${COLORS.rose}55`,
         background: `${COLORS.rose}14`,
         padding: "7px 10px",
-        fontSize: 12,
+        fontSize: TYPE.caption,
         lineHeight: 1.4,
       }}
     >
@@ -1118,7 +1162,7 @@ function SavedProfilesPanel({
         {header}
         {mainProposal}
         {visible.length === 0 ? (
-          <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("SavedProfiles.noFilterMatches")}</p>
+          <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("SavedProfiles.noFilterMatches")}</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{visible.map(rowFor)}</div>
         )}
@@ -1135,7 +1179,7 @@ function SavedProfilesPanel({
       {header}
       {mainProposal}
       {textFiltered.length === 0 ? (
-        <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{t("SavedProfiles.noFilterMatches")}</p>
+        <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("SavedProfiles.noFilterMatches")}</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {folders.map((g) => {
@@ -1159,7 +1203,7 @@ function SavedProfilesPanel({
                 {members.length > 0 ? (
                   members.map(rowFor)
                 ) : (
-                  <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("SavedProfiles.emptyFolder")}</p>
+                  <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: 0 }}>{t("SavedProfiles.emptyFolder")}</p>
                 )}
               </FolderSection>
             );
@@ -1217,8 +1261,8 @@ function FolderSection({
       >
         {collapsed ? <CaretRight size={12} color={COLORS.muted} /> : <CaretDown size={12} color={COLORS.muted} />}
         <Folder size={12} color={COLORS.muted} />
-        <span style={{ fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-        <span style={{ fontSize: 11, color: COLORS.muted, flexShrink: 0 }}>({count})</span>
+        <span style={{ fontSize: TYPE.caption, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+        <span style={{ fontSize: TYPE.label, color: COLORS.muted, flexShrink: 0 }}>({count})</span>
       </button>
       {!collapsed ? <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 4 }}>{children}</div> : null}
     </div>
@@ -1249,7 +1293,7 @@ function NewFolderControl({ onCreate }: { onCreate: (name: string) => void }) {
           border: "none",
           background: "none",
           color: COLORS.rose,
-          fontSize: 12,
+          fontSize: TYPE.caption,
           cursor: "pointer",
           fontFamily: "inherit",
         }}
@@ -1276,7 +1320,7 @@ function NewFolderControl({ onCreate }: { onCreate: (name: string) => void }) {
         onChange={(e) => setName(e.target.value)}
         onBlur={() => !name.trim() && setAdding(false)}
         placeholder={t("SavedProfiles.folderNamePlaceholder")}
-        style={{ flex: 1, minWidth: 0, fontSize: 12, padding: "5px 7px", borderRadius: 5, border: `1px solid ${COLORS.cardBorder}`, background: COLORS.background, color: COLORS.text }}
+        style={{ flex: 1, minWidth: 0, fontSize: TYPE.caption, padding: "5px 7px", borderRadius: 5, border: `1px solid ${COLORS.cardBorder}`, background: COLORS.background, color: COLORS.text }}
       />
     </form>
   );
@@ -1313,7 +1357,7 @@ function FolderEditControls({
           value={name}
           onChange={(e) => setName(e.target.value)}
           onBlur={() => setRenaming(false)}
-          style={{ width: 90, fontSize: 11, padding: "3px 5px", borderRadius: 5, border: `1px solid ${COLORS.cardBorder}`, background: COLORS.background, color: COLORS.text }}
+          style={{ width: 90, fontSize: TYPE.label, padding: "3px 5px", borderRadius: 5, border: `1px solid ${COLORS.cardBorder}`, background: COLORS.background, color: COLORS.text }}
         />
       </form>
     );
@@ -1453,7 +1497,7 @@ function PopoverOption({
         border: "none",
         background: active ? `${COLORS.rose}1f` : "none",
         color: active ? COLORS.rose : COLORS.text,
-        fontSize: 12,
+        fontSize: TYPE.caption,
         cursor: "pointer",
         fontFamily: "inherit",
         ...style,
@@ -1527,9 +1571,9 @@ function SavedProfileRow({
           fontFamily: "inherit",
         }}
       >
-        <span style={{ flexShrink: 0, width: 18, fontSize: 11, fontWeight: 700, color: COLORS.muted }}>{position ? `#${position}` : ""}</span>
+        <span style={{ flexShrink: 0, width: 18, fontSize: TYPE.label, fontWeight: 700, color: COLORS.muted }}>{position ? `#${position}` : ""}</span>
         <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, gap: 1 }}>
-          <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: TYPE.body, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {profile.gameName}
             <span style={{ color: COLORS.muted }}>#{profile.tagLine}</span>
           </span>
@@ -1537,7 +1581,7 @@ function SavedProfileRow({
               winrate text on this same line — small enough not to fight
               the compact row height. */}
           <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-            <span style={{ fontSize: 11, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: TYPE.label, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
               {PLATFORM_LABELS[profile.platform] ?? profile.platform.toUpperCase()}
               {rank ? ` · ${formatTierRank(rank.tier, rank.rank)}` : ` · ${t("SavedProfiles.noRankYet")}`}
               {winrate !== null ? ` · ${t("SavedProfiles.winrateShort", { rate: winrate })}` : ""}
@@ -1678,7 +1722,7 @@ function ToolsIndex({
       >
         <ChampionSplashAccent championId="Ahri" style={{ top: -40, right: -20, width: 480, height: 320 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>{t("ToolsIndex.title")}</h1>
+          <h1 tabIndex={-1} style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0, outline: "none" }}>{t("ToolsIndex.title")}</h1>
           {localIdentity ? <DetectedPlayerChip identity={localIdentity} onClick={onOpenMyProfile} /> : null}
         </div>
         <HeaderProfileSearch onSearch={onSearchProfile} />
@@ -1732,7 +1776,7 @@ function HeaderProfileSearch({ onSearch }: { onSearch: (target: ProfileTarget) =
 
   return (
     <form onSubmit={handleSubmit} style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-      <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: COLORS.muted }}>
+      <span style={{ fontSize: TYPE.label, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: COLORS.muted }}>
         {t("ToolsIndex.profileSearch")}
       </span>
       <div style={{ display: "flex", gap: 6 }}>
@@ -1762,7 +1806,7 @@ function headerSearchFieldStyle(error: boolean): React.CSSProperties {
     border: `1px solid ${error ? COLORS.destructive : COLORS.cardBorder}`,
     borderRadius: 8,
     padding: "8px 10px",
-    fontSize: 13,
+    fontSize: TYPE.body,
   };
 }
 
@@ -1807,7 +1851,7 @@ function DetectedPlayerChip({ identity, onClick }: { identity: LcuIdentity; onCl
       ) : (
         <div style={{ width: 26, height: 26, borderRadius: 999, background: COLORS.cardBorder }} />
       )}
-      <span style={{ fontSize: 13 }}>
+      <span style={{ fontSize: TYPE.body }}>
         {identity.gameName}
         <span style={{ color: COLORS.muted }}>#{identity.tagLine}</span>
       </span>
@@ -1877,10 +1921,12 @@ function GridCard({
 function Settings({
   user,
   onUserChange,
+  sessionNotice,
   onExit,
 }: {
   user: AccountUser | null | undefined;
   onUserChange: (user: AccountUser | null) => void;
+  sessionNotice: boolean;
   onExit: () => void;
 }) {
   const { t, locale, setLocale } = useI18n();
@@ -1949,12 +1995,12 @@ function Settings({
     <div style={{ position: "relative", zIndex: 0, display: "flex", flexDirection: "column", gap: 24, maxWidth: 620, margin: "0 auto" }}>
       <ChampionSplashAccent championId="Lux" opacity={22} style={{ top: -60, left: -260, width: 420, height: 420 }} />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>{t("Settings.title")}</h1>
+        <h1 tabIndex={-1} style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0, outline: "none" }}>{t("Settings.title")}</h1>
         {/* Explicit exit control inside the Settings screen itself —
             otherwise the only way out is the nav rail. */}
         <button
           onClick={onExit}
-          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: COLORS.muted, fontSize: 13, cursor: "pointer", padding: 0 }}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: COLORS.muted, fontSize: TYPE.body, cursor: "pointer", padding: 0 }}
         >
           <ArrowLeft size={15} /> {t("Settings.exit")}
         </button>
@@ -1971,13 +2017,13 @@ function Settings({
         {user === undefined ? null : user ? (
           <ProfileSection user={user} onUserChange={onUserChange} onLogout={handleLogout} />
         ) : (
-          <LoginForm onLoggedIn={onUserChange} />
+          <LoginForm onLoggedIn={onUserChange} notice={sessionNotice} />
         )}
       </section>
 
       <section style={sectionStyle}>
         <h2 style={sectionTitleStyle}>{t("Settings.overlaySection")}</h2>
-        <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("Settings.overlayHotkeyHint")}</p>
+        <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: 0 }}>{t("Settings.overlayHotkeyHint")}</p>
         <OverlayToggle
           label={t("Settings.overlayCsPerMinute")}
           hint={t("Settings.overlayCsPerMinuteHint")}
@@ -2008,8 +2054,8 @@ function Settings({
         />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{t("Settings.flashSideLabel")}</span>
-            <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Settings.flashSideHint")}</span>
+            <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{t("Settings.flashSideLabel")}</span>
+            <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Settings.flashSideHint")}</span>
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             {(["left", "right"] as const).map((side) => (
@@ -2021,8 +2067,8 @@ function Settings({
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{t("Settings.calibrateAbilityBar")}</span>
-            <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Settings.calibrateAbilityBarHint")}</span>
+            <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{t("Settings.calibrateAbilityBar")}</span>
+            <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Settings.calibrateAbilityBarHint")}</span>
           </div>
           <button onClick={handleCalibrateAbilityBar} style={smallButtonStyle}>
             {abilityCalibrated ? t("Settings.calibrateAbilityBarDone") : t("Settings.calibrateAbilityBarButton")}
@@ -2033,8 +2079,8 @@ function Settings({
       <section style={sectionStyle}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{t("Settings.leagueDirLabel")}</span>
-            <span style={{ fontSize: 11, color: COLORS.muted, overflowWrap: "anywhere" }}>
+            <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{t("Settings.leagueDirLabel")}</span>
+            <span style={{ fontSize: TYPE.label, color: COLORS.muted, overflowWrap: "anywhere" }}>
               {leagueDir ?? t("Settings.leagueDirAuto")}
             </span>
           </div>
@@ -2069,8 +2115,19 @@ function Settings({
           (docs/overwolf-registration.md, "Game Compliance"): tiene que
           estar donde el jugador pueda verlo dentro de la propia app. */}
       <section style={sectionStyle}>
-        <h2 style={sectionTitleStyle}>{t("Settings.aboutSection")}</h2>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+          <h2 style={sectionTitleStyle}>{t("Settings.aboutSection")}</h2>
+          <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Settings.aboutVersion", { version: __APP_VERSION__ })}</span>
+        </div>
         <p style={{ margin: 0, fontSize: TYPE.label, lineHeight: 1.5, color: COLORS.muted }}>{t("Settings.riotDisclaimer")}</p>
+        {/* Los términos completos viven en la web (el EULA del instalador lo
+            dice); desde aquí se llega en un clic y en el idioma de la app. */}
+        <button
+          onClick={() => window.riftcompass.openExternal(webUrl(locale, "/legal"))}
+          style={{ display: "flex", alignItems: "center", gap: 6, alignSelf: "flex-start", background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}
+        >
+          {t("Settings.aboutLegal")} <ArrowSquareOut size={12} />
+        </button>
       </section>
     </div>
   );
@@ -2092,8 +2149,8 @@ function OverlayToggle({
   return (
     <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: disabled ? "default" : "pointer" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <span style={{ fontSize: 13, fontWeight: 500 }}>{label}</span>
-        <span style={{ fontSize: 11, color: COLORS.muted }}>{hint}</span>
+        <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{hint}</span>
       </div>
       <Switch checked={checked} disabled={disabled} onChange={onChange} />
     </label>
@@ -2119,7 +2176,7 @@ function ProfileSection({
   onUserChange: (user: AccountUser) => void;
   onLogout: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [username, setUsername] = useState(user.username ?? "");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ kind: "error" | "saved"; message: string } | null>(null);
@@ -2148,7 +2205,7 @@ function ProfileSection({
       <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
         <Avatar user={user} size={48} />
         <form onSubmit={handleSubmit} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-          <label htmlFor="account-username" style={{ fontSize: 12, color: COLORS.muted }}>{t("Settings.usernameLabel")}</label>
+          <label htmlFor="account-username" style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Settings.usernameLabel")}</label>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input
               id="account-username"
@@ -2163,9 +2220,9 @@ function ProfileSection({
             </button>
           </div>
           {status ? (
-            <span style={{ fontSize: 12, color: status.kind === "error" ? COLORS.destructive : COLORS.rose }}>{status.message}</span>
+            <span style={{ fontSize: TYPE.caption, color: status.kind === "error" ? COLORS.destructive : COLORS.rose }}>{status.message}</span>
           ) : (
-            <span style={{ fontSize: 11, color: COLORS.muted }}>{t("Settings.usernameHint")}</span>
+            <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Settings.usernameHint")}</span>
           )}
         </form>
         <button onClick={onLogout} style={{ ...smallButtonStyle, flexShrink: 0 }}>
@@ -2176,11 +2233,11 @@ function ProfileSection({
           guardar: se dice aquí, junto al enlace a la web donde está el botón
           de reenviar el correo. */}
       {user.emailVerified === false ? (
-        <span style={{ fontSize: 12, color: COLORS.gold, lineHeight: 1.5 }}>{t("Settings.emailNotVerifiedHint")}</span>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.gold, lineHeight: 1.5 }}>{t("Settings.emailNotVerifiedHint")}</span>
       ) : null}
       <button
-        onClick={() => window.riftcompass.openExternal(`${API_BASE_URL}/account`)}
-        style={{ display: "flex", alignItems: "center", gap: 6, alignSelf: "flex-start", background: "none", border: "none", color: COLORS.rose, fontSize: 12, cursor: "pointer", padding: 0 }}
+        onClick={() => window.riftcompass.openExternal(webUrl(locale, "/account"))}
+        style={{ display: "flex", alignItems: "center", gap: 6, alignSelf: "flex-start", background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}
       >
         {t("Settings.manageOnWeb")} <ArrowSquareOut size={12} />
       </button>
@@ -2188,8 +2245,8 @@ function ProfileSection({
   );
 }
 
-function LoginForm({ onLoggedIn }: { onLoggedIn: (user: AccountUser) => void }) {
-  const { t } = useI18n();
+function LoginForm({ onLoggedIn, notice }: { onLoggedIn: (user: AccountUser) => void; notice: boolean }) {
+  const { t, locale } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -2205,18 +2262,18 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (user: AccountUser) => void }) 
       onLoggedIn(result.user);
       return;
     }
-    const known = ["invalidCredentials", "emailNotVerified", "tooManyAttempts", "network"];
+    const known = ["invalidCredentials", "tooManyAttempts", "network"];
     setErrorCode(known.includes(result.error) ? result.error : "unknown");
   }
 
-  // Signing up, resetting a password and re-sending the verification email
-  // all live on the web (server actions, not /api/v1), so the form links
-  // out to them instead of describing where they are.
+  // Signing up and resetting a password live on the web (server actions,
+  // not /api/v1), so the form links out to them instead of describing where
+  // they are. In the app's language, not Windows' (webUrl, round 27).
   const webLink = (path: string, label: string) => (
     <button
       type="button"
-      onClick={() => window.riftcompass.openExternal(`${API_BASE_URL}${path}`)}
-      style={{ background: "none", border: "none", padding: 0, color: COLORS.rose, fontSize: 12, cursor: "pointer" }}
+      onClick={() => window.riftcompass.openExternal(webUrl(locale, path))}
+      style={{ background: "none", border: "none", padding: 0, color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer" }}
     >
       {label}
     </button>
@@ -2224,7 +2281,13 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (user: AccountUser) => void }) 
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <p style={{ fontSize: 12, color: COLORS.muted, margin: 0 }}>{t("Settings.accountLoginIntro")}</p>
+      {/* Aviso, no error (COLORS.gold): el jugador no hizo nada mal. */}
+      {notice ? (
+        <p role="status" style={{ fontSize: TYPE.caption, color: COLORS.gold, margin: 0, lineHeight: 1.5 }}>
+          {t("Auth.sessionEnded")}
+        </p>
+      ) : null}
+      <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: 0 }}>{t("Settings.accountLoginIntro")}</p>
       <input
         type="email"
         required
@@ -2246,9 +2309,8 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (user: AccountUser) => void }) 
         style={inputStyle}
       />
       {errorCode ? (
-        <span style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, color: COLORS.destructive }}>
+        <span role="alert" style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: TYPE.caption, color: COLORS.destructive }}>
           {t(`Auth.errors.${errorCode}`)}
-          {errorCode === "emailNotVerified" ? webLink("/verify-email", t("Auth.resendVerification")) : null}
         </span>
       ) : null}
       <button type="submit" disabled={busy} style={{ ...smallButtonStyle, alignSelf: "flex-start", opacity: busy ? 0.6 : 1 }}>
@@ -2274,13 +2336,13 @@ const sectionStyle: React.CSSProperties = {
 
 const sectionTitleStyle: React.CSSProperties = {
   fontFamily: FONT_HEADING,
-  fontSize: 15,
+  fontSize: TYPE.subheading,
   fontWeight: 400,
   margin: 0,
 };
 
 const smallButtonStyle: React.CSSProperties = {
-  fontSize: 12,
+  fontSize: TYPE.caption,
   padding: "7px 14px",
   borderRadius: 6,
   border: `1px solid ${COLORS.cardBorder}`,

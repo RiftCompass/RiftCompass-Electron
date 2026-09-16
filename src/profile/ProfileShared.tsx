@@ -447,6 +447,6 @@ export const secondaryButtonStyle: React.CSSProperties = {
   border: `1px solid ${COLORS.cardBorder}`,
   background: "none",
   color: COLORS.text,
-  fontSize: 12,
+  fontSize: TYPE.caption,
   cursor: "pointer",
 };

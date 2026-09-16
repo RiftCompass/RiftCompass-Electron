@@ -1,7 +1,7 @@
 import { runeIconUrl, statShardById, statShardIconUrl, type RuneStyle } from "../ddragon";
 import type { ChampionBuildRunes } from "../riftcompass";
 import { useI18n } from "../i18n";
-import { COLORS } from "../theme";
+import { COLORS, TYPE } from "../theme";
 
 // Las piezas con las que se dibuja una build, iguales allá donde salga una:
 // Champion Builds (populares, guardadas y el editor) y la ficha de un
@@ -103,7 +103,7 @@ export function AbilityBadge({ slot, iconUrl, size = 26 }: { slot: number; iconU
           background: `${COLORS.background}e6`,
           borderRadius: 4,
           padding: "0 3px",
-          fontSize: 9,
+          fontSize: TYPE.micro,
           fontWeight: 700,
         }}
       >
@@ -132,7 +132,7 @@ export function SkillGrid({
       <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 520 }}>
         <div style={{ display: "flex", gap: 3, paddingLeft: 32 }}>
           {Array.from({ length: 18 }, (_, index) => (
-            <span key={index} style={{ flex: 1, textAlign: "center", fontSize: 9, color: COLORS.muted }}>
+            <span key={index} style={{ flex: 1, textAlign: "center", fontSize: TYPE.micro, color: COLORS.muted }}>
               {index + 1}
             </span>
           ))}

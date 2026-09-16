@@ -12,6 +12,15 @@ export class ApiRateLimited extends Error {
   }
 }
 
+// riftcompass.com rechazó el token guardado (ronda 27): la sesión ya no
+// existe y no hay reintento que valga, hay que volver a entrar.
+export class ApiSessionExpired extends Error {
+  constructor() {
+    super("session expired");
+    this.name = "ApiSessionExpired";
+  }
+}
+
 export class ApiFailed extends Error {
   constructor(public readonly status: number | null) {
     super(status === null ? "network" : `HTTP ${status}`);
@@ -43,5 +52,22 @@ export async function apiGet<T>(url: string, init?: RequestInit): Promise<T> {
 // Un getSaved* del puente que no pudo pedir la lista (ronda 22), convertido
 // al mismo error que lanza apiGet para que LoadError distinga el 429.
 export function savedListError(result: { error: string; retryAfterSeconds: number | null }): Error {
+  if (result.error === "sessionExpired") return new ApiSessionExpired();
   return result.error === "rateLimited" ? new ApiRateLimited(result.retryAfterSeconds) : new ApiFailed(null);
+}
+
+// Texto de un guardado que falló (ronda 27). `group` es el bloque de claves
+// de esa herramienta ("TierList.saveTierListErrors"); un código que la
+// API pueda devolver mañana y el catálogo no conozca cae en `unknown` en
+// vez de pintarse como clave cruda, y la sesión caducada usa el texto
+// común. Se apoya en que t() devuelve la propia clave cuando no existe.
+export function saveErrorMessage(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  group: string,
+  error: string,
+): string {
+  if (error === "sessionExpired") return t("Common.sessionExpired");
+  const key = `${group}.${error}`;
+  const text = t(key);
+  return text === key ? t(`${group}.unknown`) : text;
 }

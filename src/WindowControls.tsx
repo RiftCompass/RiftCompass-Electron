@@ -13,6 +13,7 @@
 // touch: close hovers rose (--rose token) instead of Windows red.
 import { useEffect, useState } from "react";
 import { COLORS } from "./theme";
+import { useI18n } from "./i18n";
 
 function MinimizeIcon() {
   return (
@@ -52,6 +53,7 @@ function CloseIcon() {
 const HAS_WINDOW_CHROME = typeof window !== "undefined" && !!window.riftcompassWindow;
 
 export function WindowControls() {
+  const { t } = useI18n();
   const [maximized, setMaximized] = useState(true); // window opens maximized (electron/windows.ts)
   const [hovered, setHovered] = useState<"min" | "max" | "close" | null>(null);
 
@@ -87,7 +89,8 @@ export function WindowControls() {
   return (
     <div style={{ display: "flex", height: "100%", flexShrink: 0, WebkitAppRegion: "no-drag" }}>
       <button
-        aria-label="Minimize"
+        aria-label={t("Common.windowMinimize")}
+        title={t("Common.windowMinimize")}
         style={baseStyle("min")}
         onMouseEnter={() => setHovered("min")}
         onMouseLeave={() => setHovered(null)}
@@ -96,7 +99,8 @@ export function WindowControls() {
         <MinimizeIcon />
       </button>
       <button
-        aria-label={maximized ? "Restore" : "Maximize"}
+        aria-label={maximized ? t("Common.windowRestore") : t("Common.windowMaximize")}
+        title={maximized ? t("Common.windowRestore") : t("Common.windowMaximize")}
         style={baseStyle("max")}
         onMouseEnter={() => setHovered("max")}
         onMouseLeave={() => setHovered(null)}
@@ -105,7 +109,8 @@ export function WindowControls() {
         {maximized ? <RestoreIcon /> : <MaximizeIcon />}
       </button>
       <button
-        aria-label="Close"
+        aria-label={t("Common.windowClose")}
+        title={t("Common.windowClose")}
         style={baseStyle("close")}
         onMouseEnter={() => setHovered("close")}
         onMouseLeave={() => setHovered(null)}

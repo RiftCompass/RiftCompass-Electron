@@ -121,4 +121,6 @@ export const EVT = {
   OverlayTabHeld: "overlay:tab-held",
   /** payload: none — ability-bar calibration mode just started */
   OverlayCalibrationStart: "overlay:calibration-start",
+  /** payload: none — riftcompass.com answered 401 to the stored token (password changed, logged out elsewhere, expired): the session is gone (round 27) */
+  AccountSessionEnded: "account:session-ended",
 } as const;

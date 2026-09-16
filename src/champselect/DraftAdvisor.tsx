@@ -293,7 +293,7 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 8 }}>
         {selectorDePosicion}
-        <span style={{ fontSize: 12, color: COLORS.muted }}>
+        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
           {t("DraftAdvisor.roleLabel", { role: t(`Profile.positions.${posicion.toLowerCase()}`) })}
         </span>
         <p style={{ margin: 0, fontSize: TYPE.body, color: COLORS.text }}>
@@ -329,7 +329,7 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
               <img src={s.champion.iconUrl} alt="" style={{ width: 36, height: 36, borderRadius: 8, flexShrink: 0 }} />
               <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
                 <span style={{ fontSize: TYPE.body, fontWeight: 700, color: COLORS.text }}>{s.champion.name}</span>
-                <span style={{ fontSize: 11, color: COLORS.muted }}>
+                <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                   {s.matchupWinRate !== undefined && s.matchupGames !== undefined
                     ? t(s.matchupSpecific ? "DraftAdvisor.matchupLabel" : "DraftAdvisor.roleWideLabel", {
                         percent: Math.round(s.matchupWinRate * 100),
@@ -337,12 +337,12 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
                       })
                     : t("DraftAdvisor.matchupNone")}
                 </span>
-                <span style={{ fontSize: 11, color: COLORS.muted }}>{etiquetaPersonal(s)}</span>
+                <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{etiquetaPersonal(s)}</span>
                 {/* La maestría mueve el orden (masteryLogit): se enseña para
                     que se vea por qué (ronda 25); nada mientras el cliente
                     no haya contestado la lista. */}
                 {mastery.length > 0 ? (
-                  <span style={{ fontSize: 11, color: COLORS.muted }}>
+                  <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                     {s.masteryPoints
                       ? t("DraftAdvisor.masteryLabel", { level: s.masteryLevel ?? 0, points: nf.format(s.masteryPoints) })
                       : t("DraftAdvisor.masteryNone")}
@@ -352,7 +352,7 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
               <span
                 style={{
                   flexShrink: 0,
-                  fontSize: 11,
+                  fontSize: TYPE.label,
                   fontWeight: 700,
                   padding: "4px 10px",
                   borderRadius: 999,

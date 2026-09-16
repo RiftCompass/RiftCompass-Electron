@@ -16,7 +16,7 @@ import { useI18n } from "../i18n";
 import { LoadError } from "./LoadError";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 import { positionIconUrl } from "../lib/profile-analysis";
-import { COLORS, FONT_HEADING, cardStyle as makeCardStyle } from "../theme";
+import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, TYPE } from "../theme";
 import { API_BASE_URL } from "../shared/api";
 import { RealWinrateBadge, type ChampionWinrate } from "../RealWinrateBadge";
 
@@ -165,7 +165,7 @@ export function ChampionPoolBuilder() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="rc-stack" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {dataQuality ? <DataQualityNote quality={dataQuality.quality} patches={[dataQuality.patch]} /> : null}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {POOL_ROLES.map((r) => {
@@ -186,7 +186,7 @@ export function ChampionPoolBuilder() {
                 border: `1px solid ${active ? COLORS.rose : COLORS.cardBorder}`,
                 background: active ? `${COLORS.rose}26` : "none",
                 color: active ? COLORS.rose : COLORS.text,
-                fontSize: 13,
+                fontSize: TYPE.body,
                 cursor: "pointer",
               }}
             >
@@ -198,13 +198,13 @@ export function ChampionPoolBuilder() {
         })}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px, 380px)", gap: 20, alignItems: "start" }}>
+      <div className="rc-pool-grid" style={{ display: "grid", gap: 20, alignItems: "start" }}>
         <div style={cardStyle}>
           <h2 style={cardTitleStyle}>{t("ChampionPoolBuilder.poolTitle")}</h2>
           <p style={cardSubtitleStyle}>{t("ChampionPoolBuilder.poolIntro")}</p>
 
           {championsStatus === "loading" ? (
-            <p style={{ fontSize: 13, color: COLORS.muted, marginTop: 14 }}>{t("ProfileSearch.loading")}</p>
+            <p style={{ fontSize: TYPE.body, color: COLORS.muted, marginTop: 14 }}>{t("ProfileSearch.loading")}</p>
           ) : championsStatus === "error" ? (
             <div style={{ marginTop: 14 }}>
               <LoadError message={t("Common.dataDragonError")} onRetry={() => setChampionsAttempt((n) => n + 1)} />
@@ -228,8 +228,8 @@ export function ChampionPoolBuilder() {
             >
               {t("ChampionPoolBuilder.addButton")}
             </button>
-            {isFull ? <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ChampionPoolBuilder.poolFull")}</span> : null}
-            {alreadyIn ? <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ChampionPoolBuilder.alreadyInPool")}</span> : null}
+            {isFull ? <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ChampionPoolBuilder.poolFull")}</span> : null}
+            {alreadyIn ? <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ChampionPoolBuilder.alreadyInPool")}</span> : null}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
@@ -249,7 +249,7 @@ export function ChampionPoolBuilder() {
                     padding: 12,
                   }}
                 >
-                  <span style={{ width: 56, flexShrink: 0, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, color: COLORS.muted }}>
+                  <span style={{ width: 56, flexShrink: 0, fontSize: TYPE.label, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, color: COLORS.muted }}>
                     {t(`ChampionPoolBuilder.slot.${kind}`)}
                   </span>
                   {champion ? (
@@ -260,7 +260,7 @@ export function ChampionPoolBuilder() {
                           <span style={{ fontSize: 14, fontWeight: 500 }}>{champion.name}</span>
                           <RealWinrateBadge winrate={winrateByChampion.get(champion.internalId)} label="ChampionPoolBuilder" />
                         </span>
-                        <span style={{ fontSize: 11, color: COLORS.muted }}>{champion.tags.map((tag) => t(`GoldCalculator.categories.${tag.toLowerCase()}`)).join(" / ")}</span>
+                        <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{champion.tags.map((tag) => t(`GoldCalculator.categories.${tag.toLowerCase()}`)).join(" / ")}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
                         <IconButton onClick={() => handleMove(index, -1)} disabled={index === 0} label={t("ChampionPoolBuilder.moveUp")}>
@@ -275,7 +275,7 @@ export function ChampionPoolBuilder() {
                       </div>
                     </>
                   ) : (
-                    <span style={{ flex: 1, fontSize: 13, color: `${COLORS.muted}99` }}>{t("ChampionPoolBuilder.emptySlot")}</span>
+                    <span style={{ flex: 1, fontSize: TYPE.body, color: `${COLORS.muted}99` }}>{t("ChampionPoolBuilder.emptySlot")}</span>
                   )}
                 </div>
               );
@@ -299,7 +299,7 @@ export function ChampionPoolBuilder() {
               <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 14 }}>
                 {recGroups.map((group) => (
                   <div key={group.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <span style={{ fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase", color: COLORS.muted }}>
+                    <span style={{ fontSize: TYPE.label, letterSpacing: 0.8, textTransform: "uppercase", color: COLORS.muted }}>
                       {t(`ChampionPoolBuilder.recGroups.${group.id}`)}
                     </span>
                     {group.items.map((rec) => (
@@ -310,10 +310,10 @@ export function ChampionPoolBuilder() {
                         <img src={rec.champion.iconUrl} alt={rec.champion.name} style={{ width: 38, height: 38, borderRadius: 7, flexShrink: 0 }} />
                         <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                           <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>{rec.champion.name}</span>
+                            <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{rec.champion.name}</span>
                             <RealWinrateBadge winrate={winrateByChampion.get(rec.champion.internalId)} label="ChampionPoolBuilder" />
                           </span>
-                          <span style={{ fontSize: 11, color: COLORS.muted }}>{rec.reason}</span>
+                          <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{rec.reason}</span>
                         </div>
                         <button onClick={() => handleAddSpecific(rec.champion.internalId)} style={smallButtonStyle(false)}>
                           {t("ChampionPoolBuilder.addButton")}
@@ -330,16 +330,16 @@ export function ChampionPoolBuilder() {
             <div style={cardStyle}>
               <h2 style={cardTitleStyle}>{t("ChampionPoolBuilder.analysisTitle")}</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
-                <span style={{ fontSize: 12, color: COLORS.muted }}>{t("ChampionPoolBuilder.classesLabel")}</span>
+                <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ChampionPoolBuilder.classesLabel")}</span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {analysis.uniqueTags.map((tag) => (
-                    <span key={tag} style={{ borderRadius: 999, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}99`, padding: "4px 10px", fontSize: 11 }}>
+                    <span key={tag} style={{ borderRadius: 999, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.card}99`, padding: "4px 10px", fontSize: TYPE.label }}>
                       {className(tag)}
                     </span>
                   ))}
                 </div>
                 {analysis.dominantTag ? (
-                  <p style={{ fontSize: 12, color: COLORS.gold, marginTop: 4 }}>
+                  <p style={{ fontSize: TYPE.caption, color: COLORS.gold, marginTop: 4 }}>
                     {t("ChampionPoolBuilder.dominantTagWarning", { tag: className(analysis.dominantTag) })}
                   </p>
                 ) : null}
@@ -347,11 +347,11 @@ export function ChampionPoolBuilder() {
 
               {analysis.averageDifficulty !== null ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
-                  <span style={{ width: 100, flexShrink: 0, fontSize: 12, color: COLORS.muted }}>{t("ChampionPoolBuilder.difficultyLabel")}</span>
+                  <span style={{ width: 100, flexShrink: 0, fontSize: TYPE.caption, color: COLORS.muted }}>{t("ChampionPoolBuilder.difficultyLabel")}</span>
                   <div style={{ flex: 1, height: 8, borderRadius: 999, background: `${COLORS.background}99`, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${analysis.averageDifficulty * 10}%`, borderRadius: 999, background: COLORS.rose }} />
                   </div>
-                  <span style={{ width: 32, flexShrink: 0, textAlign: "right", fontSize: 12, color: COLORS.muted }}>
+                  <span style={{ width: 32, flexShrink: 0, textAlign: "right", fontSize: TYPE.caption, color: COLORS.muted }}>
                     {new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(analysis.averageDifficulty)}
                   </span>
                 </div>
@@ -391,7 +391,7 @@ function IconButton({ onClick, disabled, label, children }: { onClick: () => voi
 
 function smallButtonStyle(disabled: boolean): React.CSSProperties {
   return {
-    fontSize: 12,
+    fontSize: TYPE.caption,
     padding: "7px 14px",
     borderRadius: 6,
     border: `1px solid ${COLORS.cardBorder}`,
@@ -411,7 +411,7 @@ const cardTitleStyle: React.CSSProperties = {
 };
 
 const cardSubtitleStyle: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: TYPE.body,
   color: COLORS.muted,
   marginTop: 6,
 };
