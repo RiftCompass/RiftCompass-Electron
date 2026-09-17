@@ -307,6 +307,8 @@ export function DraftSimulator() {
                               key={`${draft.id}-${i}`}
                               src={champ.iconUrl}
                               alt={champ.name}
+                              loading="lazy"
+                              decoding="async"
                               title={`${champ.name}${isBan ? ` (${t("Draft.bans")})` : ""}`}
                               style={{
                                 width: 18,
@@ -430,7 +432,7 @@ export function DraftSimulator() {
                   opacity: used ? 0.2 : 1,
                 }}
               >
-                <img src={champ.iconUrl} alt={champ.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={champ.iconUrl} alt={champ.name} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </button>
             );
           })}
@@ -551,7 +553,7 @@ function ChampionSlot({
       }}
     >
       {champ ? (
-        <img src={champ.iconUrl} alt={champ.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={champ.iconUrl} alt={champ.name} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       ) : null}
     </div>
   );

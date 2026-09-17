@@ -81,6 +81,7 @@ export const es: Messages = {
     emptyFolder: "Todavía no hay perfiles en esta carpeta.",
   },
   ProfileSearch: {
+    platformLabel: "Servidor",
     matchNoteEven: "A la par con la línea",
     matchNoteBad: "Flojo {metric}",
     matchNoteGood: "Buen {metric}",

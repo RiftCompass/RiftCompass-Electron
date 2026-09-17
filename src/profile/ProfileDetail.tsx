@@ -962,8 +962,8 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 22,
-              height: 22,
+              width: 24, // 24 px minimum target (round 30)
+              height: 24,
               border: "none",
               background: "none",
               color: isAtFloor ? `${COLORS.muted}4d` : COLORS.muted,
@@ -981,8 +981,8 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 22,
-              height: 22,
+              width: 24, // 24 px minimum target (round 30)
+              height: 24,
               border: "none",
               background: "none",
               color: isCurrentMonth ? `${COLORS.muted}4d` : COLORS.muted,
@@ -1813,7 +1813,8 @@ const primaryButtonStyle: React.CSSProperties = {
   borderRadius: 8,
   border: "none",
   background: COLORS.rose,
-  color: "#fff",
+  // Dark on rose: white on rose was 4.02:1, under AA (round 30).
+  color: COLORS.background,
   fontSize: TYPE.body,
   fontWeight: 600,
   cursor: "pointer",

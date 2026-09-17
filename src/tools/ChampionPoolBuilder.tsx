@@ -254,7 +254,7 @@ export function ChampionPoolBuilder() {
                   </span>
                   {champion ? (
                     <>
-                      <img src={champion.iconUrl} alt={champion.name} style={{ width: 42, height: 42, borderRadius: 8, flexShrink: 0 }} />
+                      <img src={champion.iconUrl} alt={champion.name} loading="lazy" decoding="async" style={{ width: 42, height: 42, borderRadius: 8, flexShrink: 0 }} />
                       <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                         <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                           <span style={{ fontSize: 14, fontWeight: 500 }}>{champion.name}</span>
@@ -307,7 +307,7 @@ export function ChampionPoolBuilder() {
                         key={rec.champion.internalId}
                         style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 10, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.background}40`, padding: 10 }}
                       >
-                        <img src={rec.champion.iconUrl} alt={rec.champion.name} style={{ width: 38, height: 38, borderRadius: 7, flexShrink: 0 }} />
+                        <img src={rec.champion.iconUrl} alt={rec.champion.name} loading="lazy" decoding="async" style={{ width: 38, height: 38, borderRadius: 7, flexShrink: 0 }} />
                         <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                           <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                             <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{rec.champion.name}</span>

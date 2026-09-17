@@ -303,7 +303,7 @@ export function MetaTierList() {
                                     }}
                                   >
                                     {champ ? (
-                                      <img src={champ.iconUrl} alt={champ.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                      <img src={champ.iconUrl} alt={champ.name} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     ) : (
                                       <span
                                         style={{

@@ -354,13 +354,17 @@ export const selectStyle: React.CSSProperties = {
 export function PlatformSelect({ value, onChange }: { value: string; onChange: (platform: string) => void }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const { t } = useI18n();
 
   return (
     <div style={{ position: "relative", flexShrink: 0 }}>
+      {/* Named "Server", not by its value: a screen reader otherwise says
+          "button, EUW" with no clue what it picks (round 30, as on the web). */}
       <button
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-label={t("ProfileSearch.platformLabel")}
         aria-haspopup="listbox"
         aria-expanded={open}
         style={{

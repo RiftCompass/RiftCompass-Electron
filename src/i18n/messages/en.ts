@@ -93,6 +93,7 @@ export const en = {
     emptyFolder: "No profiles in this folder yet.",
   },
   ProfileSearch: {
+    platformLabel: "Server",
     matchNoteEven: "Even with lane",
     matchNoteBad: "Weak {metric}",
     matchNoteGood: "Strong {metric}",

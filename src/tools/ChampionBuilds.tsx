@@ -620,6 +620,8 @@ export function ChampionBuilds() {
                                 key={id}
                                 src={spell.iconUrl}
                                 alt={spell.name}
+                                loading="lazy"
+                                decoding="async"
                                 title={spell.name}
                                 style={{ width: 26, height: 26, borderRadius: 6 }}
                               />
@@ -649,6 +651,8 @@ export function ChampionBuilds() {
                               key={`${id}-${itemIndex}`}
                               src={itemIconUrl(version, id)}
                               alt={catalog?.byId[id]?.name ?? id}
+                              loading="lazy"
+                              decoding="async"
                               title={itemTooltip(catalog, id)}
                               style={{ width: 26, height: 26, borderRadius: 6 }}
                             />
@@ -792,6 +796,8 @@ export function ChampionBuilds() {
                                   key={id}
                                   src={spell.iconUrl}
                                   alt={spell.name}
+                                  loading="lazy"
+                                  decoding="async"
                                   title={spell.name}
                                   style={{ width: 22, height: 22, borderRadius: 5 }}
                                 />
@@ -803,6 +809,8 @@ export function ChampionBuilds() {
                             key={`${id}-${index}`}
                             src={itemIconUrl(version, id)}
                             alt={catalog?.byId[id]?.name ?? id}
+                            loading="lazy"
+                            decoding="async"
                             title={itemTooltip(catalog, id)}
                             style={{ width: 22, height: 22, borderRadius: 5 }}
                           />
@@ -887,6 +895,8 @@ function ItemPlanView({ plan, version, catalog }: { plan: ItemPlan; version: str
     <img
       src={itemIconUrl(version, String(itemId))}
       alt={catalog?.byId[String(itemId)]?.name ?? String(itemId)}
+      loading="lazy"
+      decoding="async"
       title={`${catalog?.byId[String(itemId)]?.name ?? itemId} · ${label}`}
       style={{ width: 26, height: 26, borderRadius: 6 }}
     />
