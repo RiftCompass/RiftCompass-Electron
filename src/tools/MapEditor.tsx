@@ -1324,9 +1324,7 @@ export function MapEditor() {
                           única pista, aparte del nombre, de cuál es cuál
                           (ronda 23). El t() de la app no hace plurales ICU. */}
                       <span style={{ fontSize: TYPE.caption, color: THEME.muted, flexShrink: 0 }}>
-                        {map.strokeCount === 1
-                          ? t("MapEditor.strokeCountOne")
-                          : t("MapEditor.strokeCount", { count: new Intl.NumberFormat(locale).format(map.strokeCount) })}
+                        {t("MapEditor.strokeCount", { count: map.strokeCount })}
                       </span>
                       <span style={{ fontSize: TYPE.caption, color: THEME.muted }}>{new Date(map.createdAt).toLocaleDateString(locale)}</span>
                       <button onClick={() => handleLoadMap(map.id)} style={pillButtonStyle(false, false)}>

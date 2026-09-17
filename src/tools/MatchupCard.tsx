@@ -160,7 +160,7 @@ export function MatchupCard({
   const anyGeneral = pieces.some((p) => !p.matchupSpecific);
   const sample = (piece: { games: number; wins: number; matchupSpecific: boolean }) => (
     <span style={labelStyle}>
-      {t("ChampionBuilds.itemSample", { games: nf.format(piece.games), rate: Math.round((piece.wins / Math.max(piece.games, 1)) * 100) })}
+      {t("ChampionBuilds.itemSample", { games: piece.games, rate: Math.round((piece.wins / Math.max(piece.games, 1)) * 100) })}
       {!piece.matchupSpecific && !allGeneral ? ` · ${t("Matchups.cardGeneralTag")}` : ""}
     </span>
   );
@@ -203,7 +203,7 @@ export function MatchupCard({
                 {matchup.winRate == null ? "–" : pct.format(matchup.winRate)}
               </span>
               <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("Matchups.cardWinrate", { champion: champion.name, enemy: enemy.name })}</span>
-              <span style={labelStyle}>{t("Matchups.games", { games: nf.format(matchup.games) })}</span>
+              <span style={labelStyle}>{t("Matchups.games", { games: matchup.games })}</span>
             </div>
             {matchup.winRate != null ? (
               <div style={{ position: "relative", height: 6, maxWidth: 440, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "clip" }} aria-hidden="true">
@@ -298,7 +298,7 @@ export function MatchupCard({
                       </span>
                     ))}
                   </span>
-                  <span style={labelStyle}>{t("Matchups.games", { games: nf.format(matchup.skillOrder.sampleGames) })}</span>
+                  <span style={labelStyle}>{t("Matchups.games", { games: matchup.skillOrder.sampleGames })}</span>
                 </div>
                 <SkillGrid path={matchup.skillOrder.path} abilityIcon={abilityIcon} t={t} />
               </div>

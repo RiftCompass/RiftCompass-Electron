@@ -1,6 +1,6 @@
 import { useI18n } from "../i18n";
 import { COLORS, pillStyle, TYPE } from "../theme";
-import { ApiRateLimited, ApiSessionExpired } from "../lib/api-fetch";
+import { ApiFailed, ApiRateLimited, ApiSessionExpired } from "../lib/api-fetch";
 
 // A tool's data failing to arrive from riftcompass.com, with a way back
 // that isn't reopening the tool. Shared by the tools whose whole board
@@ -18,7 +18,9 @@ export function LoadError({ onRetry, error, message: fallback }: { onRetry: () =
         ? error.retryAfterSeconds
           ? t("Common.rateLimitedFor", { seconds: error.retryAfterSeconds })
           : t("Common.rateLimited")
-        : (fallback ?? t("Common.networkError"));
+        : error instanceof ApiFailed && error.status !== null && error.status >= 500
+          ? t("Common.serverError")
+          : (fallback ?? t("Common.networkError"));
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
       <p style={{ fontSize: TYPE.body, color: COLORS.destructive, margin: 0 }}>{message}</p>
