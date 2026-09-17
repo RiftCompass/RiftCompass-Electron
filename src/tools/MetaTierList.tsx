@@ -231,7 +231,10 @@ export function MetaTierList() {
                             alignItems: "center",
                             gap: 10,
                             padding: "10px 0",
-                            borderTop: tierIdx > 0 ? `1px solid ${COLORS.cardBorder}` : "none",
+                            // Same strength as the web's divider (its --border at
+                            // full opacity, ~18% of the light text): cardBorder at
+                            // 8% was invisible between tiers.
+                            borderTop: tierIdx > 0 ? `1px solid ${COLORS.text}2e` : "none",
                           }}
                         >
                           <div
