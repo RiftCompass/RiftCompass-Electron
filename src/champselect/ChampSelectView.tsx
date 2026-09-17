@@ -524,8 +524,8 @@ export function ChampSelectView() {
                         games: nf.format(o.muestra ?? 0),
                         percent: String(Math.round(((o.victorias ?? 0) / Math.max(1, o.muestra ?? 0)) * 100)),
                       })
-                    : t("ChampSelect.fromSample", { games: nf.format(o.muestra ?? 0) })}
-                {o.itemIds.length > 0 ? ` · ${t("ChampSelect.withItems", { count: String(o.itemIds.length) })}` : ""}
+                    : t("ChampSelect.fromSample", { games: o.muestra ?? 0 })}
+                {o.itemIds.length > 0 ? ` · ${t("ChampSelect.withItems", { count: o.itemIds.length })}` : ""}
                 {aplicando === o.clave ? ` · ${t("ChampSelect.applying")}` : ""}
                 {aplicada === o.clave ? ` · ${t("ChampSelect.applied")}` : ""}
               </span>

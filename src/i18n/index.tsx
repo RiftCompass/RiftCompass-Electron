@@ -28,9 +28,27 @@ function resolve(obj: unknown, path: string): unknown {
   return path.split(".").reduce<unknown>((acc, key) => (acc && typeof acc === "object" ? (acc as Record<string, unknown>)[key] : undefined), obj);
 }
 
-function interpolate(template: string, vars?: Record<string, string | number>): string {
-  if (!vars) return template;
-  return template.replace(/\{(\w+)\}/g, (match, key) => (key in vars ? String(vars[key]) : match));
+// The one level of ICU the catalogs use, copied from the web's messages:
+// `{name, plural, =0 {…} one {…} other {…}}` with `#` for the number; then
+// plain `{var}`. Category by Intl.PluralRules, exact `=n` first, `other`
+// last. No nesting: the web doesn't nest either, and a full ICU parser
+// for "1 game / 2 games" would be the heaviest module in the renderer.
+const PLURAL = /\{(\w+),\s*plural,\s*((?:[^{}]|\{[^{}]*\})*)\}/g;
+const BRANCH = /(=\d+|zero|one|two|few|many|other)\s*\{([^{}]*)\}/g;
+
+export function interpolate(template: string, vars: Record<string, string | number> | undefined, locale: string): string {
+  const withPlurals = template.replace(PLURAL, (match, key: string, body: string) => {
+    const raw = vars?.[key];
+    const n = typeof raw === "number" ? raw : Number(raw);
+    if (raw === undefined || Number.isNaN(n)) return match;
+    const branches = new Map<string, string>();
+    for (const m of body.matchAll(BRANCH)) branches.set(m[1], m[2]);
+    const category = new Intl.PluralRules(locale).select(n);
+    const text = branches.get(`=${n}`) ?? branches.get(category) ?? branches.get("other") ?? "";
+    return text.replace(/#/g, new Intl.NumberFormat(locale).format(n));
+  });
+  if (!vars) return withPlurals;
+  return withPlurals.replace(/\{(\w+)\}/g, (match, key) => (key in vars ? String(vars[key]) : match));
 }
 
 interface I18nContextValue {
@@ -64,7 +82,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     (key: MessageKey, vars?: Record<string, string | number>) => {
       const value = resolve(CATALOGS[locale], key) ?? resolve(CATALOGS.en, key);
       if (typeof value !== "string") return key;
-      return interpolate(value, vars);
+      return interpolate(value, vars, locale);
     },
     [locale],
   );

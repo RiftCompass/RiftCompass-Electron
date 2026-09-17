@@ -66,7 +66,6 @@ const cardStyle = makeCardStyle({ borderRadius: 12, padding: 16 });
 
 export function Matchups() {
   const { t, locale } = useI18n();
-  const nf = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const openTool = useOpenTool();
   const requested = useRequestedChampion();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
@@ -205,7 +204,7 @@ export function Matchups() {
                     <WinRateBar winRate={row.winRate} />
                   </div>
                   <span style={{ fontSize: TYPE.body, fontWeight: 700, textAlign: "right", color: COLORS[tone], fontVariantNumeric: "tabular-nums" }}>{formatPercent(locale, row.winRate)}</span>
-                  <span style={{ fontSize: TYPE.label, color: COLORS.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{t("Matchups.games", { games: nf.format(row.games) })}</span>
+                  <span style={{ fontSize: TYPE.label, color: COLORS.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{t("Matchups.games", { games: row.games })}</span>
                 </div>
               );
             })}
@@ -350,7 +349,7 @@ export function Matchups() {
               <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.display, lineHeight: 1.1, color: summaryWinRate === null ? COLORS.muted : summaryWinRate >= 0.5 ? COLORS.good : COLORS.bad }}>
                 {summaryWinRate === null ? "–" : new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryWinRate)}
               </span>
-              <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Matchups.summaryGames", { games: nf.format(summaryGames), rivals: solidAs.length })}</span>
+              <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Matchups.summaryGames", { games: summaryGames, rivals: solidAs.length })}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: "1 1 320px", minWidth: 0 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

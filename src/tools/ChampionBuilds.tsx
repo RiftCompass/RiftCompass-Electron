@@ -36,7 +36,7 @@ import { useI18n } from "../i18n";
 import { useOpenAccountPanel } from "../account-panel";
 import { useOpenTool, useRequestedChampion } from "../tool-navigation";
 import { LoadError } from "./LoadError";
-import { apiGet, saveErrorMessage } from "../lib/api-fetch";
+import { apiGet, saveErrorMessage, savedListError } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 import { AbilityBadge, RunePageView, SKILL_KEYS, SkillGrid, type Translate } from "./build-visuals";
 import { COLORS, FONT_HEADING, cardStyle, inputStyle, pillStyle, TYPE } from "../theme";
@@ -218,7 +218,13 @@ export function ChampionBuilds() {
   const [itemPick, setItemPick] = useState(0);
 
   const [user, setUser] = useState<AccountUser | null | undefined>(undefined);
+  // null = not loaded yet; `savedError` = the list couldn't be fetched
+  // (round 29): before, loading and failing both looked like "you haven't
+  // saved a build for this champion yet", the one saved list round 22 left
+  // without LoadError + "Loading your saved items…".
   const [builds, setBuilds] = useState<SavedChampionBuild[] | null>(null);
+  const [savedError, setSavedError] = useState<Error | null>(null);
+  const [savedAttempt, setSavedAttempt] = useState(0);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -318,8 +324,12 @@ export function ChampionBuilds() {
       setBuilds(user === null ? [] : null);
       return;
     }
-    window.riftcompass.getSavedChampionBuilds().then((result) => setBuilds(result.ok ? result.items : null));
-  }, [user]);
+    setSavedError(null);
+    window.riftcompass.getSavedChampionBuilds().then((result) => {
+      if (result.ok) setBuilds(result.items);
+      else setSavedError(savedListError(result));
+    });
+  }, [user, savedAttempt]);
 
   const runeIndex = useMemo(() => {
     const byId = new Map<number, { name: string; icon: string; shortDesc: string }>();
@@ -738,6 +748,10 @@ export function ChampionBuilds() {
 
             {user === null ? (
               <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.loginToSave")}</p>
+            ) : savedError ? (
+              <LoadError error={savedError} onRetry={() => setSavedAttempt((n) => n + 1)} />
+            ) : builds === null ? (
+              <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("Common.loadingSaved")}</p>
             ) : championBuilds.length === 0 ? (
               <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noSavedBuilds")}</p>
             ) : (

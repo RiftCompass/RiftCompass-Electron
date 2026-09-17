@@ -5,6 +5,25 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.13
+
+- Builds de campeón: "Mis builds" dice "Cargando tus guardados…" mientras
+  carga y, si la lista no llega (sin red, demasiadas peticiones, sesión
+  cerrada), lo dice y ofrece reintentar, en vez de "Aún no has guardado
+  ninguna build".
+- Test de personalidad: si Data Dragon no responde, los resultados lo
+  dicen y ofrecen reintentar en vez de salir vacíos.
+- Cuando riftcompass.com contesta con un error del servidor (por ejemplo
+  mientras se reinicia de madrugada), el mensaje dice que el problema es
+  del servidor, no de tu conexión.
+- Plurales: "1 partida", "1 partie", "1 Spiel" en Builds de campeón,
+  Matchups, perfil, selección de campeón y tier lists, con miles según el
+  idioma.
+- Francés: Calculateur d'or, XP de jungle, Comparer y el Simulateur de
+  Draft hablan de "vous" como el resto de la app; "Loups" y "Rapaces" en la
+  tabla de XP; la nota al pie nombra al cangrejo como la tabla (es/fr/de).
+- Matchups y Meta Tier List sugieren probar otro rango cuando no hay datos.
+
 ## 0.3.12
 
 - Sesión: si riftcompass.com rechaza la sesión guardada (contraseña

@@ -14,6 +14,7 @@ import { useI18n } from "../i18n";
 import { COLORS, FONT_HEADING, cardStyle as makeCardStyle, TYPE } from "../theme";
 import { API_BASE_URL } from "../shared/api";
 import { RealWinrateBadge, type ChampionWinrate } from "../RealWinrateBadge";
+import { LoadError } from "./LoadError";
 
 // Real winrate from RiftCompass's own crawler, shown as extra context next
 // to each recommendation (shared with ChampionPoolBuilder.tsx via
@@ -37,14 +38,25 @@ const QUIZ_DRAFT_KEY = "riftcompass-overlay:personality-test:draft:v1";
 export function PersonalityTest() {
   const { t } = useI18n();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
+  // Same loading | error | ready the other Data Dragon tools carry (round
+  // 29): a failed roster fetch used to render the results card empty, as if
+  // no champion matched, with nothing to retry.
+  const [championsStatus, setChampionsStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [championsAttempt, setChampionsAttempt] = useState(0);
   const [role, setRole] = useState<PersonalityRole | null>(null);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [restored, setRestored] = useState(false);
 
   useEffect(() => {
-    fetchChampionMap().then((m) => setChampions(Object.values(m.byInternalId)));
-  }, []);
+    setChampionsStatus("loading");
+    fetchChampionMap()
+      .then((m) => {
+        setChampions(Object.values(m.byInternalId));
+        setChampionsStatus("ready");
+      })
+      .catch(() => setChampionsStatus("error"));
+  }, [championsAttempt]);
 
   useEffect(() => {
     try {
@@ -137,7 +149,16 @@ export function PersonalityTest() {
   }
 
   if (isResults) {
-    return <Results role={role} answers={answers} champions={champions} onRestart={handleRestart} />;
+    return (
+      <Results
+        role={role}
+        answers={answers}
+        champions={champions}
+        championsStatus={championsStatus}
+        onRetryChampions={() => setChampionsAttempt((n) => n + 1)}
+        onRestart={handleRestart}
+      />
+    );
   }
 
   const question = PERSONALITY_QUESTIONS[step];
@@ -172,11 +193,15 @@ function Results({
   role,
   answers,
   champions,
+  championsStatus,
+  onRetryChampions,
   onRestart,
 }: {
   role: PersonalityRole;
   answers: Record<string, Answer>;
   champions: ChampionInfo[];
+  championsStatus: "loading" | "error" | "ready";
+  onRetryChampions: () => void;
   onRestart: () => void;
 }) {
   const { t } = useI18n();
@@ -220,6 +245,13 @@ function Results({
       <div className="rc-stack" style={cardStyle}>
         <h2 style={cardTitleStyle}>{t("PersonalityTest.resultsTitle")}</h2>
         <p style={cardSubtitleStyle}>{t("PersonalityTest.resultsSubtitle", { role: t(`Profile.positions.${role.toLowerCase()}`) })}</p>
+        {championsStatus === "loading" ? (
+          <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: "12px 0 0" }}>{t("ProfileSearch.loading")}</p>
+        ) : championsStatus === "error" ? (
+          <div style={{ marginTop: 12 }}>
+            <LoadError message={t("Common.dataDragonError")} onRetry={onRetryChampions} />
+          </div>
+        ) : (
         <div className="rc-two-col" style={{ display: "grid", gap: 8, marginTop: 12 }}>
           {matches.map((m, i) => (
             <div
@@ -262,6 +294,7 @@ function Results({
             </div>
           ))}
         </div>
+        )}
       </div>
 
       <button onClick={onRestart} style={{ ...optionButtonStyle, width: "fit-content" }}>

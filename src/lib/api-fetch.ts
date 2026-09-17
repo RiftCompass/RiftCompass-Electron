@@ -53,7 +53,12 @@ export async function apiGet<T>(url: string, init?: RequestInit): Promise<T> {
 // al mismo error que lanza apiGet para que LoadError distinga el 429.
 export function savedListError(result: { error: string; retryAfterSeconds: number | null }): Error {
   if (result.error === "sessionExpired") return new ApiSessionExpired();
-  return result.error === "rateLimited" ? new ApiRateLimited(result.retryAfterSeconds) : new ApiFailed(null);
+  if (result.error === "rateLimited") return new ApiRateLimited(result.retryAfterSeconds);
+  // account.ts reports an HTTP failure as `httpNNN`: keep the status so a
+  // 5xx reads as "riftcompass.com is having trouble", not "check your
+  // connection" (round 29).
+  const m = /^http(\d+)$/.exec(result.error);
+  return new ApiFailed(m ? Number(m[1]) : null);
 }
 
 // Texto de un guardado que falló (ronda 27). `group` es el bloque de claves
