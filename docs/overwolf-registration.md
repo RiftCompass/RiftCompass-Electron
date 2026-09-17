@@ -358,7 +358,7 @@ y <https://dev.overwolf.com/ow-electron/guides/game-compliance/riot-in-game-ads>
 | Temporizadores de hechizos rivales | **Incumplida**: el overlay tenía el panel "Hechizos rivales", con cuenta atrás al clicar cada hechizo (base de Data Dragon). | **Retirado el 2026-09-12** (`src/OverlayView.tsx`, `electron/settings.ts`, tipos y textos). Un `enemySpells` guardado en `settings.json` de versiones anteriores se ignora. |
 | Aviso de Riot con texto literal | La web ya lo lleva en el pie de todas las páginas; la app no lo enseñaba en ningún sitio. | Añadida la sección "Acerca de" al final de Ajustes con el texto exacto (en inglés) y su traducción en es/fr/de (`Settings.riotDisclaimer`). |
 | Notificaciones de power spike / directivas | No existen: el orden de habilidades recomendado es sobre el propio campeón, y las cuentas atrás de objetivos (dragón, heraldo, barón, larvas) son tiempos de aparición públicos, no del estado del rival. | Nada. No añadir nunca avisos tipo "el rival tiene nivel 6" ni "gankea ahora". |
-| Anonimato en champ select | La ventana de draft solo enseña campeones y posiciones, nunca nombres de invocador de nadie que no sea el propio jugador (`src/champselect/`). | Nada. Si algún día se enseñan nombres de aliados, ocultar los que no sean del grupo como "Ally #". |
+| Anonimato en champ select y en partida | La ventana de draft solo enseña campeones y posiciones, nunca nombres de invocador de nadie que no sea el propio jugador (`src/champselect/`). El overlay in-game sí enseñaba el Riot ID de los compañeros hasta la ronda 25 (2026-09-16); desde entonces los nombra "Aliado {n}" (`overlay.ally` en los catálogos). | Hecho en la ronda 25. Si algún día se enseñan nombres de aliados, solo los del grupo; el resto como "Ally #". |
 | Logos de Riot | No hay ninguno: iconos de campeones/objetos/runas de Data Dragon y de objetivos de Community Dragon, que son recursos del juego, no la marca. | Nada. |
 | Marca propia y no tapar la interfaz | Paneles con el estilo de RiftCompass (tipografía y paleta propias), arrastrables, y los de oro/CS solo mientras se pulsa Tab; el resaltado de habilidad recomendada se pinta sobre el icono real calibrado por el jugador, no sobre un control. | Nada por ahora; revisar la esquina por defecto de cada panel si Overwolf pide algo en la revisión de la tienda. |
 | Anuncios | No hay. | Cuando se active la monetización, seguir las seis reglas de arriba además de la guía de la web. |
@@ -366,3 +366,73 @@ y <https://dev.overwolf.com/ow-electron/guides/game-compliance/riot-in-game-ads>
 
 Lo que la web ya cumplía por su cuenta: aviso en el pie (`Footer.disclaimer`)
 y en el Aviso Legal; sin logos de Riot; sin anuncios.
+
+
+## Respuesta sobre la consola: no hay consola hasta aprobar el MVP — 2026-09-14
+
+Overwolf contestó el 2026-09-14 (15:11) al hilo "Welcome to the Overwolf
+Developers community!" a la petición de acceso a `console.overwolf.com` del
+día 11. Texto literal:
+
+> "We set up an Overwolf console only after you submit your app MVP and it
+> has been approved by us, since the console's purpose is to handle the
+> OPK/EXE's distribution. When your app is ready, you can submit it for
+> review here. For now you should only use the OW_DEV_KEY - the app signing
+> should happen only before app release."
+
+O sea: el "Something went wrong" de la consola no es un fallo, es que la
+cuenta no tiene consola todavía. `OW_CLI_API_KEY` y `OW_BUILD_KEY` no existen
+hasta que el MVP pase su revisión.
+
+### Qué cambia
+
+- **La firma de Overwolf es el último paso, no el siguiente.** Según su
+  guía de app-signing y dev-mode: un build empaquetado no activa el modo dev
+  y sin la firma de Overwolf los paquetes GEP/Overlay/Recorder no cargan.
+  **Hasta la aprobación del MVP no se puede repartir la app con overlay a
+  usuarios reales** (ni por riftcompass.com ni por GitHub Releases); solo
+  cabría una versión pública sin overlay, que no interesa.
+- **El certificado de Certum sigue haciendo falta** (Overwolf exige las dos
+  firmas: la nuestra sobre el `.exe` y la suya sobre los paquetes). Se usa
+  al final. Su validez corre desde la compra: si la revisión se alargara,
+  vigilar la caducidad.
+- **Enlaces del correo**: el formulario de envío del MVP es
+  <https://forms.monday.com/forms/6cba29808d4f0e70aaf4517ee7e4e82b?r=use1>.
+  El enlace "submit your app" apunta a la guía de apps nativas
+  (<https://dev.overwolf.com/ow-native/getting-started/submit-your-app/>),
+  que describe un OPK con `manifest.json`; parece plantilla. Al enviar,
+  indicar que es ow-electron y preguntar si quieren el `.exe` empaquetado o
+  el proyecto.
+- Según esa guía, la revisión tarda **hasta 4 semanas** según la cola, y
+  tras la primera revisión piden material de tienda: `Tile.jpg` 258×198,
+  `Icon.png` 55×55, hasta 5 capturas 1200×750 JPG de ≤100 KB y descripción
+  de <2000 caracteres. El material de marca vive en el servidor
+  (`ssh macmini material riftcompass`).
+
+### Orden de pasos a partir de aquí
+
+1. Terminar el MVP con `OW_DEV_KEY` (caduca el 24/09/2026; Extend en
+   dev.overwolf.com/profile).
+2. Enviar el MVP por el formulario de Monday. Cada día de retraso se suma a
+   la cola de revisión.
+3. Preparar el material de tienda en paralelo.
+4. Con la consola concedida: `OW_CLI_API_KEY` + `OW_BUILD_KEY`, doble firma
+   en `scripts/build-win.mjs`, empaquetar con `@overwolf/ow-electron-builder`
+   y comprobar el auto-update.
+
+No se respondió al correo: no pedía nada. Si se responde, bastaría confirmar
+que se seguirá con la Dev Key y se enviará el MVP por el formulario.
+
+### Estado del certificado de Certum el mismo día
+
+Verificación cerrada por parte del propietario: identidad repetida por
+IDnow el 2026-09-12 y corrección de los datos de domicilio aceptada el
+2026-09-14 respondiendo al correo de `ccp@certum.pl` desde
+riftcompass@gmail.com. Factura emitida y pagada el 2026-09-14 (49 € + IVA).
+**El 2026-09-16 Certum dio la verificación por terminada** ("Confirmation of
+the data to be verified is completed"): el último paso es que el propietario
+genere el par de claves desde su cuenta de la tienda (shop.certum.eu → Data
+security products → el producto), que crea el certificado en SimplySign;
+después instalar SimplySign Desktop y la app móvil, y meter la firma en
+`scripts/build-win.mjs`. Los números de pedido y factura no se apuntan aquí
+(repositorio público): están en los correos de riftcompass@gmail.com.
