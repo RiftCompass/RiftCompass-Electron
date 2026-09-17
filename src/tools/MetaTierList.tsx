@@ -262,7 +262,7 @@ export function MetaTierList() {
                     key={tier}
                     style={{
                       display: "flex",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                       gap: 10,
                       padding: "10px 0",
                       // Same strength as the web's divider (its --border at
@@ -288,7 +288,10 @@ export function MetaTierList() {
                     >
                       {tier}
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {/* Equal columns that grow to fill the row (icons up to 64 px): a tier
+                        with few champions spreads them out instead of leaving the right
+                        side empty, as on the web. */}
+                    <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(52px, 1fr))", alignItems: "start", gap: 6 }}>
                       {inTier.map((entry) => {
                         const champ = championByInternalId.get(toDDragonId(entry.championName));
                         const tooltip = t("MetaTierList.chipTooltip", { rate: Math.round(entry.winRate * 100), games: entry.games });
@@ -320,6 +323,7 @@ export function MetaTierList() {
                               display: "flex",
                               flexDirection: "column",
                               alignItems: "center",
+                              minWidth: 0,
                               gap: 3,
                               cursor: openBuilds ? "pointer" : undefined,
                               transform: matched ? "scale(1.15)" : undefined,
@@ -330,8 +334,9 @@ export function MetaTierList() {
                           >
                             <div
                               style={{
-                                width: 36,
-                                height: 36,
+                                width: "100%",
+                                maxWidth: 64,
+                                aspectRatio: "1",
                                 borderRadius: 7,
                                 overflow: "hidden",
                                 border: `1px solid ${matched ? COLORS.rose : COLORS.cardBorder}`,
@@ -357,6 +362,20 @@ export function MetaTierList() {
                                 </span>
                               )}
                             </div>
+                            <span
+                              style={{
+                                width: "100%",
+                                fontSize: 10,
+                                lineHeight: 1.2,
+                                color: COLORS.muted,
+                                textAlign: "center",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {name}
+                            </span>
                             <span
                               style={{
                                 fontSize: 10,
