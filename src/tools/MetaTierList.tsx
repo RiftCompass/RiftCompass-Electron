@@ -130,8 +130,10 @@ export function MetaTierList() {
   // icons line up vertically across tiers; in a narrow window the columns
   // never go under 52 px and rows wrap instead (auto-fill keeps the empty
   // trailing tracks, which is what keeps the rows aligned). Same as the web.
-  const widestTier = Math.max(1, ...TIERS.map((tier) => entries.filter((e) => e.tier === tier).length));
-  const boardColumns = `repeat(auto-fill, minmax(max(52px, calc((100% - ${widestTier - 1} * 6px) / ${widestTier})), 1fr))`;
+  // Plus one cell for the tier letter, which sits in the grid so it is
+  // exactly as big as the champion icons next to it.
+  const boardCells = Math.max(1, ...TIERS.map((tier) => entries.filter((e) => e.tier === tier).length)) + 1;
+  const boardColumns = `repeat(auto-fill, minmax(max(52px, calc((100% - ${boardCells - 1} * 6px) / ${boardCells})), 1fr))`;
   const matchesHere = trimmedSearch
     ? entries.some((entry) => displayName(entry.championName).toLowerCase().includes(trimmedSearch))
     : false;
@@ -267,9 +269,10 @@ export function MetaTierList() {
                   <div
                     key={tier}
                     style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: 10,
+                      display: "grid",
+                      gridTemplateColumns: boardColumns,
+                      alignItems: "start",
+                      gap: 6,
                       padding: "10px 0",
                       // Same strength as the web's divider (its --border at
                       // full opacity, ~18% of the light text): cardBorder at
@@ -277,27 +280,25 @@ export function MetaTierList() {
                       borderTop: tierIdx > 0 ? `1px solid ${COLORS.text}2e` : "none",
                     }}
                   >
+                    {/* The letter is the first grid cell: same square as the
+                        icons, font size following the square (container units). */}
                     <div
                       style={{
-                        width: 32,
-                        height: 32,
-                        flexShrink: 0,
+                        containerType: "inline-size",
+                        width: "100%",
+                        maxWidth: 64,
+                        aspectRatio: "1",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         borderRadius: 7,
-                        fontSize: 14,
-                        fontWeight: 700,
                         background: TIER_COLORS[tier],
                         color: COLORS.text,
                       }}
                     >
-                      {tier}
+                      <span style={{ fontFamily: FONT_HEADING, fontSize: "45cqw", lineHeight: 1 }}>{tier}</span>
                     </div>
-                    {/* Equal columns that grow to fill the row (icons up to 64 px): a tier
-                        with few champions spreads them out instead of leaving the right
-                        side empty, as on the web. */}
-                    <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: boardColumns, alignItems: "start", gap: 6 }}>
+                    <>
                       {inTier.map((entry) => {
                         const champ = championByInternalId.get(toDDragonId(entry.championName));
                         const tooltip = t("MetaTierList.chipTooltip", { rate: Math.round(entry.winRate * 100), games: entry.games });
@@ -395,7 +396,7 @@ export function MetaTierList() {
                           </div>
                         );
                       })}
-                    </div>
+                    </>
                   </div>
                 );
                 })
