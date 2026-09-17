@@ -126,6 +126,12 @@ export function MetaTierList() {
   const displayName = (championName: string) =>
     championByInternalId.get(toDDragonId(championName))?.name ?? championName;
   const entries = byRole[role] ?? [];
+  // Every tier row uses the SAME column count (the fullest tier's), so the
+  // icons line up vertically across tiers; in a narrow window the columns
+  // never go under 52 px and rows wrap instead (auto-fill keeps the empty
+  // trailing tracks, which is what keeps the rows aligned). Same as the web.
+  const widestTier = Math.max(1, ...TIERS.map((tier) => entries.filter((e) => e.tier === tier).length));
+  const boardColumns = `repeat(auto-fill, minmax(max(52px, calc((100% - ${widestTier - 1} * 6px) / ${widestTier})), 1fr))`;
   const matchesHere = trimmedSearch
     ? entries.some((entry) => displayName(entry.championName).toLowerCase().includes(trimmedSearch))
     : false;
@@ -291,7 +297,7 @@ export function MetaTierList() {
                     {/* Equal columns that grow to fill the row (icons up to 64 px): a tier
                         with few champions spreads them out instead of leaving the right
                         side empty, as on the web. */}
-                    <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(52px, 1fr))", alignItems: "start", gap: 6 }}>
+                    <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: boardColumns, alignItems: "start", gap: 6 }}>
                       {inTier.map((entry) => {
                         const champ = championByInternalId.get(toDDragonId(entry.championName));
                         const tooltip = t("MetaTierList.chipTooltip", { rate: Math.round(entry.winRate * 100), games: entry.games });
