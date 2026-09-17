@@ -816,6 +816,9 @@ export const en = {
     games: "{games, plural, one {# game} other {# games}}",
   },
   MetaTierList: {
+    roleLabel: "Position",
+    onlyInOtherRoles: "Not in this position. Found in:",
+    alsoInOtherRoles: "Also in:",
     intro: "Champions ranked by real win rate, from ranked solo/duo matches RiftCompass has actually sampled and tracked, not a third-party source, and not fabricated for roles/champions we don't have data for yet.",
     methodologyNote: "Tiers are relative: S is the best-performing slice of what's been measured for that role so far, D the weakest, not a fixed win-rate cutoff, since the dataset is still small and growing daily.",
     noDataForRole: "Not enough tracked matches for this role and rank yet. Try another rank, or check back as more games get sampled.",

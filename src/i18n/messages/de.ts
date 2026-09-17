@@ -804,6 +804,9 @@ export const de: Messages = {
     games: "{games, plural, one {# Partie} other {# Partien}}",
   },
   MetaTierList: {
+    roleLabel: "Position",
+    onlyInOtherRoles: "Nicht auf dieser Position. Zu finden auf:",
+    alsoInOtherRoles: "Auch auf:",
     intro: "Champions gerankt nach echter Winrate, aus Ranked-Solo/Duo-Matches, die RiftCompass tatsächlich erfasst und ausgewertet hat, keine Drittanbieter-Quelle und nicht erfunden für Rollen/Champions, zu denen wir noch keine Daten haben.",
     methodologyNote: "Tiers sind relativ: S ist der bisher bestperformende Ausschnitt der Messungen für diese Rolle, D der schwächste, kein fester Winrate-Grenzwert, da der Datensatz noch klein ist und täglich wächst.",
     noDataForRole: "Noch nicht genug erfasste Partien für diese Rolle und diesen Rang. Probiere einen anderen Rang oder schau später wieder vorbei, wenn mehr Partien erfasst sind.",

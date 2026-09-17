@@ -804,6 +804,9 @@ export const fr: Messages = {
     games: "{games, plural, one {# partie} other {# parties}}",
   },
   MetaTierList: {
+    roleLabel: "Position",
+    onlyInOtherRoles: "Absent de cette position. Présent en :",
+    alsoInOtherRoles: "Aussi en :",
     intro: "Champions classés par taux de victoire réel, à partir de parties classées solo/duo réellement échantillonnées et suivies par RiftCompass, pas une source tierce, et pas inventé pour les rôles/champions dont nous n'avons pas encore de données.",
     methodologyNote: "Les tiers sont relatifs : S représente la tranche la plus performante de ce qui a été mesuré jusqu'ici pour ce rôle, D la plus faible, pas un seuil fixe de taux de victoire, puisque le jeu de données est encore petit et croît chaque jour.",
     noDataForRole: "Pas encore assez de parties suivies pour ce rôle et ce rang. Essayez un autre rang, ou revenez quand plus de parties auront été analysées.",
