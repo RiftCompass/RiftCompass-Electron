@@ -9,3 +9,6 @@ release/
 # Credenciales de desarrollador de Overwolf: sin ellas los paquetes de juego
 # no cargan en local, y con ellas dentro del repo (que es publico) seria una fuga.
 .env.overwolf.local
+
+# Ajustes y skills de Claude Code son de cada máquina (las skills viven en ~/.claude/skills).
+.claude/
