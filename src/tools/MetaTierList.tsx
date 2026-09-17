@@ -63,6 +63,10 @@ export function MetaTierList() {
   const openTool = useOpenTool();
   const [champions, setChampions] = useState<ChampionInfo[]>([]);
   const [rank, setRank] = useState<(typeof RANK_TIERS)[number]>("CHALLENGER");
+  // One position at a time (owner's decision, 2026-09-17, same as the web):
+  // five role cards in a 2+2+1 grid ran 2 600 px tall with half-empty tier
+  // rows; a single full-width board per position fits on one screen.
+  const [role, setRole] = useState<PersonalityRole>("TOP");
   const [winrates, setWinrates] = useState<ChampionWinrate[] | null>(null);
   const [loadStatus, setLoadStatus] = useState<"loading" | "error" | "ready">("loading");
   const [loadError, setLoadError] = useState<unknown>(null);
@@ -121,16 +125,20 @@ export function MetaTierList() {
   const trimmedSearch = search.trim().toLowerCase();
   const displayName = (championName: string) =>
     championByInternalId.get(toDDragonId(championName))?.name ?? championName;
-  const matchCount = winrates
-    ? new Set(
-        winrates
-          .map((entry) => displayName(entry.championName))
-          .filter((name) => trimmedSearch && name.toLowerCase().includes(trimmedSearch)),
-      ).size
-    : 0;
+  const entries = byRole[role] ?? [];
+  const matchesHere = trimmedSearch
+    ? entries.some((entry) => displayName(entry.championName).toLowerCase().includes(trimmedSearch))
+    : false;
+  // Positions other than the visible one where the searched champion sits,
+  // so the field can point at them instead of a dead "no matches".
+  const matchesElsewhere = trimmedSearch
+    ? (POOL_ROLES as PersonalityRole[]).filter(
+        (r) => r !== role && (byRole[r] ?? []).some((entry) => displayName(entry.championName).toLowerCase().includes(trimmedSearch)),
+      )
+    : [];
 
-  // The five role cards run well past one screen, so the first match is
-  // scrolled into view: a chip glowing below the fold is a chip nobody sees.
+  // On a small window the board still runs past one screen, so the first
+  // match is scrolled into view: a chip glowing below the fold is a chip nobody sees.
   // Centred rather than "nearest" (which lands it flush against the edge,
   // clipping a chip that's scaled up and glowing) and only when it's actually
   // off screen, so typing one more letter doesn't yank a chip that was
@@ -179,9 +187,42 @@ export function MetaTierList() {
             }}
           />
         </div>
-        {trimmedSearch && matchCount === 0 ? (
+        {trimmedSearch && !matchesHere && matchesElsewhere.length === 0 ? (
           <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("MetaTierList.noMatches")}</span>
         ) : null}
+        {trimmedSearch && matchesElsewhere.length > 0 ? (
+          <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: TYPE.body, color: COLORS.muted }}>
+            {matchesHere ? t("MetaTierList.alsoInOtherRoles") : t("MetaTierList.onlyInOtherRoles")}
+            {matchesElsewhere.map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRole(r)}
+                style={{ background: "none", border: "none", padding: 0, color: COLORS.roseBright, fontSize: TYPE.body, cursor: "pointer" }}
+              >
+                {t(`Profile.positions.${r.toLowerCase()}`)}
+              </button>
+            ))}
+          </span>
+        ) : null}
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }} role="group" aria-label={t("MetaTierList.roleLabel")}>
+        {(POOL_ROLES as PersonalityRole[]).map((r) => {
+          const icon = positionIconUrl(r);
+          const active = r === role;
+          return (
+            <button
+              key={r}
+              onClick={() => setRole(r)}
+              aria-pressed={active}
+              style={{ ...pillStyle(active, "compact"), display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              {icon ? <img src={icon} alt="" style={{ width: 14, height: 14, opacity: active ? 1 : 0.7 }} /> : null}
+              {t(`Profile.positions.${r.toLowerCase()}`)}
+            </button>
+          );
+        })}
       </div>
 
       {dataPatch && winrates && winrates.length > 0 && dataPatch.patch !== dataPatch.latestPatch ? (
@@ -198,153 +239,143 @@ export function MetaTierList() {
           <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
         )
       ) : (
-        // flex+wrap+center instead of a CSS grid: with 5 role cards a
-        // grid's incomplete last row (3 then 2) sticks to the left because
-        // grid tracks are shared across every row — flexbox wrap centers
-        // each row's own items as a group, so 3-then-2 both end up
-        // centered.
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 16 }}>
-          {(POOL_ROLES as PersonalityRole[]).map((role) => {
-            const entries = byRole[role] ?? [];
-            return (
-              <div key={role} style={{ ...cardStyle, flex: "1 1 420px", maxWidth: 560 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {(() => {
-                    const roleIcon = positionIconUrl(role);
-                    return roleIcon ? <img src={roleIcon} alt="" style={{ width: 20, height: 20 }} /> : null;
-                  })()}
-                  <h2 style={{ fontFamily: FONT_HEADING, fontSize: 16, fontWeight: 400, margin: 0 }}>
-                    {t(`Profile.positions.${role.toLowerCase()}`)}
-                  </h2>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", marginTop: 14 }}>
-                  {entries.length === 0 ? (
-                    <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: 0 }}>{t("MetaTierList.noDataForRole")}</p>
-                  ) : (
-                    TIERS.filter((tier) => entries.some((e) => e.tier === tier)).map((tier, tierIdx) => {
-                      const inTier = entries.filter((e) => e.tier === tier);
-                      return (
-                        <div
-                          key={tier}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            padding: "10px 0",
-                            // Same strength as the web's divider (its --border at
-                            // full opacity, ~18% of the light text): cardBorder at
-                            // 8% was invisible between tiers.
-                            borderTop: tierIdx > 0 ? `1px solid ${COLORS.text}2e` : "none",
-                          }}
-                        >
+        // A single full-width board for the selected position: every tier
+        // is one line (see the role pills above).
+        <div key={role} style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {(() => {
+              const roleIcon = positionIconUrl(role);
+              return roleIcon ? <img src={roleIcon} alt="" style={{ width: 20, height: 20 }} /> : null;
+            })()}
+            <h2 style={{ fontFamily: FONT_HEADING, fontSize: 16, fontWeight: 400, margin: 0 }}>
+              {t(`Profile.positions.${role.toLowerCase()}`)}
+            </h2>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", marginTop: 14 }}>
+            {entries.length === 0 ? (
+              <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: 0 }}>{t("MetaTierList.noDataForRole")}</p>
+            ) : (
+              TIERS.filter((tier) => entries.some((e) => e.tier === tier)).map((tier, tierIdx) => {
+                const inTier = entries.filter((e) => e.tier === tier);
+                return (
+                  <div
+                    key={tier}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 0",
+                      // Same strength as the web's divider (its --border at
+                      // full opacity, ~18% of the light text): cardBorder at
+                      // 8% was invisible between tiers.
+                      borderTop: tierIdx > 0 ? `1px solid ${COLORS.text}2e` : "none",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 7,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        background: TIER_COLORS[tier],
+                        color: COLORS.text,
+                      }}
+                    >
+                      {tier}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {inTier.map((entry) => {
+                        const champ = championByInternalId.get(toDDragonId(entry.championName));
+                        const tooltip = t("MetaTierList.chipTooltip", { rate: Math.round(entry.winRate * 100), games: entry.games });
+                        const name = champ?.name ?? entry.championName;
+                        const matched = trimmedSearch !== "" && name.toLowerCase().includes(trimmedSearch);
+                        const dimmed = trimmedSearch !== "" && !matched;
+                        const openBuilds = openTool
+                          ? () => openTool({ toolId: "championBuilds", championInternalId: entry.championName, role, rank })
+                          : undefined;
+                        return (
                           <div
+                            key={entry.championName}
+                            title={champ ? `${champ.name}: ${tooltip}` : tooltip}
+                            data-champion-match={matched ? "" : undefined}
+                            onClick={openBuilds}
+                            role={openBuilds ? "button" : undefined}
+                            tabIndex={openBuilds ? 0 : undefined}
+                            onKeyDown={
+                              openBuilds
+                                ? (event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                      event.preventDefault();
+                                      openBuilds();
+                                    }
+                                  }
+                                : undefined
+                            }
                             style={{
-                              width: 32,
-                              height: 32,
-                              flexShrink: 0,
                               display: "flex",
+                              flexDirection: "column",
                               alignItems: "center",
-                              justifyContent: "center",
-                              borderRadius: 7,
-                              fontSize: 14,
-                              fontWeight: 700,
-                              background: TIER_COLORS[tier],
-                              color: COLORS.text,
+                              gap: 3,
+                              cursor: openBuilds ? "pointer" : undefined,
+                              transform: matched ? "scale(1.15)" : undefined,
+                              opacity: dimmed ? 0.3 : undefined,
+                              filter: dimmed ? "grayscale(1)" : undefined,
+                              transition: "transform 150ms, opacity 150ms, filter 150ms",
                             }}
                           >
-                            {tier}
-                          </div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                            {inTier.map((entry) => {
-                              const champ = championByInternalId.get(toDDragonId(entry.championName));
-                              const tooltip = t("MetaTierList.chipTooltip", { rate: Math.round(entry.winRate * 100), games: entry.games });
-                              const name = champ?.name ?? entry.championName;
-                              const matched = trimmedSearch !== "" && name.toLowerCase().includes(trimmedSearch);
-                              const dimmed = trimmedSearch !== "" && !matched;
-                              const openBuilds = openTool
-                                ? () => openTool({ toolId: "championBuilds", championInternalId: entry.championName, role, rank })
-                                : undefined;
-                              return (
-                                <div
-                                  key={entry.championName}
-                                  title={champ ? `${champ.name}: ${tooltip}` : tooltip}
-                                  data-champion-match={matched ? "" : undefined}
-                                  onClick={openBuilds}
-                                  role={openBuilds ? "button" : undefined}
-                                  tabIndex={openBuilds ? 0 : undefined}
-                                  onKeyDown={
-                                    openBuilds
-                                      ? (event) => {
-                                          if (event.key === "Enter" || event.key === " ") {
-                                            event.preventDefault();
-                                            openBuilds();
-                                          }
-                                        }
-                                      : undefined
-                                  }
+                            <div
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 7,
+                                overflow: "hidden",
+                                border: `1px solid ${matched ? COLORS.rose : COLORS.cardBorder}`,
+                                boxShadow: matched ? `0 0 0 1px ${COLORS.rose}, 0 0 18px ${COLORS.rose}` : undefined,
+                                filter: matched ? "brightness(1.1)" : undefined,
+                              }}
+                            >
+                              {champ ? (
+                                <img src={champ.iconUrl} alt={champ.name} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ) : (
+                                <span
                                   style={{
                                     display: "flex",
-                                    flexDirection: "column",
+                                    width: "100%",
+                                    height: "100%",
                                     alignItems: "center",
-                                    gap: 3,
-                                    cursor: openBuilds ? "pointer" : undefined,
-                                    transform: matched ? "scale(1.15)" : undefined,
-                                    opacity: dimmed ? 0.3 : undefined,
-                                    filter: dimmed ? "grayscale(1)" : undefined,
-                                    transition: "transform 150ms, opacity 150ms, filter 150ms",
+                                    justifyContent: "center",
+                                    fontSize: 10,
+                                    color: COLORS.muted,
                                   }}
                                 >
-                                  <div
-                                    style={{
-                                      width: 36,
-                                      height: 36,
-                                      borderRadius: 7,
-                                      overflow: "hidden",
-                                      border: `1px solid ${matched ? COLORS.rose : COLORS.cardBorder}`,
-                                      boxShadow: matched ? `0 0 0 1px ${COLORS.rose}, 0 0 18px ${COLORS.rose}` : undefined,
-                                      filter: matched ? "brightness(1.1)" : undefined,
-                                    }}
-                                  >
-                                    {champ ? (
-                                      <img src={champ.iconUrl} alt={champ.name} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    ) : (
-                                      <span
-                                        style={{
-                                          display: "flex",
-                                          width: "100%",
-                                          height: "100%",
-                                          alignItems: "center",
-                                          justifyContent: "center",
-                                          fontSize: 10,
-                                          color: COLORS.muted,
-                                        }}
-                                      >
-                                        {name.slice(0, 4)}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <span
-                                    style={{
-                                      fontSize: 10,
-                                      fontWeight: 700,
-                                      lineHeight: 1,
-                                      color: entry.winRate >= 0.53 ? COLORS.gold : COLORS.muted,
-                                    }}
-                                  >
-                                    {Math.round(entry.winRate * 100)}%
-                                  </span>
-                                </div>
-                              );
-                            })}
+                                  {name.slice(0, 4)}
+                                </span>
+                              )}
+                            </div>
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                lineHeight: 1,
+                                color: entry.winRate >= 0.53 ? COLORS.gold : COLORS.muted,
+                              }}
+                            >
+                              {Math.round(entry.winRate * 100)}%
+                            </span>
                           </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+                })
+              )}
+            </div>
         </div>
       )}
     </div>
