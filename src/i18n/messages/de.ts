@@ -81,6 +81,7 @@ export const de: Messages = {
     emptyFolder: "Noch keine Profile in diesem Ordner.",
   },
   ProfileSearch: {
+    platformLabel: "Server",
     matchNoteEven: "Gleichauf mit der Lane",
     matchNoteBad: "Schwach: {metric}",
     matchNoteGood: "Stark: {metric}",

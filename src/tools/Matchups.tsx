@@ -190,7 +190,7 @@ export function Matchups() {
                 >
                   <span style={{ fontSize: TYPE.label, color: `${COLORS.muted}b3`, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{i + 1}</span>
                   {info ? (
-                    <img src={info.iconUrl} alt="" style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${COLORS.cardBorder}` }} />
+                    <img src={info.iconUrl} alt="" loading="lazy" decoding="async" style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${COLORS.cardBorder}` }} />
                   ) : (
                     <span style={{ width: 32, height: 32, borderRadius: 8, background: `${COLORS.muted}33` }} />
                   )}
@@ -222,7 +222,7 @@ export function Matchups() {
                     onClick={info ? () => pick(row) : undefined}
                     style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 8px 2px 2px", borderRadius: 999, border: `1px solid ${COLORS.cardBorder}`, background: "transparent", color: COLORS.muted, fontSize: TYPE.label, cursor: info ? "pointer" : "default" }}
                   >
-                    {info ? <img src={info.iconUrl} alt="" style={{ width: 18, height: 18, borderRadius: 999, opacity: 0.7 }} /> : null}
+                    {info ? <img src={info.iconUrl} alt="" loading="lazy" decoding="async" style={{ width: 18, height: 18, borderRadius: 999, opacity: 0.7 }} /> : null}
                     {nameOf(row)}
                     <span style={{ opacity: 0.7 }}>{row.games}</span>
                   </button>

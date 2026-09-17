@@ -167,9 +167,10 @@ function ChampionCooldownPanel({
           editable — the native number-input spinner is suppressed via
           -webkit-appearance so the two don't double up. */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <label style={{ flex: 1, fontSize: TYPE.body, color: COLORS.muted }}>{t("Cooldowns.abilityHasteLabel")}</label>
+        <label htmlFor={`haste-${slot}`} style={{ flex: 1, fontSize: TYPE.body, color: COLORS.muted }}>{t("Cooldowns.abilityHasteLabel")}</label>
         <div style={{ display: "flex", alignItems: "center" }}>
           <input
+            id={`haste-${slot}`}
             type="number"
             min={0}
             max={200}
@@ -187,12 +188,14 @@ function ChampionCooldownPanel({
               textAlign: "right",
             }}
           />
+          {/* 24 px boxes (WCAG 2.5.8): the bare 13 px carets sat glued
+              together, like the web's before round 30. */}
           <div style={{ display: "flex", flexDirection: "column" }}>
             <button
               type="button"
               onClick={() => setAbilityHaste((prev) => clampHaste(prev + 1))}
               aria-label={t("Cooldowns.increaseHaste")}
-              style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", padding: 0, display: "flex" }}
+              style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24 }}
             >
               <CaretUp size={13} />
             </button>
@@ -200,7 +203,7 @@ function ChampionCooldownPanel({
               type="button"
               onClick={() => setAbilityHaste((prev) => clampHaste(prev - 1))}
               aria-label={t("Cooldowns.decreaseHaste")}
-              style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", padding: 0, display: "flex" }}
+              style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24 }}
             >
               <CaretDown size={13} />
             </button>

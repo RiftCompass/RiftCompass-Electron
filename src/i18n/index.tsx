@@ -78,6 +78,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     window.riftcompass.setLocale(next);
   }, []);
 
+  // Screen readers and Chromium's spell checker read the document language
+  // from <html lang>, which index.html can only hard-code (round 30).
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const t = useCallback(
     (key: MessageKey, vars?: Record<string, string | number>) => {
       const value = resolve(CATALOGS[locale], key) ?? resolve(CATALOGS.en, key);

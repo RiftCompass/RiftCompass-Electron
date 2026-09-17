@@ -496,6 +496,8 @@ export function TierListBuilder() {
                                 key={id}
                                 src={champ?.iconUrl}
                                 alt={champ?.name ?? id}
+                                loading="lazy"
+                                decoding="async"
                                 title={champ?.name ?? id}
                                 style={{ width: 24, height: 24, borderRadius: 4, border: `1px solid ${COLORS.cardBorder}`, display: "block" }}
                               />
@@ -840,7 +842,7 @@ const ChampionChip = forwardRef<
       {...attributes}
       {...listeners}
     >
-      <img src={iconUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} draggable={false} />
+      <img src={iconUrl} alt={name} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} draggable={false} />
       {realTier ? (
         <span
           style={{

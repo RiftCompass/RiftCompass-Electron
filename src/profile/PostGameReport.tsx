@@ -158,7 +158,7 @@ export function PostGameReport({
             fontWeight: 600,
             cursor: "pointer",
             background: `${COLORS.rose}26`,
-            color: COLORS.rose,
+            color: COLORS.roseBright,
           }}
         >
           {t("PostGameReport.openProfile")}
@@ -238,7 +238,7 @@ export function PostGameReport({
           fontWeight: 600,
           cursor: "pointer",
           background: `${COLORS.rose}26`,
-          color: COLORS.rose,
+          color: COLORS.roseBright,
         }}
       >
         {t("PostGameReport.openProfile")}

@@ -8,6 +8,9 @@ export const COLORS = {
   card: "#17121a",
   cardBorder: "rgba(255,255,255,0.08)",
   rose: "#e63977",
+  // The web's --rose-bright: rose text over the rose tint (`${rose}26`)
+  // measured 3.95-4.12:1, under AA's 4.5; this one reads 4.99-5.36 (round 30).
+  roseBright: "#f0538c",
   text: "#f7f3f5",
   // The web's --muted-foreground, hex for hex (round 28): the app carried
   // a colder, darker grey from its first commit on every secondary text.
@@ -77,7 +80,7 @@ export function pillStyle(active: boolean, size: "default" | "compact" = "defaul
     borderRadius: 999,
     border: `1px solid ${active ? COLORS.rose : COLORS.cardBorder}`,
     background: active ? `${COLORS.rose}26` : "none",
-    color: active ? COLORS.rose : COLORS.text,
+    color: active ? COLORS.roseBright : COLORS.text,
     fontSize: size === "compact" ? 12 : 13,
     cursor: "pointer",
   };
