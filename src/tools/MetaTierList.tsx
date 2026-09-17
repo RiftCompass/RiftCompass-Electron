@@ -130,10 +130,14 @@ export function MetaTierList() {
   // icons line up vertically across tiers; in a narrow window the columns
   // never go under 52 px and rows wrap instead (auto-fill keeps the empty
   // trailing tracks, which is what keeps the rows aligned). Same as the web.
-  // Plus one cell for the tier letter, which sits in the grid so it is
-  // exactly as big as the champion icons next to it.
-  const boardCells = Math.max(1, ...TIERS.map((tier) => entries.filter((e) => e.tier === tier).length)) + 1;
-  const boardColumns = `repeat(auto-fill, minmax(max(52px, calc((100% - ${boardCells - 1} * 6px) / ${boardCells})), 1fr))`;
+  // Each tier row is [letter | chips]: the letter column and every chip
+  // column share one width (the fullest tier's count decides it), the letter
+  // spans the row height, and in a narrow window the chips wrap inside their
+  // own grid, always to the right of the letter. With W = row width, g = gap,
+  // N = chips: letter = (W - N*g) / (N + 1) and each chip column is the same.
+  const widestTier = Math.max(1, ...TIERS.map((tier) => entries.filter((e) => e.tier === tier).length));
+  const letterColumn = `max(52px, calc((100% - ${widestTier} * 6px) / ${widestTier + 1}))`;
+  const chipColumns = `repeat(auto-fill, minmax(max(52px, calc((100% - ${widestTier - 1} * 6px) / ${widestTier})), 1fr))`;
   const matchesHere = trimmedSearch
     ? entries.some((entry) => displayName(entry.championName).toLowerCase().includes(trimmedSearch))
     : false;
@@ -270,8 +274,7 @@ export function MetaTierList() {
                     key={tier}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: boardColumns,
-                      alignItems: "start",
+                      gridTemplateColumns: `${letterColumn} minmax(0, 1fr)`,
                       gap: 6,
                       padding: "10px 0",
                       // Same strength as the web's divider (its --border at
@@ -280,14 +283,12 @@ export function MetaTierList() {
                       borderTop: tierIdx > 0 ? `1px solid ${COLORS.text}2e` : "none",
                     }}
                   >
-                    {/* The letter is the first grid cell: same square as the
-                        icons, font size following the square (container units). */}
+                    {/* Letter column, as wide as a chip column and as tall as
+                        the row; font size following the width (container units). */}
                     <div
                       style={{
                         containerType: "inline-size",
-                        width: "100%",
-                        maxWidth: 64,
-                        aspectRatio: "1",
+                        alignSelf: "stretch",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -298,7 +299,7 @@ export function MetaTierList() {
                     >
                       <span style={{ fontFamily: FONT_HEADING, fontSize: "45cqw", lineHeight: 1 }}>{tier}</span>
                     </div>
-                    <>
+                    <div style={{ display: "grid", gridTemplateColumns: chipColumns, alignItems: "start", gap: 6 }}>
                       {inTier.map((entry) => {
                         const champ = championByInternalId.get(toDDragonId(entry.championName));
                         const tooltip = t("MetaTierList.chipTooltip", { rate: Math.round(entry.winRate * 100), games: entry.games });
@@ -396,7 +397,7 @@ export function MetaTierList() {
                           </div>
                         );
                       })}
-                    </>
+                    </div>
                   </div>
                 );
                 })
