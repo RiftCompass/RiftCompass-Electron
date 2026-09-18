@@ -436,3 +436,25 @@ security products → el producto), que crea el certificado en SimplySign;
 después instalar SimplySign Desktop y la app móvil, y meter la firma en
 `scripts/build-win.mjs`. Los números de pedido y factura no se apuntan aquí
 (repositorio público): están en los correos de riftcompass@gmail.com.
+
+
+## MVP enviado — 2026-09-19 a la 01:10
+
+Formulario de Monday "Submitting Your First Build" rellenado desde el Chrome
+CDP y enviado por el propietario. Confirmación en pantalla: "Thank you for
+submitting your OPK. Our QA team will go over your OPK. Results can take up
+to 4 weeks, and we will contact you once the review is ready". Lo enviado:
+Electron, enlace al instalador público (`releases/latest/download/RiftCompass-Setup.exe`,
+v0.3.22 pública en ese momento), captura de la app 875077 de Riot "Approved"
+con la clave tapada, seis capturas 1200×750 de la app (herramientas, perfil,
+roadmap, Meta Tier List, champ select con la ventana de draft, overlay en
+partida con Tab), instrucciones de 1.918 caracteres (las tres ventanas, cómo
+se probó, y que el overlay solo corre en modo dev hasta la firma), Discord
+"No Discord server", Monetization "None", QA marcado, cuenta
+`la cuenta personal de Google del propietario`. El texto exacto queda en `overwolf-mvp.md`
+de la carpeta raíz del proyecto. La víspera se probó la app en tres
+personalizadas contra bots (ventana de draft con la build aplicada, overlay
+visible en partida con `sandbox: true`, resumen post-partida); el material
+de la tienda vive en `/srv/assets/riftcompass/overwolf/` del servidor.
+Siguiente paso: esperar la respuesta (Gmail personal) y, al aprobar, la
+consola (`OW_CLI_API_KEY`, `OW_BUILD_KEY`) y la doble firma.
