@@ -25,6 +25,8 @@ export const CMD = {
   GetChampionMastery: "get_champion_mastery",
   /** invoke, no args — fase actual y ultima sesion de champ select, para que una ventana recien abierta no espere al siguiente evento */
   GetChampSelectState: "get_champ_select_state",
+  /** invoke, no args — oculta la ventana de champ select hasta el siguiente draft (la X de su barra, ronda 33) */
+  ChampSelectHide: "champselect_hide",
   /** invoke, no args. returns AppSettings */
   SettingsGet: "settings_get",
   /** invoke. args: { enabled } */

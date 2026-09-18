@@ -5,6 +5,45 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.22
+
+- Selección de campeón: una sola ventana de draft. Antes, en el instalador
+  normal, la ventana principal saltaba a una segunda copia del consejero y
+  el overlay pintaba además una tarjeta que a 1080p tapaba parte de la
+  ventana de draft; el overlay ahora solo aparece en partida.
+- La ventana de draft tiene barra propia con la marca, se puede arrastrar y
+  lleva una X para ocultarla en ese draft.
+- Resumen post-partida: se abre también cuando la app está en tu propio
+  perfil, que es donde te deja al detectar el cliente. Antes solo se abría
+  si habías vuelto a "Herramientas" a mano.
+- Primer arranque: la ventana ya no aparece en blanco antes de pintar, y
+  bajo "Herramientas" se explica que basta con abrir League (y qué hacer si
+  nunca lo detecta).
+- "Calibrar barra de habilidades" solo se puede lanzar durante una partida
+  (fuera de ella atrapaba todos los clics de la pantalla) y tiene botón
+  Cancelar (o clic derecho).
+- Actualizaciones: no se reinicia la app mientras tengas la ventana
+  abierta; espera a que esté en la bandeja.
+- Desinstalar borra el arranque con Windows y los datos de la app.
+- "Acerca de": enlaces para informar de un problema o sugerir algo y a
+  riftcompass.com (código abierto, MIT), y el correo de contacto.
+- Sin League abierto, la búsqueda del cliente ya no congela la app
+  brevemente cada 15 segundos.
+- Electron 44.4.2 (parches de seguridad de Chromium).
+
+## 0.3.14 a 0.3.21
+
+- Meta Tier List: una posición por pantalla (pastillas Top/Jungla/Mid/
+  Bot/Support), cada tier en una fila que llena el ancho con los nombres
+  de los campeones, la letra del tier a la izquierda a toda la altura de la
+  fila, y la búsqueda te lleva a las otras posiciones donde está el campeón.
+- Rendimiento y accesibilidad: iconos de las rejillas con carga diferida,
+  texto oscuro sobre los botones rosa y rose más claro sobre los tintes
+  (contraste AA), idioma del documento según el de la app, campos de
+  celeridad etiquetados, flechas de 24 px, selector de servidor con nombre.
+- Sesión: si riftcompass.com rechaza la sesión guardada se avisa una vez y
+  se pide iniciar sesión de nuevo (ver 0.3.12).
+
 ## 0.3.13
 
 - Builds de campeón: "Mis builds" dice "Cargando tus guardados…" mientras

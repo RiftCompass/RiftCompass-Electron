@@ -316,6 +316,8 @@ export interface RiftCompassApi {
   // Estado actual, para que una ventana recien abierta se pinte sin esperar al
   // siguiente evento del cliente. Ver champSelectSnapshot en gameConnection.ts.
   getChampSelectState: () => Promise<{ phase: string | null; session: unknown }>;
+  /** Hides the champ select window for the rest of this draft (its X button). */
+  hideChampSelect: () => Promise<void>;
   getSettings: () => Promise<AppSettings>;
   setAutoLaunch: (enabled: boolean) => Promise<AppSettings>;
   setOverlayModules: (modules: Partial<OverlayModules>) => Promise<AppSettings>;

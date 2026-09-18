@@ -9,20 +9,30 @@ import { autoUpdater } from "electron-updater";
 import { existsSync } from "node:fs";
 import * as path from "node:path";
 import { isPhaseIdle } from "./gameConnection";
-import { markMainWindowQuitting } from "./windows";
+import { getMainWindow, markMainWindowQuitting } from "./windows";
 
 const IDLE_RECHECK_MS = 5 * 60 * 1000;
 let installPending = false;
+
+// "In use" (round 33): the main window is on screen. Restarting under the
+// user's hands looked like a crash (the app closed itself 10-30 s after
+// opening, right after a fresh install). The app lives in the tray, so the
+// window is hidden most of the time and the update still lands soon;
+// autoInstallOnAppQuit covers Quit.
+function isWindowInUse(): boolean {
+  const win = getMainWindow();
+  return !!win && !win.isDestroyed() && win.isVisible() && !win.isMinimized();
+}
 
 function tryInstallWhenIdle(): void {
   if (installPending) return;
   installPending = true;
   const attempt = () => {
-    if (!isPhaseIdle()) {
+    if (!isPhaseIdle() || isWindowInUse()) {
       setTimeout(attempt, IDLE_RECHECK_MS);
       return;
     }
-    console.log("[updater] sin partida en curso: instalo la actualizacion y vuelvo a arrancar");
+    console.log("[updater] sin partida en curso ni ventana en uso: instalo la actualizacion y vuelvo a arrancar");
     markMainWindowQuitting();
     // isSilent=true, isForceRunAfter=true: sin asistente y arranca de nuevo
     // solo (con --background no arranca en segundo plano, asi que la ventana
