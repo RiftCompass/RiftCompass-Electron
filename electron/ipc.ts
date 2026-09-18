@@ -10,7 +10,7 @@ import { champSelectSnapshot, connectionSnapshot, currentCreds, getLocalPuuid } 
 import { lcuRequest } from "./lcu";
 import * as settings from "./settings";
 import { rebuildTrayMenu } from "./tray";
-import { broadcast, getMainWindow, setOverlayInteractive, showOverlay, WINDOW_CHANNELS } from "./windows";
+import { broadcast, getMainWindow, setOverlayInteractive, showChampSelect, showOverlay, WINDOW_CHANNELS } from "./windows";
 
 const FLASH_ID = 4;
 
@@ -40,6 +40,9 @@ function esPaginaDeRunas(perkIds: unknown, primaryStyleId: unknown, subStyleId: 
 export function registerIpcHandlers(): void {
   ipcMain.handle(CMD.LcuGetState, () => connectionSnapshot());
   ipcMain.handle(CMD.GetChampSelectState, () => champSelectSnapshot());
+  // The X of the champ select window (round 33): hide until the next draft
+  // shows it again through gameConnection's phase handling.
+  ipcMain.handle(CMD.ChampSelectHide, () => showChampSelect(false));
   ipcMain.handle(CMD.LcuGet, (_e, { path }: { path: string }) => {
     // La ruta se normaliza como la vería el cliente antes de compararla con
     // la lista: "/lol-summoner/v1/summoners/puuid/../../../lol-perks/v1/pages"

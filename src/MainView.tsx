@@ -28,7 +28,6 @@ import { LoadError } from "./tools/LoadError";
 import { savedListError } from "./lib/api-fetch";
 import { PostGameReport } from "./profile/PostGameReport";
 import { scheduleRankSnapshot } from "./lib/rank-snapshot";
-import { DraftAdvisor } from "./champselect/DraftAdvisor";
 import { SQUAD_SYNERGY, TOOLS, type ToolId, type ToolMeta } from "./tool-meta";
 import { GoldCalculator } from "./tools/GoldCalculator";
 import { WaveTimer } from "./tools/WaveTimer";
@@ -86,7 +85,7 @@ const NATIVE_VIEWS: Record<ToolId, React.ComponentType> = {
 // to bury in a settings page.
 const TITLEBAR_HEIGHT = 40;
 
-type Panel = "tools" | "settings" | "profile" | "compare" | "draft" | "postgame";
+type Panel = "tools" | "settings" | "profile" | "compare" | "postgame";
 
 // Three splash-art accents per tool detail screen — same champions and same
 // top/bottom-same-side + mid-height-opposite-side zigzag riftcompass.com's
@@ -187,6 +186,13 @@ export function MainView() {
   // tool was opened from the menu itself.
   const [toolTrail, setToolTrail] = useState<ToolId[]>([]);
   const [lcuStatus, setLcuStatus] = useState<"connected" | "disconnected">("disconnected");
+  // Gameflow phase as state (round 33): Settings disables ability-bar
+  // calibration outside a game (it only makes sense with the real HUD on
+  // screen; from the desktop it swallowed every click with no way out).
+  const [lcuPhase, setLcuPhase] = useState<string>("None");
+  useEffect(() => {
+    window.riftcompass.onPhase((phase) => setLcuPhase(phase));
+  }, []);
   const [user, setUser] = useState<AccountUser | null | undefined>(undefined);
   const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
   const [profileFilter, setProfileFilter] = useState("");
@@ -194,7 +200,6 @@ export function MainView() {
   // once for the auto-navigate below) so the tools-home header can show a
   // "back to your profile" chip after the user has navigated away from it.
   const [localIdentity, setLocalIdentity] = useState<LcuIdentity | null>(null);
-  const [draftPosition, setDraftPosition] = useState<string | null>(null);
   // Set once when the post-game report panel opens (identity + the real
   // moment the just-finished game started) — see the phase effect below.
   const [postGameContext, setPostGameContext] = useState<{ identity: LcuIdentity; startedAt: number } | null>(null);
@@ -294,6 +299,25 @@ export function MainView() {
     profileTargetRef.current = profileTarget;
   }, [profileTarget]);
 
+  // "Idle" for the automatic screens (auto-centre on connect, post-game
+  // report): the tools home with nothing open, OR the player's own profile
+  // (round 33). The app opens that profile by itself on connect, so before
+  // this the post-game report never fired in the default flow: the window
+  // sat on the stale profile and the promise "a report opens when a game
+  // ends" was false unless the player had gone back to Tools by hand.
+  const isIdle = (identity: { platform: string; gameName: string; tagLine: string } | null) => {
+    if (panelRef.current === "tools") return !openToolIdRef.current && !profileTargetRef.current;
+    if (panelRef.current === "profile" && identity && profileTargetRef.current) {
+      const target = profileTargetRef.current;
+      return (
+        target.platform === identity.platform &&
+        target.gameName.toLowerCase() === identity.gameName.toLowerCase() &&
+        target.tagLine.toLowerCase() === identity.tagLine.toLowerCase()
+      );
+    }
+    return false;
+  };
+
   const autoCenteredRef = useRef(false);
   useEffect(() => {
     window.riftcompass.onLcuIdentity((identity) => {
@@ -303,11 +327,12 @@ export function MainView() {
         return;
       }
       if (autoCenteredRef.current) return;
-      if (panelRef.current === "tools" && !openToolIdRef.current && !profileTargetRef.current) {
+      if (isIdle(null)) {
         autoCenteredRef.current = true;
         openProfile({ platform: identity.platform, gameName: identity.gameName, tagLine: identity.tagLine });
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Post-game report: a dedicated coaching screen (PostGameReport.tsx),
@@ -345,31 +370,18 @@ export function MainView() {
       if (!identity) return;
       cancelRankSnapshotRef.current?.();
       cancelRankSnapshotRef.current = scheduleRankSnapshot(identity.platform, identity.puuid);
-      if (panelRef.current === "tools" && !openToolIdRef.current && !profileTargetRef.current) {
+      if (isIdle(identity)) {
         setPostGameContext({ identity, startedAt: gameStartedAtRef.current ?? Date.now() });
         setPanel("postgame");
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Draft Advisor: opens automatically on entering ChampSelect (same idle
-  // guard as the post-game report above), closes automatically on leaving
-  // it regardless of what's on screen — a stale draft recommendation for a
-  // draft that already ended has no reason to stick around.
-  const prevPhaseForDraftRef = useRef<string>("None");
-  useEffect(() => {
-    window.riftcompass.onPhase((phase) => {
-      const enteringChampSelect = phase === "ChampSelect" && prevPhaseForDraftRef.current !== "ChampSelect";
-      const leavingChampSelect = phase !== "ChampSelect" && prevPhaseForDraftRef.current === "ChampSelect";
-      prevPhaseForDraftRef.current = phase;
-      if (enteringChampSelect && panelRef.current === "tools" && !openToolIdRef.current && !profileTargetRef.current) {
-        setPanel("draft");
-      }
-      if (leavingChampSelect && panelRef.current === "draft") {
-        goHome();
-      }
-    });
-  }, []);
+  // No "draft" screen in the main window any more (round 33): the champ
+  // select window (windows.ts) owns the Draft Advisor since 50387ba, and
+  // this leftover made the main window jump to a second copy of it (two
+  // sets of requests) every time a draft started.
 
   // On every real view switch the container remounts (the key below) and
   // the control that was pressed is gone, so focus fell to <body>: the
@@ -470,6 +482,7 @@ export function MainView() {
                 setUser(next);
               }}
               sessionNotice={sessionNotice}
+              inGame={lcuPhase === "InProgress"}
               onExit={goHome}
             />
           ) : panel === "profile" ? (
@@ -529,36 +542,6 @@ export function MainView() {
                 key={compareInitial ? `${compareInitial.platform}-${compareInitial.gameName}-${compareInitial.tagLine}` : "blank"}
                 initialTarget={compareInitial}
               />
-            </div>
-          ) : panel === "draft" ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Same back-to-menu control every other screen has (profile,
-                  compare, every tool). */}
-              <button
-                onClick={goHome}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  alignSelf: "flex-start",
-                  background: "none",
-                  border: "none",
-                  color: COLORS.muted,
-                  fontSize: TYPE.body,
-                  cursor: "pointer",
-                  padding: 0,
-                }}
-              >
-                <ArrowLeft size={15} /> {t("Common.backToTools")}
-              </button>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <Sword size={22} color={COLORS.rose} />
-                <h1 tabIndex={-1} style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0, outline: "none" }}>
-                  {t("DraftAdvisor.title")}
-                </h1>
-              </div>
-              <p style={{ color: COLORS.muted, fontSize: 14, margin: 0, maxWidth: 560 }}>{t("DraftAdvisor.description")}</p>
-              <DraftAdvisor identity={localIdentity} posicionManual={draftPosition} onElegirPosicion={setDraftPosition} />
             </div>
           ) : panel === "postgame" && postGameContext ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -663,6 +646,7 @@ export function MainView() {
               onSearchProfile={openProfile}
               onOpenCompare={() => setPanel("compare")}
               localIdentity={localIdentity}
+              leagueDetected={lcuStatus === "connected"}
               onOpenMyProfile={() =>
                 localIdentity &&
                 openProfile({ platform: localIdentity.platform, gameName: localIdentity.gameName, tagLine: localIdentity.tagLine })
@@ -1696,6 +1680,7 @@ function ToolsIndex({
   onSearchProfile,
   onOpenCompare,
   localIdentity,
+  leagueDetected,
   onOpenMyProfile,
 }: {
   onOpen: (id: ToolId) => void;
@@ -1703,6 +1688,7 @@ function ToolsIndex({
   onSearchProfile: (target: ProfileTarget) => void;
   onOpenCompare: () => void;
   localIdentity: LcuIdentity | null;
+  leagueDetected: boolean;
   onOpenMyProfile: () => void;
 }) {
   const { t } = useI18n();
@@ -1728,6 +1714,13 @@ function ToolsIndex({
         </div>
         <HeaderProfileSearch onSearch={onSearchProfile} />
       </div>
+      {/* First contact (round 33): without this a new user saw a grey
+          "League client not detected" dot and nothing that said League has
+          to be open, that the app picks it up by itself, or what to do if
+          it never does. Only while there is no client. */}
+      {!leagueDetected ? (
+        <p style={{ margin: "-8px 0 0", maxWidth: 720, fontSize: TYPE.body, color: COLORS.muted }}>{t("Common.leagueNotDetectedHint")}</p>
+      ) : null}
       <div
         style={{
           position: "relative",
@@ -1923,11 +1916,13 @@ function Settings({
   user,
   onUserChange,
   sessionNotice,
+  inGame,
   onExit,
 }: {
   user: AccountUser | null | undefined;
   onUserChange: (user: AccountUser | null) => void;
   sessionNotice: boolean;
+  inGame: boolean;
   onExit: () => void;
 }) {
   const { t, locale, setLocale } = useI18n();
@@ -2071,8 +2066,17 @@ function Settings({
             <span style={{ fontSize: TYPE.body, fontWeight: 500 }}>{t("Settings.calibrateAbilityBar")}</span>
             <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Settings.calibrateAbilityBarHint")}</span>
           </div>
-          <button onClick={handleCalibrateAbilityBar} style={smallButtonStyle}>
-            {abilityCalibrated ? t("Settings.calibrateAbilityBarDone") : t("Settings.calibrateAbilityBarButton")}
+          <button
+            onClick={handleCalibrateAbilityBar}
+            disabled={!inGame}
+            title={inGame ? undefined : t("Settings.calibrateAbilityBarOnlyInGame")}
+            style={{ ...smallButtonStyle, opacity: inGame ? 1 : 0.5, cursor: inGame ? "pointer" : "default" }}
+          >
+            {!inGame
+              ? t("Settings.calibrateAbilityBarOnlyInGame")
+              : abilityCalibrated
+                ? t("Settings.calibrateAbilityBarDone")
+                : t("Settings.calibrateAbilityBarButton")}
           </button>
         </div>
       </section>
@@ -2129,6 +2133,23 @@ function Settings({
         >
           {t("Settings.aboutLegal")} <ArrowSquareOut size={12} />
         </button>
+        {/* Support channel and the website (round 33): Overwolf requires a
+            way for users to reach us, and there was none inside the app.
+            openExternal only opens riftcompass.com, so the code (MIT) is
+            reached through the site's footer. */}
+        <button
+          onClick={() => window.riftcompass.openExternal(webUrl(locale, "/about#suggestions"))}
+          style={{ display: "flex", alignItems: "center", gap: 6, alignSelf: "flex-start", background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}
+        >
+          {t("Settings.aboutSupport")} <ArrowSquareOut size={12} />
+        </button>
+        <button
+          onClick={() => window.riftcompass.openExternal(webUrl(locale, "/about"))}
+          style={{ display: "flex", alignItems: "center", gap: 6, alignSelf: "flex-start", background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}
+        >
+          {t("Settings.aboutWebsite")} <ArrowSquareOut size={12} />
+        </button>
+        <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>riftcompass@gmail.com</span>
       </section>
     </div>
   );

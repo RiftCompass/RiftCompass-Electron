@@ -196,6 +196,7 @@ const api: RiftCompassApi = {
   getChampionMastery: () => tryInvoke(CMD.GetChampionMastery, undefined, () => ({ ok: true as const, mastery: [] })),
 
   getChampSelectState: () => tryInvoke(CMD.GetChampSelectState, undefined, () => ({ phase: null, session: null })),
+  hideChampSelect: (): Promise<void> => tryInvoke(CMD.ChampSelectHide, undefined, () => undefined),
 
   getSettings: (): Promise<AppSettings> => tryInvoke(CMD.SettingsGet, undefined, loadLocalSettings),
   setAutoLaunch: (enabled: boolean): Promise<AppSettings> =>

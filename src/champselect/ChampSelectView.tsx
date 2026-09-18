@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { X } from "@phosphor-icons/react";
 import { API_BASE_URL } from "../shared/api";
 import { DraftAdvisor } from "./DraftAdvisor";
 import { useI18n } from "../i18n";
@@ -459,6 +460,65 @@ export function ChampSelectView() {
         gap: 12,
       }}
     >
+      {/* Title bar (round 33): Overwolf asks for overlays that are easy to
+          close and carry a recognisable brand. The window is frameless and
+          never takes focus, so this bar is the drag handle (-webkit-app-region)
+          and the X hides it until the next draft. */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          margin: "-14px -14px 0",
+          padding: "6px 8px 6px 12px",
+          borderBottom: `1px solid ${COLORS.cardBorder}`,
+          WebkitAppRegion: "drag",
+        } as React.CSSProperties}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 6,
+              background: COLORS.rose,
+              color: COLORS.background,
+              fontFamily: FONT_HEADING,
+              fontSize: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            RC
+          </div>
+          <span style={{ fontFamily: FONT_HEADING, fontSize: 13 }}>RiftCompass · {t("ChampSelect.title")}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => void window.riftcompass.hideChampSelect()}
+          title={t("ChampSelect.hideForThisDraft")}
+          aria-label={t("ChampSelect.hideForThisDraft")}
+          style={{
+            WebkitAppRegion: "no-drag",
+            background: "none",
+            border: "none",
+            color: COLORS.muted,
+            cursor: "pointer",
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 6,
+          } as React.CSSProperties}
+        >
+          <X size={16} />
+        </button>
+      </div>
+
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
         <span style={{ fontFamily: FONT_HEADING, fontSize: 17 }}>{t("ChampSelect.title")}</span>
         {campeon ? (

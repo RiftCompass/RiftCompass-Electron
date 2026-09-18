@@ -201,10 +201,12 @@ async function refreshPhase(c: LcuCredentials): Promise<void> {
   }
   broadcast(EVT.LcuPhase, phase);
 
-  // The overlay HUD only ever shows itself for the two phases it has real
-  // content for — every other phase (menus, lobby, matchmaking, loading
-  // screen) it stays hidden, matching Porofessor/iTero's behavior.
-  setOverlayVisible(phase === "ChampSelect" || phase === "InProgress");
+  // The overlay HUD only shows itself in game (round 33; before, also in
+  // champ select, where its card overlapped the champ select window by
+  // ~220 px at 1080p and duplicated its requests). Every other phase it
+  // stays hidden; hidden it still receives champselect:session, so the
+  // lane-gold table keeps the roster.
+  setOverlayVisible(phase === "InProgress");
 
   // El acompañante de draft tiene su propia ventana y solo vive durante champ
   // select: fuera de ahí no tiene nada que decir, y una ventana siempre encima
@@ -254,7 +256,7 @@ export async function run(): Promise<void> {
       const path = findLockfile();
       found = path ? readLockfile(path) : null;
       if (!found && polls % PROCESS_PROBE_EVERY === PROCESS_PROBE_EVERY - 1) {
-        found = readCredentialsFromProcess();
+        found = await readCredentialsFromProcess();
         if (found) console.log("[lcu] cliente encontrado por los argumentos del proceso (sin lockfile en las rutas conocidas)");
       }
       polls += 1;

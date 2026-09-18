@@ -25,6 +25,11 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  # Clean uninstall (round 33): drop the auto-launch Run value and the app
+  # data folder (session token, settings). Only on a real uninstall, never
+  # on the reinstall an update performs (template's own guard).
+  include: build/installer.nsh
+  deleteAppDataOnUninstall: true
 # electron-updater reads this at runtime to know where to check for new
 # versions — installs already on a user's machine update themselves from
 # here, no need to redistribute the installer for every release.

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchChampionMap, mergeLocalizedChampionNames, normalizeChampionName, type ChampionMaps } from "./ddragon";
-import { suggestPicks, type ChampionWinrateEntry } from "./draft-help";
 import { useI18n } from "./i18n";
 import { COLORS, TYPE } from "./theme";
 import { API_BASE_URL } from "./shared/api";
@@ -469,7 +468,6 @@ export function OverlayView() {
   // lcu:identity — see ddragon.ts's mergeLocalizedChampionNames for why
   // the lane-gold table needs this.
   const [gameClientLocale, setGameClientLocale] = useState<string | undefined>(undefined);
-  const [importState, setImportState] = useState<"idle" | "working" | "done" | "error">("idle");
   const [overlayModules, setOverlayModules] = useState<OverlayModules>({
     csPerMinute: true,
     goldDiff: true,
@@ -481,13 +479,6 @@ export function OverlayView() {
   // HUD line.
   const [tabHeld, setTabHeld] = useState(false);
   const [skillOrder, setSkillOrder] = useState<SkillOrderEntry[]>([]);
-  const [recommendedBuild, setRecommendedBuild] = useState<RecommendedBuild | null>(null);
-  // null = not fetched for this champ select yet; [] = fetched, nothing
-  // usable (empty or failed). Keyed on "empty list" this refetched in a
-  // tight loop whenever the API answered empty or errored, because every
-  // `set([])` is a new array (same fix as DraftAdvisor.tsx).
-  const [championWinrates, setChampionWinrates] = useState<ChampionWinrateEntry[] | null>(null);
-  const [applyBuildState, setApplyBuildState] = useState<"idle" | "working" | "done" | "error">("idle");
   // The local player's real solo-queue tier, for the CS/min-vs-elo target —
   // fetched once via the LCU, not carried by Live Client Data or the
   // champ-select session.
@@ -545,11 +536,6 @@ export function OverlayView() {
   }, []);
 
   useEffect(() => {
-    setImportState("idle");
-    setApplyBuildState("idle");
-  }, [localCellId, myTeam.find((p) => p.cellId === localCellId)?.championId]);
-
-  useEffect(() => {
     if (phase !== "InProgress" || !tabHeld) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -574,7 +560,10 @@ export function OverlayView() {
     if (!needsChampionData || Object.keys(champions.byId).length > 0) return;
     fetch("https://ddragon.leagueoflegends.com/api/versions.json")
       .then((r) => r.json())
-      .then((versions: string[]) => setDdragonVersion(versions[0]));
+      .then((versions: string[]) => setDdragonVersion(versions[0]))
+      .catch(() => {
+        // Same as below: offline, the version just stays unknown.
+      });
     fetchChampionMap()
       .then(setChampions)
       .catch(() => {
@@ -617,50 +606,7 @@ export function OverlayView() {
     return { role, championName, enemyChampionName };
   }, [myTeam, theirTeam, localCellId, champions]);
 
-  useEffect(() => {
-    if (phase !== "ChampSelect" || !overlayModules.autoBuild) {
-      setRecommendedBuild(null);
-      return;
-    }
-    const { role, championName, enemyChampionName } = localPick;
-    if (!role || !championName) return;
 
-    const params = new URLSearchParams({ champion: championName, role: role.toUpperCase() });
-    if (enemyChampionName) params.set("enemy", enemyChampionName);
-
-    fetch(`${API_BASE_URL}/api/v1/champion-build?${params}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((data) =>
-        setRecommendedBuild({
-          runes: data.runes ?? null,
-          spells: data.spells ?? null,
-          items: data.items ?? null,
-          itemOrder: data.itemOrder ?? [],
-          startingItems: data.startingItems ?? [],
-          situationalItems: data.situationalItems ?? [],
-        }),
-      )
-      .catch(() => setRecommendedBuild(null));
-  }, [phase, overlayModules.autoBuild, localPick.role, localPick.championName, localPick.enemyChampionName]);
-
-  // Real winrate for the pick-suggestion row below (see suggestPicks in
-  // draft-help.ts) — fetched once per champ select, not per keystroke, and
-  // only while still picking (no point once a champion is locked in).
-  // Same public, unauthenticated endpoint Meta Tier List uses on the web.
-  // No ?rank= filter: this wants the same "one honest overall number"
-  // Champion Pool Builder already settled on, not a per-rank breakdown
-  // this small overlay card has no room to select.
-  useEffect(() => {
-    if (phase !== "ChampSelect") {
-      setChampionWinrates(null);
-      return;
-    }
-    if (championWinrates !== null) return;
-    fetch(`${API_BASE_URL}/api/v1/champion-winrates`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((data) => setChampionWinrates(data.winrates ?? []))
-      .catch(() => setChampionWinrates([]));
-  }, [phase, championWinrates]);
 
   // Which ability to level up next — real per-level winrate for this
   // champion+role (see getRecommendedSkillOrder; not matchup-aware, skill
@@ -707,6 +653,14 @@ export function OverlayView() {
   // normalized (0-1 of the overlay window's own size, which now covers the
   // whole monitor) so they stay valid across the window's lifetime without
   // depending on screen pixels directly.
+  // Cancel (round 33): the card's button or a right-click anywhere. Before
+  // this, once calibration started every click on the screen counted as
+  // Q/W/E and there was no way out but clicking three times.
+  function cancelCalibration() {
+    setCalibrationStep(null);
+    window.riftcompass.exitCalibration();
+  }
+
   function handleCalibrationClick(e: React.MouseEvent) {
     if (!calibrationStep) return;
     const point = { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight };
@@ -727,61 +681,12 @@ export function OverlayView() {
     }
   }
 
-  const localPlayer = myTeam.find((p) => p.cellId === localCellId);
-  const hasChampionData = Object.keys(champions.byId).length > 0;
 
-  async function handleImportBuild() {
-    if (!localPlayer?.championId) return;
-    setImportState("working");
-    try {
-      const result = await window.riftcompass.importBuild(localPlayer.championId);
-      setImportState(result.ok ? "done" : "error");
-    } catch {
-      setImportState("error");
-    }
-  }
-
-  async function handleApplyRecommendedBuild() {
-    if (!recommendedBuild?.runes || !recommendedBuild.spells) return;
-    setApplyBuildState("working");
-    try {
-      const { runes, spells, itemOrder, startingItems, situationalItems } = recommendedBuild;
-
-      // El item set solo se manda si hay orden de compra Y sabemos de qué
-      // campeón y rol es: sin eso el cliente guardaría un set sin dueño, que
-      // aparecería en la tienda de todos los campeones.
-      const championId = localPlayer?.championId;
-      const itemSet =
-        itemOrder.length > 0 && championId && localPick.championName && localPick.role
-          ? {
-              championId,
-              championName: localPick.championName,
-              role: localPick.role.toUpperCase(),
-              startingItemIds: startingItems.map((e) => e.itemId),
-              itemIds: itemOrder.map((e) => e.itemId),
-              situationalItemIds: situationalItems.map((e) => e.itemId),
-              titulo: `RiftCompass · ${champions.byInternalId[localPick.championName]?.name ?? localPick.championName} ${t(`Profile.positions.${localPick.role.toLowerCase()}`)}`,
-            }
-          : undefined;
-
-      const result = await window.riftcompass.applyRecommendedBuild(
-        [runes.perk0, runes.perk1, runes.perk2, runes.perk3, runes.perk4, runes.perk5, runes.statPerk0, runes.statPerk1, runes.statPerk2],
-        runes.primaryStyleId,
-        runes.subStyleId,
-        spells.spellLow,
-        spells.spellHigh,
-        itemSet,
-      );
-      setApplyBuildState(result.ok ? "done" : "error");
-    } catch {
-      setApplyBuildState("error");
-    }
-  }
-
-  // El auto-aplicado vive en la ventana de champ select (ChampSelectView),
-  // no aquí. Lo hacían las dos a la vez, y como las dos borran y vuelven a
-  // crear la misma página de runas, una de las dos fallaba ("rune page
-  // create returned no id", 2026-09-11). Aquí queda el botón como reintento.
+  // The champ select card that lived here (roster, "import last build",
+  // recommended build, pick suggestions) is gone (round 33): the overlay
+  // only shows in game now (gameConnection.ts), and the champ select window
+  // (ChampSelectView) already does all of that. It also ran the same
+  // requests a second time on every draft.
 
   // Local player's CS/min against the real target for their own rank
   // band — same benchmark table the web profile's roadmap uses
@@ -811,6 +716,14 @@ export function OverlayView() {
     <div
       style={{ position: "relative", width: "100vw", height: "100vh", fontSize: TYPE.body }}
       onClick={calibrationStep ? handleCalibrationClick : undefined}
+      onContextMenu={
+        calibrationStep
+          ? (e) => {
+              e.preventDefault();
+              cancelCalibration();
+            }
+          : undefined
+      }
     >
       {calibrationStep ? (
         <div
@@ -827,200 +740,25 @@ export function OverlayView() {
           <span style={{ fontSize: TYPE.body, fontWeight: 600, color: ROSE }}>
             {t("Overlay.calibrationClick", { ability: calibrationStep.toUpperCase() })}
           </span>
-        </div>
-      ) : null}
-
-      {phase === "ChampSelect" && myTeam.length > 0 ? (
-        <div style={{ position: "fixed", top: 12, right: 12, width: 420, ...cardStyle }}>
-          <span style={headingStyle}>{t("Overlay.champSelect")}</span>
-          {myTeam.map((p, index) => {
-            const champ = p.championId ? champions.byId[p.championId] : undefined;
-            const position = p.assignedPosition ? t(`Profile.positions.${p.assignedPosition.toLowerCase()}`) : "—";
-            const isLocal = p.cellId === localCellId;
-            return (
-              <div key={p.cellId} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 7,
-                    overflow: "hidden",
-                    flexShrink: 0,
-                    background: "rgba(255,255,255,0.06)",
-                    border: isLocal ? `1px solid ${ROSE}` : "1px solid transparent",
-                  }}
-                >
-                  {champ ? (
-                    <img src={champ.iconUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : null}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {isLocal ? t("Overlay.you") : t("Overlay.ally", { n: index + 1 })}
-                  </span>
-                  <span style={{ color: MUTED, fontSize: TYPE.label }}>
-                    {position} · {champ?.name ?? t("Overlay.lockingIn")}
-                  </span>
-                </div>
-                {isLocal && p.championId ? (
-                  <Interactive>
-                    <button
-                      onClick={handleImportBuild}
-                      disabled={importState === "working" || importState === "done"}
-                      style={{
-                        flexShrink: 0,
-                        border: "none",
-                        borderRadius: 8,
-                        padding: "6px 10px",
-                        fontSize: TYPE.label,
-                        fontWeight: 600,
-                        cursor: importState === "idle" || importState === "error" ? "pointer" : "default",
-                        background: `${ROSE}26`,
-                        color: ROSE,
-                      }}
-                    >
-                      {importState === "working"
-                        ? t("Overlay.importing")
-                        : importState === "done"
-                          ? t("Overlay.imported")
-                          : importState === "error"
-                            ? t("Overlay.noRecentGame")
-                            : t("Overlay.importLastBuild")}
-                    </button>
-                  </Interactive>
-                ) : null}
-              </div>
-            );
-          })}
-
-          {overlayModules.autoBuild && localPlayer?.championId && recommendedBuild && (recommendedBuild.runes || recommendedBuild.spells || recommendedBuild.items) ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 4, borderTop: BORDER }}>
-              <span style={{ ...headingStyle, fontSize: 10 }}>{t("Overlay.recommendedBuild")}</span>
-              {recommendedBuild.items ? (
-                <div style={{ display: "flex", gap: 4 }}>
-                  {recommendedBuild.items.coreItemsKey.split(",").map((id) => (
-                    <img
-                      key={id}
-                      src={`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/item/${id}.png`}
-                      alt=""
-                      style={{ width: 22, height: 22, borderRadius: 4 }}
-                    />
-                  ))}
-                </div>
-              ) : null}
-              <span style={{ color: MUTED, fontSize: 10 }}>
-                {t(
-                  recommendedBuild.runes?.matchupSpecific || recommendedBuild.spells?.matchupSpecific
-                    ? "Overlay.buildMatchupSpecific"
-                    : "Overlay.buildBlended",
-                  { games: recommendedBuild.runes?.games ?? recommendedBuild.spells?.games ?? 0 },
-                )}
-              </span>
-              {recommendedBuild.runes && recommendedBuild.spells ? (
-                <Interactive>
-                  <button
-                    onClick={handleApplyRecommendedBuild}
-                    disabled={applyBuildState === "working" || applyBuildState === "done"}
-                    style={{
-                      alignSelf: "flex-start",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "6px 10px",
-                      fontSize: TYPE.label,
-                      fontWeight: 600,
-                      cursor: applyBuildState === "idle" || applyBuildState === "error" ? "pointer" : "default",
-                      background: `${ROSE}26`,
-                      color: ROSE,
-                    }}
-                  >
-                    {applyBuildState === "working"
-                      ? t("Overlay.applyingBuild")
-                      : applyBuildState === "done"
-                        ? t("Overlay.buildApplied")
-                        : applyBuildState === "error"
-                          ? t("Overlay.applyBuildError")
-                          : t("Overlay.applyRecommendedBuild")}
-                  </button>
-                </Interactive>
-              ) : null}
-            </div>
-          ) : null}
-
-          {!localPlayer?.championId && localPlayer?.assignedPosition && hasChampionData
-            ? (() => {
-                const suggestions = suggestPicks(
-                  Object.values(champions.byId),
-                  myTeam.filter((p) => p.championId).map((p) => p.championId),
-                  localPlayer.assignedPosition,
-                  championWinrates ?? [],
-                );
-                if (suggestions.length === 0) return null;
-                // Your real lane opponent, if their pick has already been
-                // revealed — shown as plain information (not a fabricated
-                // counter-winrate; that data doesn't exist, see
-                // draft-help.ts) so there's still something real to react
-                // to, the way checking the enemy team panel by hand
-                // already lets you do.
-                const enemy = theirTeam.find((p) => p.assignedPosition === localPlayer.assignedPosition);
-                const enemyChamp = enemy?.championId ? champions.byId[enemy.championId] : undefined;
-                return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 4, borderTop: BORDER }}>
-                    <span style={{ ...headingStyle, fontSize: 10 }}>
-                      {t("Overlay.suggestedFor", { position: t(`Profile.positions.${localPlayer.assignedPosition.toLowerCase()}`) })}
-                    </span>
-                    {enemyChamp ? (
-                      <span style={{ fontSize: 10, color: MUTED }}>
-                        {t("Overlay.laneOpponent", { champion: enemyChamp.name })}
-                      </span>
-                    ) : null}
-                    <div style={{ display: "flex", gap: 8 }}>
-                      {suggestions.map((s) => (
-                        <div
-                          key={s.champion.id}
-                          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, width: 56 }}
-                        >
-                          <div style={{ width: 32, height: 32, borderRadius: 7, overflow: "hidden" }}>
-                            <img
-                              src={s.champion.iconUrl}
-                              alt=""
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            />
-                          </div>
-                          <span
-                            style={{
-                              fontSize: 10,
-                              color: MUTED,
-                              textAlign: "center",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              width: "100%",
-                            }}
-                          >
-                            {s.champion.name}
-                          </span>
-                          {/* draft-help.ts marca los picks de relleno con
-                              `missingTag` precisamente para que la interfaz
-                              pueda etiquetar los dos grupos con honestidad; el
-                              overlay era el unico consumidor que se lo saltaba,
-                              asi que un pick del heuristico se leia igual que
-                              uno rankeado por winrate real. */}
-                          {s.winRate !== undefined ? (
-                            <span style={{ fontSize: TYPE.label, fontWeight: 600, color: GOOD }}>
-                              {t("Overlay.winRateBadge", { rate: Math.round(s.winRate * 100), games: s.games ?? 0 })}
-                            </span>
-                          ) : s.missingTag ? (
-                            <span style={{ fontSize: TYPE.label, color: MUTED, textAlign: "center" }}>
-                              {t("ChampionPoolBuilder.recommendationReason", { tag: s.missingTag })}
-                            </span>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()
-            : null}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              cancelCalibration();
+            }}
+            style={{
+              marginLeft: 14,
+              background: "none",
+              border: `1px solid ${COLORS.cardBorder}`,
+              borderRadius: 6,
+              color: COLORS.text,
+              fontSize: TYPE.caption,
+              padding: "3px 10px",
+              cursor: "pointer",
+            }}
+          >
+            {t("Overlay.calibrationCancel")}
+          </button>
         </div>
       ) : null}
 

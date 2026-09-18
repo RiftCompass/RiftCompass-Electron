@@ -137,6 +137,10 @@ export function createMainWindow(): BrowserWindow {
     minHeight: 480,
     frame: false,
     show: false,
+    // The renderer's own background (src/theme.ts COLORS.background): the
+    // first frame used to be Electron's default white until React painted
+    // (round 33), on every cold start and after each update's restart.
+    backgroundColor: "#0c0a0d",
     icon: APP_ICON,
     webPreferences: {
       preload: PRELOAD,
@@ -179,8 +183,16 @@ export function createMainWindow(): BrowserWindow {
 // and gameConnection.ts opening it when League connects).
 export function showMainWindow(): void {
   if (!mainWindow) return;
-  mainWindow.show();
-  mainWindow.focus();
+  const win = mainWindow;
+  const reveal = () => {
+    if (win.isDestroyed()) return;
+    win.show();
+    win.focus();
+  };
+  // Wait for the first paint on a cold start so the window never appears
+  // before it has content (round 33). Once it has rendered, show at once.
+  if (win.webContents.isLoading()) win.once("ready-to-show", reveal);
+  else reveal();
 }
 
 // Marks the window as genuinely quitting so its own "close" handler
@@ -235,7 +247,9 @@ export function createChampSelectWindow(): BrowserWindow {
     minWidth: 380,
     frame: false,
     transparent: false,
-    backgroundColor: "#0d0a12",
+    // Same background as the renderer paints (src/theme.ts COLORS.background)
+    // so the first frame is not a different black (round 33).
+    backgroundColor: "#0c0a0d",
     alwaysOnTop: true,
     skipTaskbar: true,
     // Nunca roba el foco: aparece a mitad de un draft con el reloj corriendo,

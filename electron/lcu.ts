@@ -9,7 +9,7 @@
 // must explicitly trust it — plain https.request via `rejectUnauthorized:
 // false`, and the websocket via the same option passed to `ws`.
 
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 import * as https from "node:https";
 import * as path from "node:path";
@@ -62,11 +62,13 @@ export function findLockfile(): string | null {
 // `--remoting-auth-token=`), que es lo que leen Porofessor o Blitz. Cuesta
 // arrancar un PowerShell, asi que gameConnection.ts solo lo pregunta de vez
 // en cuando y solo mientras no haya lockfile.
-export function readCredentialsFromProcess(): LcuCredentials | null {
-  if (process.platform !== "win32") return null;
-  let out: string;
-  try {
-    out = execFileSync(
+export function readCredentialsFromProcess(): Promise<LcuCredentials | null> {
+  if (process.platform !== "win32") return Promise.resolve(null);
+  // Asynchronous (round 33): the synchronous version froze the main process
+  // for ~270 ms every 15 s while no client was running (tray, drag, window
+  // buttons and every invoke waited), which is most of a tray app's life.
+  return new Promise((resolve) => {
+    execFile(
       "powershell.exe",
       [
         "-NoProfile",
@@ -74,15 +76,19 @@ export function readCredentialsFromProcess(): LcuCredentials | null {
         "-Command",
         "(Get-CimInstance Win32_Process -Filter \"Name='LeagueClientUx.exe'\" | Select-Object -First 1 -ExpandProperty CommandLine)",
       ],
-      { encoding: "utf-8", timeout: 8000, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] },
+      { encoding: "utf-8", timeout: 8000, windowsHide: true },
+      (error, stdout) => {
+        if (error) {
+          resolve(null);
+          return;
+        }
+        const out = String(stdout);
+        const port = Number(/--app-port=(\d+)/.exec(out)?.[1]);
+        const password = /--remoting-auth-token=([^\s"]+)/.exec(out)?.[1];
+        resolve(Number.isInteger(port) && password ? { port, password } : null);
+      },
     );
-  } catch {
-    return null;
-  }
-  const port = Number(/--app-port=(\d+)/.exec(out)?.[1]);
-  const password = /--remoting-auth-token=([^\s"]+)/.exec(out)?.[1];
-  if (!Number.isInteger(port) || !password) return null;
-  return { port, password };
+  });
 }
 
 export function readLockfile(lockfilePath: string): LcuCredentials | null {
