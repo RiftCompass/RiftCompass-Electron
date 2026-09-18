@@ -5,6 +5,26 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.24
+
+Incluye la 0.3.23, que se quedó en borrador.
+
+- Números de parche como los ves en el juego: "26.18" en vez de "16.18" en
+  la Meta Tier List, los matchups, las builds y la calculadora de oro.
+- Diagnóstico del perfil: cuando vas a la par con tus rivales de línea en
+  una métrica, lo dice así, con barra neutra, en vez de contarlo como punto
+  débil.
+- Porcentajes y decimales con el formato de tu idioma en todas las
+  pantallas, y plurales correctos en el calendario de actividad y en el
+  consejero de draft.
+- Meta Tier List: dos campeones con exactamente el mismo winrate ya no
+  caen en tiers distintos, y el orden es siempre el mismo.
+- Carril de perfiles guardados: la propuesta "¿X eres tú? Márcalo como tu
+  perfil principal" va en dos líneas, con los botones debajo; antes el
+  texto se partía palabra por palabra junto a los botones.
+- Instalador: páginas de bienvenida y final con la marca de RiftCompass en
+  vez de la imagen genérica del instalador.
+
 ## 0.3.22
 
 - Selección de campeón: una sola ventana de draft. Antes, en el instalador
