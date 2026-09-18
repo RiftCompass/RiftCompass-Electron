@@ -1113,28 +1113,35 @@ function SavedProfilesPanel({
     );
   }
 
+  // Text on one line, buttons on the next: the rail is ~230 px wide and
+  // with everything in a row the sentence wrapped one word per line
+  // beside the two buttons.
   const mainProposal = proposedMain ? (
     <div
       style={{
         display: "flex",
-        alignItems: "center",
+        flexDirection: "column",
         gap: 8,
         borderRadius: 8,
         border: `1px solid ${COLORS.rose}55`,
         background: `${COLORS.rose}14`,
-        padding: "7px 10px",
+        padding: "8px 10px",
         fontSize: TYPE.caption,
         lineHeight: 1.4,
       }}
     >
-      <Star size={14} color={COLORS.rose} weight="fill" style={{ flexShrink: 0 }} />
-      <span style={{ flex: 1, minWidth: 0 }}>{t("SavedProfiles.mainProposal", { name: proposedMain.gameName })}</span>
-      <button onClick={() => handleSetMain(proposedMain.id, true)} style={{ ...smallButtonStyle, flexShrink: 0 }}>
-        {t("SavedProfiles.mainProposalYes")}
-      </button>
-      <button onClick={() => setMainProposalDismissed(true)} style={{ ...smallButtonStyle, flexShrink: 0 }}>
-        {t("SavedProfiles.mainProposalNo")}
-      </button>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <Star size={14} color={COLORS.rose} weight="fill" style={{ flexShrink: 0, marginTop: 2 }} />
+        <span style={{ flex: 1, minWidth: 0 }}>{t("SavedProfiles.mainProposal", { name: proposedMain.gameName })}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
+        <button onClick={() => handleSetMain(proposedMain.id, true)} style={smallButtonStyle}>
+          {t("SavedProfiles.mainProposalYes")}
+        </button>
+        <button onClick={() => setMainProposalDismissed(true)} style={smallButtonStyle}>
+          {t("SavedProfiles.mainProposalNo")}
+        </button>
+      </div>
     </div>
   ) : null;
 
