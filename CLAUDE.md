@@ -66,7 +66,7 @@ El overlay in-game de una ventana normal no puede pintarse sobre League en modo 
 host=github.com
 " | git credential fill` y usar el campo `password` como `GH_TOKEN`.
 - EULA en el instalador en cuatro idiomas (`build/eula_{en,es,fr,de}.txt`, desde la ronda 27; electron-builder los recoge solo por el nombre, sin `nsis.license`; el instalador enseña el del idioma elegido).
-- **Firma de código en marcha**: certificado Certum "Open Source Code Signing in the Cloud" (SimplySign) comprado el 2026-09-11, verificación completada el 2026-09-14, pendiente de que Certum lo emita (detalle en `../CLAUDE.md`, "Overlay y Overwolf"). Ojo: la firma de Overwolf, la otra mitad, solo llega tras enviar el MVP y que lo aprueben (respuesta suya del 2026-09-14). Hasta que la firma esté en `scripts/build-win.mjs`, SmartScreen avisa de "Editor desconocido" (la web lo explica bajo el botón de descarga).
+- **Firma de código en marcha**: certificado Certum "Open Source Code Signing in the Cloud" (SimplySign) comprado el 2026-09-11 y **emitido el 2026-09-19** (claves en la nube, cuenta SimplySign riftcompass@gmail.com; falta vincular la app móvil, instalar SimplySign Desktop y meter `signtool` en `scripts/build-win.mjs`; detalle en `../CLAUDE.md`, "Requieren al propietario"). Ojo: la firma de Overwolf, la otra mitad, solo llega tras enviar el MVP y que lo aprueben (respuesta suya del 2026-09-14). Hasta que la firma esté en `scripts/build-win.mjs`, SmartScreen avisa de "Editor desconocido" (la web lo explica bajo el botón de descarga).
 - Cuando llegue Overwolf, esa build se distribuye como una actualización más por este mecanismo.
 
 ## Telemetría
