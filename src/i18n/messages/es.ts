@@ -142,7 +142,7 @@ export const es: Messages = {
     rankTrendEmptyBody: "Solo las partidas clasificatorias de {queue} mueven esta escalera: juega unas cuantas y tu historial real de LP se irá construyendo con cada visita a este perfil.",
     lpHistorySubtitle: "{count, plural, one {# snapshot real registrado} other {# snapshots reales registrados}} desde {since}",
     activityCalendar: "Calendario de actividad",
-    activityDayTitle: "{games} partidas · {wins}V {losses}D",
+    activityDayTitle: "{games, plural, one {# partida} other {# partidas}} · {wins}V {losses}D",
     activityLegendLoss: "Mal día",
     activityLegendWin: "Buen día",
     previousMonth: "Mes anterior",
@@ -231,6 +231,7 @@ export const es: Messages = {
     csPerMin: {
       title: "Farmeo (CS/min)",
       short: "farmeo",
+      tipEven: "A la par con tus rivales de línea en farmeo. El siguiente paso es convertir el empate en ventaja: llévate la oleada extra cuando ellos vuelven a base.",
       tipAbove: {
         default: "Farmeas más que tus rivales de línea. Busca ventanas para convertir esa ventaja de oro en presión en el mapa.",
         learning: "Ya farmeas más que tus rivales de línea. Sigue priorizando los súbditos sobre los intercambios innecesarios.",
@@ -247,6 +248,7 @@ export const es: Messages = {
     visionPerMin: {
       title: "Puntuación de visión / min",
       short: "visión",
+      tipEven: "A la par con tus rivales de línea en visión. Un guardián de control más por partida es la forma más barata de adelantarte.",
       tipAbove: {
         default: "Ves más mapa que tus rivales de línea. Sigue negando los guardianes enemigos cerca de los objetivos.",
         learning: "Ya tienes mejor instinto para colocar guardianes que tus rivales. Mantenlo como hábito, no como algo secundario.",
@@ -263,6 +265,7 @@ export const es: Messages = {
     damagePerMin: {
       title: "Daño a campeones / min",
       short: "daño",
+      tipEven: "A la par con tus rivales de línea en daño. Busca un intercambio seguro más por cada ciclo de línea.",
       tipAbove: {
         default: "Haces más daño que tus rivales de línea. Asegúrate de que cae sobre los objetivos correctos en las peleas de equipo, no sobre el que esté más cerca.",
         learning: "Haces más daño que tus rivales de línea. Sigue intercambiando cuando tus habilidades estén listas y las suyas no.",
@@ -279,6 +282,7 @@ export const es: Messages = {
     killParticipation: {
       title: "Participación en asesinatos",
       short: "participación en asesinatos",
+      tipEven: "A la par con tus rivales de línea en participación en asesinatos. Estar en posición para la siguiente pelea por objetivo es lo que lo decide.",
       tipAbove: {
         default: "Participas en más asesinatos de tu equipo que tus rivales de línea en los del suyo. Sigue apareciendo, y asegúrate de dejar la oleada en un estado seguro al salir de línea.",
         learning: "Estás presente en más asesinatos de tu equipo que tus rivales. Buen instinto; sigue acompañando las jugadas.",
@@ -295,6 +299,7 @@ export const es: Messages = {
     kda: {
       title: "Ratio de KDA",
       short: "KDA",
+      tipEven: "A la par con tus rivales de línea en KDA. Menos muertes en solitario es la forma más rápida de mover esta cifra.",
       tipAbove: {
         default: "Intercambias mejor que tus rivales de línea. Empieza a buscar jugadas más proactivas para hacer crecer tus ventajas.",
         learning: "Sales por delante de tus rivales de línea en las peleas. Sigue jugando a tus puntos fuertes.",
@@ -311,6 +316,7 @@ export const es: Messages = {
     laningAdvantage: {
       title: "Ventaja en fase de línea",
       short: "fase de línea",
+      tipEven: "La mitad de tus partidas por delante al acabar la fase de línea y la otra mitad por detrás: hoy la línea es una moneda al aire. Elige un matchup y estúdialo.",
       tipAbove: {
         laner: {
           default: "Sueles ir por delante al final de la fase de línea. El siguiente paso es aprovechar esa ventaja en el mapa, no solo en línea.",
@@ -715,7 +721,7 @@ export const es: Messages = {
     yourStyleTitle: "Tu estilo de juego",
     resultsTitle: "Tus campeones más afines",
     resultsSubtitle: "Según cuánto se acerquen tus respuestas a las estadísticas reales de cada campeón {role}.",
-    realWinrate: "{rate}% WR real ({games} partidas)",
+    realWinrate: "{rate} WR real ({games} partidas)",
     realWinrateTooltip: "Winrate real de las partidas rastreadas por RiftCompass. La muestra todavía es pequeña y sigue creciendo.",
     likert: { "2": "Totalmente de acuerdo", "1": "De acuerdo", "0": "Neutral", "-1": "En desacuerdo", "-2": "Totalmente en desacuerdo" },
     axis: { aggression: "Agresividad", resilience: "Resistencia", spellPower: "Poder de habilidad", complexity: "Complejidad" },
@@ -739,7 +745,7 @@ export const es: Messages = {
     moveDown: "Bajar",
     remove: "Quitar",
     intro: "Crea una pool enfocada de hasta 6 campeones por posición: picks principales que jugarás más, picks flexibles para cobertura y un pocket pick. Se guarda automáticamente en este dispositivo.",
-    realWinrate: "{rate}% WR real ({games} partidas)",
+    realWinrate: "{rate} WR real ({games} partidas)",
     realWinrateTooltip: "Winrate real de las partidas rastreadas por RiftCompass. La muestra todavía es pequeña y sigue creciendo.",
     searchNoResults: "No se encontraron campeones.",
     poolTitle: "Tu pool",
@@ -815,7 +821,7 @@ export const es: Messages = {
     methodologyNote: "Los tiers son relativos: S es el tramo con mejor rendimiento de lo medido hasta ahora para esa posición, D el más débil, no un corte de winrate fijo, ya que el dataset todavía es pequeño y crece cada día.",
     noDataForRole: "Todavía no hay suficientes partidas registradas para esta posición y rango. Prueba con otro rango o vuelve cuando haya más muestra.",
     dataFromPatch: "Datos del parche {patch}; el parche actual ({current}) aún no tiene muestras suficientes.",
-    chipTooltip: "{rate}% de winrate en {games} partidas rastreadas",
+    chipTooltip: "{rate} de winrate en {games} partidas rastreadas",
     noMatches: "No hay ningún campeón con ese nombre en este tablero.",
     rankTiers: {
       CHALLENGER: "Retador",
@@ -947,12 +953,12 @@ export const es: Messages = {
     enemyKnown: "Rival de línea: {champion}",
     enemyUnknown: "Aún no se conoce el rival de línea: mostrando los mejores picks generales de tu rol.",
     empty: "Aún no hay datos suficientes para recomendar nada.",
-    matchupLabel: "{percent}% en este matchup ({games} partidas)",
-    roleWideLabel: "{percent}% general en este rol ({games} partidas)",
+    matchupLabel: "{percent} en este matchup ({games, plural, one {# partida} other {# partidas}})",
+    roleWideLabel: "{percent} general en este rol ({games, plural, one {# partida} other {# partidas}})",
     matchupNone: "Sin datos de este matchup",
-    personalLabel: "Tú: {percent}% ({games} partidas)",
-    personalLabelOne: "Tú: {percent}% (solo 1 partida)",
-    personalLabelFew: "Tú: {percent}% (solo {games} partidas)",
+    personalLabel: "Tú: {percent} ({games} partidas)",
+    personalLabelOne: "Tú: {percent} (solo 1 partida)",
+    personalLabelFew: "Tú: {percent} (solo {games} partidas)",
     personalNone: "Sin partidas recientes con este campeón",
     tier: { good: "Buena opción", solid: "Sólida", risky: "Arriesgada" },
   },

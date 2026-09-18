@@ -1,4 +1,5 @@
 import { useI18n } from "./i18n";
+import { formatPercent } from "./lib/profile-analysis";
 import { COLORS } from "./theme";
 
 // Real winrate from RiftCompass's own crawler (/api/v1/champion-winrates,
@@ -35,7 +36,7 @@ export function RealWinrateBadge({
       }}
       title={t(`${label}.realWinrateTooltip`)}
     >
-      {t(`${label}.realWinrate`, { rate: Math.round(winrate.winRate * 100), games: new Intl.NumberFormat(locale).format(winrate.games) })}
+      {t(`${label}.realWinrate`, { rate: formatPercent(locale, winrate.winRate), games: new Intl.NumberFormat(locale).format(winrate.games) })}
     </span>
   );
 }

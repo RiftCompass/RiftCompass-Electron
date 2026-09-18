@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { patchLabel } from "../lib/patch-label";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { fetchChampionMap, toDDragonId, type ChampionInfo } from "../ddragon";
 import { POOL_ROLES } from "../lib/champion-pool-builder";
 import { type PersonalityRole } from "../lib/personality-test";
-import { positionIconUrl } from "../lib/profile-analysis";
+import { formatPercent, positionIconUrl } from "../lib/profile-analysis";
 import { TIERS, TIER_COLORS, type Tier } from "../lib/tier-colors";
 import { API_BASE_URL } from "../shared/api";
 import { useI18n } from "../i18n";
@@ -34,12 +35,20 @@ interface TieredWinrate extends ChampionWinrate {
 }
 
 function tierByWinrate(entries: ChampionWinrate[]): TieredWinrate[] {
-  const sorted = [...entries].sort((a, b) => b.winRate - a.winRate);
+  // Same rule as the web's tierChampionsByWinrate (round 34): ties sort by
+  // games then name, and an exact win-rate tie never splits across tiers.
+  const sorted = [...entries].sort(
+    (a, b) => b.winRate - a.winRate || b.games - a.games || a.championName.localeCompare(b.championName),
+  );
   const total = sorted.length;
-  return sorted.map((entry, index) => {
+  const out: TieredWinrate[] = [];
+  sorted.forEach((entry, index) => {
     const tierIndex = Math.min(TIERS.length - 1, Math.floor((index / total) * TIERS.length));
-    return { ...entry, tier: TIERS[tierIndex] };
+    const previous = out[index - 1];
+    const tier = previous && previous.winRate === entry.winRate ? previous.tier : TIERS[tierIndex];
+    out.push({ ...entry, tier });
   });
+  return out;
 }
 
 function groupByRole(winrates: ChampionWinrate[]): Record<string, TieredWinrate[]> {
@@ -57,7 +66,7 @@ function groupByRole(winrates: ChampionWinrate[]): Record<string, TieredWinrate[
 const RANK_TIERS = ["CHALLENGER", "GRANDMASTER", "MASTER", "DIAMOND", "EMERALD", "PLATINUM", "GOLD", "SILVER", "BRONZE", "IRON"] as const;
 
 export function MetaTierList() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   // The web's chips are links to /champions/<champion>; here the same jump
   // opens the Champion Builds tool on that champion (see tool-navigation.tsx).
   const openTool = useOpenTool();
@@ -239,7 +248,7 @@ export function MetaTierList() {
 
       {dataPatch && winrates && winrates.length > 0 && dataPatch.patch !== dataPatch.latestPatch ? (
         <p style={{ fontSize: TYPE.body, color: COLORS.gold, margin: 0 }}>
-          {t("MetaTierList.dataFromPatch", { patch: dataPatch.patch, current: dataPatch.latestPatch })}
+          {t("MetaTierList.dataFromPatch", { patch: patchLabel(dataPatch.patch), current: patchLabel(dataPatch.latestPatch) })}
         </p>
       ) : null}
       {dataPatch && winrates ? <DataQualityNote quality={dataQuality} patches={[dataPatch.patch]} /> : null}
@@ -302,7 +311,7 @@ export function MetaTierList() {
                     <div style={{ display: "grid", gridTemplateColumns: chipColumns, alignItems: "start", gap: 6 }}>
                       {inTier.map((entry) => {
                         const champ = championByInternalId.get(toDDragonId(entry.championName));
-                        const tooltip = t("MetaTierList.chipTooltip", { rate: Math.round(entry.winRate * 100), games: entry.games });
+                        const tooltip = t("MetaTierList.chipTooltip", { rate: formatPercent(locale, entry.winRate), games: entry.games });
                         const name = champ?.name ?? entry.championName;
                         const matched = trimmedSearch !== "" && name.toLowerCase().includes(trimmedSearch);
                         const dimmed = trimmedSearch !== "" && !matched;
@@ -392,7 +401,7 @@ export function MetaTierList() {
                                 color: entry.winRate >= 0.53 ? COLORS.gold : COLORS.muted,
                               }}
                             >
-                              {Math.round(entry.winRate * 100)}%
+                              {formatPercent(locale, entry.winRate)}
                             </span>
                           </div>
                         );

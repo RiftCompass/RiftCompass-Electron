@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { patchLabel } from "../lib/patch-label";
 import { ChampionCombobox } from "../ChampionCombobox";
 import { fetchChampionMap, fetchLatestVersion, toDDragonId, type ChampionInfo } from "../ddragon";
 import { POOL_ROLES } from "../lib/champion-pool-builder";
@@ -311,7 +312,7 @@ export function Matchups() {
                 {champion.name} · {t(`Profile.positions.${effectiveRole.toLowerCase()}`)}
               </span>
               <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
-                {t("ChampionBuilds.popularBuildSource", { patch: data.dataPatches.join(" + ") })}
+                {t("ChampionBuilds.popularBuildSource", { patch: patchLabel(data.dataPatches) })}
                 {openTool ? (
                   <>
                     {" · "}

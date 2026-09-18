@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { publicPatchLabel } from "../lib/patch-label";
 import {
   Coins,
   Crosshair,
@@ -305,7 +306,7 @@ export function GoldCalculator() {
       >
         {version && (
           <span style={{ fontSize: TYPE.label, color: COLORS.muted, padding: "0 14px 8px", letterSpacing: 0.4 }}>
-            {t("GoldCalculator.patch", { version })}
+            {t("GoldCalculator.patch", { version: publicPatchLabel(version.split(".").slice(0, 2).join(".")) })}
           </span>
         )}
         {STAT_SECTIONS.map((section, si) => (

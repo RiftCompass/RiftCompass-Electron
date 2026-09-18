@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { patchLabel } from "../lib/patch-label";
 import { X } from "@phosphor-icons/react";
 import {
   fetchChampionDetail,
@@ -179,7 +180,7 @@ export function MatchupCard({
             </h2>
             <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
               {t(`Profile.positions.${role.toLowerCase()}`)}
-              {data ? ` · ${t("ChampionBuilds.popularBuildSource", { patch: data.dataPatches.join(" + ") })}` : ""}
+              {data ? ` · ${t("ChampionBuilds.popularBuildSource", { patch: patchLabel(data.dataPatches) })}` : ""}
             </span>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useI18n } from "./i18n";
+import { patchLabel } from "./lib/patch-label";
 import { formatRelativeTime } from "./lib/profile-analysis";
 import { webUrl } from "./shared/api";
 import { COLORS, TYPE } from "./theme";
@@ -17,7 +18,7 @@ export function DataQualityNote({ quality, patches }: { quality: DataQuality | u
   const { t, locale } = useI18n();
   if (!quality) return null;
   const games = new Intl.NumberFormat(locale).format(quality.games);
-  const patch = patches.join(" + ");
+  const patch = patchLabel(patches);
   const updated = quality.updatedAt ? formatRelativeTime(new Date(quality.updatedAt).getTime(), locale) : null;
   return (
     <p style={{ fontSize: TYPE.label, color: COLORS.muted, margin: 0 }}>

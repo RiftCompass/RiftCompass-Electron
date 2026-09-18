@@ -72,7 +72,8 @@ export const STRENGTH_RATIO = 1.15;
 export const FOCUS_RATIO = 0.85;
 const LANING_ADVANTAGE_REFERENCE = 50;
 
-export type DiagnosticStatus = "above" | "below";
+// "even" (round 34, same as the web): identical printed figures claim no edge.
+export type DiagnosticStatus = "above" | "even" | "below";
 
 export interface DiagnosticNode {
   metric: DiagnosticMetric;
@@ -177,7 +178,8 @@ function node(metric: DiagnosticMetric, rawValue: number, rawReference: number):
   const value = roundTo(rawValue, decimals);
   const reference = roundTo(rawReference, decimals);
   const ratio = ratioOf(value, reference);
-  return { metric, value, reference, ratio, status: ratio >= 1 ? "above" : "below" };
+  const status: DiagnosticStatus = value === reference ? "even" : ratio >= 1 ? "above" : "below";
+  return { metric, value, reference, ratio, status };
 }
 
 function sumOf(stats: GameStats[], key: "kills" | "deaths" | "assists"): number {
@@ -237,6 +239,7 @@ export function computeDiagnostic(matches: RecentMatchSummary[], tier?: string |
 
 /** Roadmap i18n key of a node's advice: by rank band, and for laning also by jungle vs. laner. */
 export function tipKey(node: DiagnosticNode, diagnostic: Pick<Diagnostic, "band" | "primaryRole">): string {
+  if (node.status === "even") return `Roadmap.${node.metric}.tipEven`;
   const verdict = node.status === "above" ? "tipAbove" : "tipBelow";
   if (node.metric === "laningAdvantage") {
     const role = diagnostic.primaryRole === "JUNGLE" ? "jungle" : "laner";

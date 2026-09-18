@@ -142,7 +142,7 @@ export const fr: Messages = {
     rankTrendEmptyBody: "Seules les parties classées en {queue} font bouger ce classement : jouez-en quelques-unes et votre historique de LP réel se construit à chaque visite de ce profil.",
     lpHistorySubtitle: "{count, plural, one {# instantané réel enregistré} other {# instantanés réels enregistrés}} depuis {since}",
     activityCalendar: "Calendrier d'activité",
-    activityDayTitle: "{games} parties · {wins}V {losses}D",
+    activityDayTitle: "{games, plural, one {# partie} other {# parties}} · {wins}V {losses}D",
     activityLegendLoss: "Mauvais jour",
     activityLegendWin: "Bon jour",
     previousMonth: "Mois précédent",
@@ -231,6 +231,7 @@ export const fr: Messages = {
     csPerMin: {
       title: "Farm (CS/min)",
       short: "farm",
+      tipEven: "À égalité avec vos adversaires de lane au farm. La prochaine étape : transformer l'égalité en avance en prenant la vague supplémentaire quand ils rappellent.",
       tipAbove: {
         default: "Vous farmez plus que vos adversaires de lane. Cherchez des fenêtres pour convertir cette avance en or en pression sur la map.",
         learning: "Vous farmez déjà plus que vos adversaires de lane. Continuez à privilégier les sbires aux échanges inutiles.",
@@ -247,6 +248,7 @@ export const fr: Messages = {
     visionPerMin: {
       title: "Score de vision / min",
       short: "vision",
+      tipEven: "À égalité avec vos adversaires de lane en vision. Une balise de contrôle de plus par partie est le moyen le moins cher de prendre l'avantage.",
       tipAbove: {
         default: "Vous voyez plus de la map que vos adversaires de lane. Continuez à retirer les wards ennemies près des objectifs.",
         learning: "Déjà un meilleur instinct de ward que vos adversaires. Gardez-le comme une habitude, pas une réflexion après coup.",
@@ -263,6 +265,7 @@ export const fr: Messages = {
     damagePerMin: {
       title: "Dégâts aux champions / min",
       short: "dégâts",
+      tipEven: "À égalité avec vos adversaires de lane en dégâts. Cherchez un échange sûr de plus par cycle de lane.",
       tipAbove: {
         default: "Vous infligez plus de dégâts que vos adversaires de lane. Assurez-vous qu'ils touchent les bonnes cibles en teamfight, pas seulement la plus proche.",
         learning: "Vous infligez plus de dégâts que vos adversaires de lane. Continuez à échanger quand vos sorts sont disponibles et pas les leurs.",
@@ -279,6 +282,7 @@ export const fr: Messages = {
     killParticipation: {
       title: "Participation aux kills",
       short: "participation aux kills",
+      tipEven: "À égalité avec vos adversaires de lane en participation aux éliminations. Être en position pour le prochain combat d'objectif fait la différence.",
       tipAbove: {
         default: "Vous participez à plus de kills de votre équipe que vos adversaires de lane pour la leur. Continuez à répondre présent, et quittez la lane avec une vague en sécurité.",
         learning: "Vous êtes présent sur plus de kills de votre équipe que vos adversaires. Bon instinct ; continuez à suivre les actions.",
@@ -295,6 +299,7 @@ export const fr: Messages = {
     kda: {
       title: "Ratio KDA",
       short: "KDA",
+      tipEven: "À égalité avec vos adversaires de lane en KDA. Moins de morts en solo est le moyen le plus rapide de faire bouger ce chiffre.",
       tipAbove: {
         default: "Vous échangez mieux que vos adversaires de lane. Cherchez davantage d'actions proactives pour faire boule de neige avec vos avances.",
         learning: "Vous sortez gagnant des combats face à vos adversaires de lane. Continuez à jouer sur vos points forts.",
@@ -311,6 +316,7 @@ export const fr: Messages = {
     laningAdvantage: {
       title: "Avance en phase de lane",
       short: "phase de lane",
+      tipEven: "La moitié de vos parties en avance à la fin de la phase de lane, l'autre moitié en retard : la lane est un pile ou face pour l'instant. Choisissez un matchup à étudier.",
       tipAbove: {
         laner: {
           default: "Vous êtes régulièrement en avance à la fin de la phase de lane. La prochaine étape est de dépenser cette avance sur la carte, pas seulement en lane.",
@@ -715,7 +721,7 @@ export const fr: Messages = {
     yourStyleTitle: "Votre style de jeu",
     resultsTitle: "Vos champions les plus compatibles",
     resultsSubtitle: "Basé sur la proximité entre vos réponses et les statistiques réelles de chaque champion {role}.",
-    realWinrate: "{rate}% WR réel ({games} parties)",
+    realWinrate: "{rate} WR réel ({games} parties)",
     realWinrateTooltip: "Taux de victoire réel basé sur les parties suivies par RiftCompass. L'échantillon est encore restreint et continue de croître.",
     likert: { "2": "Tout à fait d'accord", "1": "D'accord", "0": "Neutre", "-1": "Pas d'accord", "-2": "Pas du tout d'accord" },
     axis: { aggression: "Agressivité", resilience: "Résilience", spellPower: "Puissance des sorts", complexity: "Complexité" },
@@ -739,7 +745,7 @@ export const fr: Messages = {
     moveDown: "Descendre",
     remove: "Retirer",
     intro: "Constituez une pool ciblée de jusqu'à 6 champions par rôle : des picks principaux que vous jouerez le plus, des picks polyvalents pour la couverture, et un pocket pick. Sauvegardé automatiquement sur cet appareil.",
-    realWinrate: "{rate}% WR réel ({games} parties)",
+    realWinrate: "{rate} WR réel ({games} parties)",
     realWinrateTooltip: "Taux de victoire réel basé sur les parties suivies par RiftCompass. L'échantillon est encore restreint et continue de croître.",
     searchNoResults: "Aucun champion trouvé.",
     poolTitle: "Votre pool",
@@ -815,7 +821,7 @@ export const fr: Messages = {
     methodologyNote: "Les tiers sont relatifs : S représente la tranche la plus performante de ce qui a été mesuré jusqu'ici pour ce rôle, D la plus faible, pas un seuil fixe de taux de victoire, puisque le jeu de données est encore petit et croît chaque jour.",
     noDataForRole: "Pas encore assez de parties suivies pour ce rôle et ce rang. Essayez un autre rang, ou revenez quand plus de parties auront été analysées.",
     dataFromPatch: "Données du patch {patch} ; le patch actuel ({current}) n'a pas encore assez d'échantillons.",
-    chipTooltip: "{rate}% de taux de victoire sur {games} parties suivies",
+    chipTooltip: "{rate} de taux de victoire sur {games} parties suivies",
     noMatches: "Aucun champion de ce nom n'est présent sur ce tableau.",
     rankTiers: {
       CHALLENGER: "Challenger",
@@ -947,12 +953,12 @@ export const fr: Messages = {
     enemyKnown: "Adversaire de ligne : {champion}",
     enemyUnknown: "Adversaire de ligne pas encore révélé : affichage des meilleurs picks généraux de votre rôle.",
     empty: "Pas encore assez de données pour une recommandation.",
-    matchupLabel: "{percent}% dans ce matchup ({games} parties)",
-    roleWideLabel: "{percent}% globalement à ce rôle ({games} parties)",
+    matchupLabel: "{percent} dans ce matchup ({games, plural, one {# partie} other {# parties}})",
+    roleWideLabel: "{percent} globalement à ce rôle ({games, plural, one {# partie} other {# parties}})",
     matchupNone: "Aucune donnée pour ce matchup",
-    personalLabel: "Vous : {percent}% ({games} parties)",
-    personalLabelOne: "Vous : {percent}% (1 seule partie)",
-    personalLabelFew: "Vous : {percent}% (seulement {games} parties)",
+    personalLabel: "Vous : {percent} ({games} parties)",
+    personalLabelOne: "Vous : {percent} (1 seule partie)",
+    personalLabelFew: "Vous : {percent} (seulement {games} parties)",
     personalNone: "Aucune partie récente avec ce champion",
     tier: { good: "Bon choix", solid: "Solide", risky: "Risqué" },
   },
