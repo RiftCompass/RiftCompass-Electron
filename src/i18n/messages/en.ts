@@ -477,6 +477,7 @@ export const en = {
     loading: "Loading abilities…",
     rankLabel: "Rank {rank}",
     withHaste: "With haste",
+    sameAtAllRanks: "Same cooldown at every rank",
     emptyState: "Pick a champion to see their ability cooldowns.",
   },
   Draft: {

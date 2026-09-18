@@ -465,6 +465,7 @@ export const de: Messages = {
     loading: "Fähigkeiten werden geladen…",
     rankLabel: "Rang {rank}",
     withHaste: "Mit Ability Haste",
+    sameAtAllRanks: "Gleiche Abklingzeit auf jedem Rang",
     emptyState: "Wähle einen Champion, um seine Fähigkeiten-Cooldowns zu sehen.",
   },
   Draft: {
