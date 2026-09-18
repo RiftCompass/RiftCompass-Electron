@@ -465,6 +465,7 @@ export const es: Messages = {
     loading: "Cargando habilidades…",
     rankLabel: "Nivel {rank}",
     withHaste: "Con celeridad",
+    sameAtAllRanks: "Mismo enfriamiento en todos los rangos",
     emptyState: "Elige un campeón para ver sus tiempos de reutilización.",
   },
   Draft: {

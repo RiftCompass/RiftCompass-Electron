@@ -5,10 +5,13 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
-## 0.3.24
+## 0.3.25
 
-Incluye la 0.3.23, que se quedó en borrador.
+Incluye la 0.3.23 y la 0.3.24, que se quedaron en borrador.
 
+- Comparador de Cooldowns: cuando una habilidad tiene el mismo enfriamiento
+  en todos los rangos (la Q de Ahri, 7 s), lo dice bajo los rangos; antes
+  parecía que los rangos no funcionaban.
 - Números de parche como los ves en el juego: "26.18" en vez de "16.18" en
   la Meta Tier List, los matchups, las builds y la calculadora de oro.
 - Diagnóstico del perfil: cuando vas a la par con tus rivales de línea en

@@ -465,6 +465,7 @@ export const fr: Messages = {
     loading: "Chargement des sorts…",
     rankLabel: "Rang {rank}",
     withHaste: "Avec accélération",
+    sameAtAllRanks: "Même délai de récupération à tous les rangs",
     emptyState: "Choisissez un champion pour voir ses temps de recharge.",
   },
   Draft: {

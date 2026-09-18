@@ -221,6 +221,9 @@ function ChampionCooldownPanel({
             const rank = selectedRanks[index] ?? 1;
             const baseCooldown = spell.cooldown[rank - 1];
             const withHaste = abilityHaste > 0 ? effectiveCooldown(baseCooldown, abilityHaste) : null;
+            // Plenty of abilities have a flat cooldown (Ahri Q is 7 s at
+            // every rank): say so, or clicking the pips looks broken.
+            const flat = spell.cooldown.every((value) => value === spell.cooldown[0]);
             return (
               <li key={spell.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span
@@ -273,6 +276,9 @@ function ChampionCooldownPanel({
                       );
                     })}
                   </div>
+                  {flat ? (
+                    <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Cooldowns.sameAtAllRanks")}</span>
+                  ) : null}
                 </div>
                 <span style={{ textAlign: "right", fontSize: TYPE.body, fontWeight: 500 }}>
                   {withHaste !== null ? (
