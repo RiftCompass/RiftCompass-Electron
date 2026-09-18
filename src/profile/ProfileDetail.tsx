@@ -48,6 +48,7 @@ import {
   type RoleStats,
   formatDecimal,
   formatDuration,
+  formatPercent,
 } from "../lib/profile-analysis";
 import type { ProfileApiResponse, RecentMatchSummary, RiotLeagueEntry, RoadmapSnapshot } from "../lib/profile-types";
 import type { SavedProfileWithRank } from "../riftcompass";
@@ -658,7 +659,7 @@ function RankCard({
           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {roleStats.map((r) => {
               const icon = positionIconUrl(r.position);
-              const rate = r.games > 0 ? `${Math.round((r.wins / r.games) * 100)}%` : "—";
+              const rate = r.games > 0 ? formatPercent(locale, r.wins / r.games) : "—";
               return (
                 <div key={r.position} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: TYPE.label }}>
                   {icon ? <img src={icon} alt="" style={{ width: 13, height: 13, flexShrink: 0 }} /> : null}
@@ -1306,7 +1307,7 @@ function SummaryPills({ diagnostic }: { diagnostic: Diagnostic }) {
 // diagnostic-bar.tsx): the fill is their share of (you + them), so the
 // center tick is "even" whatever the metric's unit.
 export function DiagnosticBar({ node, height = 6 }: { node: DiagnosticNode; height?: number }) {
-  const fillColor = node.status === "above" ? COLORS.good : COLORS.bad;
+  const fillColor = node.status === "above" ? COLORS.good : node.status === "even" ? COLORS.neutral : COLORS.bad;
   return (
     <div style={{ position: "relative", height, width: "100%", borderRadius: 999, background: `${COLORS.goodMild}1a`, overflow: "hidden" }}>
       <div style={{ height: "100%", width: `${playerShare(node)}%`, borderRadius: 999, background: fillColor }} />
@@ -1408,7 +1409,7 @@ function ChampionOverviewCard({ matches, ddragonVersion }: { matches: RecentMatc
                       color: winRate >= 50 ? COLORS.goodMild : COLORS.badMild,
                     }}
                   >
-                    {winRate}%
+                    {formatPercent(locale, winRate / 100)}
                   </td>
                   <td style={{ padding: "6px 0", textAlign: "right", color: COLORS.muted }}>{formatDecimal(locale, kda)}</td>
                   <td style={{ padding: "6px 0", textAlign: "right", color: COLORS.muted }}>{formatDecimal(locale, csPerMin)}</td>
@@ -1708,7 +1709,7 @@ function MatchScoreboard({
                     {p.cs} ({csPerMin})
                   </span>
                   <span style={{ width: 40, flexShrink: 0, fontSize: TYPE.label, textAlign: "right", color: COLORS.muted }}>
-                    {Math.round(p.killParticipation * 100)}%
+                    {formatPercent(locale, p.killParticipation)}
                   </span>
                   <span style={{ width: 56, flexShrink: 0, fontSize: TYPE.label, textAlign: "right", color: COLORS.muted }}>
                     {p.goldEarned.toLocaleString(locale)}g

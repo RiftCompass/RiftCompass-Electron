@@ -20,6 +20,7 @@ import {
   type HeadToHeadStat,
   type RoleStats,
   formatDecimal,
+  formatPercent,
 } from "../lib/profile-analysis";
 import type { ProfileApiResponse, RecentMatchSummary, RiotLeagueEntry } from "../lib/profile-types";
 import type { SavedProfileWithRank } from "../riftcompass";
@@ -506,7 +507,7 @@ function ComparePlayerSlot({
 const SIDE_BY_SIDE_CEILING = 150;
 
 function CompareSkillCard({ profiles, accents }: { profiles: ProfileApiResponse[]; accents: string[] }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const diagnostics = profiles.map((p) => computeDiagnostic(p.profile.recentMatches, p.rankTier));
   if (!diagnostics.some((d) => d.ready)) return null;
   return (
@@ -526,7 +527,7 @@ function CompareSkillCard({ profiles, accents }: { profiles: ProfileApiResponse[
                   <div style={{ flex: 1, height: 6, borderRadius: 999, background: `${COLORS.background}99`, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${value === null ? 0 : (value / SIDE_BY_SIDE_CEILING) * 100}%`, borderRadius: 999, background: accent }} />
                   </div>
-                  <span style={{ width: 42, flexShrink: 0, fontSize: TYPE.caption, color: accent, textAlign: "right" }}>{value === null ? "—" : `${value}%`}</span>
+                  <span style={{ width: 42, flexShrink: 0, fontSize: TYPE.caption, color: accent, textAlign: "right" }}>{value === null ? "—" : formatPercent(locale, value / 100)}</span>
                 </div>
               );
             })}
@@ -596,7 +597,7 @@ function CompareRankLine({
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: TYPE.caption, color: COLORS.muted }}>
       {emblem && <img src={emblem} alt="" style={{ width: 18, height: 18 }} />}
       <span>
-        {label}: {entry ? `${formatTierRank(entry.tier, entry.rank)} · ${new Intl.NumberFormat(locale).format(entry.leaguePoints)} LP · ${winRate}% WR` : t("ProfileSearch.unranked")}
+        {label}: {entry ? `${formatTierRank(entry.tier, entry.rank)} · ${new Intl.NumberFormat(locale).format(entry.leaguePoints)} LP · ${formatPercent(locale, (winRate ?? 0) / 100)} WR` : t("ProfileSearch.unranked")}
       </span>
       {roleIcon ? (
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>

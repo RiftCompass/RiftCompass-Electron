@@ -17,6 +17,7 @@ import { COLORS, TYPE, cardStyle as makeCardStyle, pillStyle } from "../theme";
 import { apiGet } from "../lib/api-fetch";
 import { LoadError } from "../tools/LoadError";
 import { useI18n } from "../i18n";
+import { formatPercent } from "../lib/profile-analysis";
 import type { LcuIdentity } from "../riftcompass";
 
 interface ChampSelectPlayer {
@@ -224,7 +225,7 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
   // tiene que decirlo igual de claro.
   function etiquetaPersonal(s: MatchupSuggestion): string {
     if (s.personalWinRate === undefined || s.personalGames === undefined) return t("DraftAdvisor.personalNone");
-    const percent = Math.round(s.personalWinRate * 100);
+    const percent = formatPercent(locale, s.personalWinRate);
     if (s.personalGames === 1) return t("DraftAdvisor.personalLabelOne", { percent });
     if (s.personalGames < PERSONAL_SAMPLE_TRUSTED) return t("DraftAdvisor.personalLabelFew", { percent, games: s.personalGames });
     return t("DraftAdvisor.personalLabel", { percent, games: s.personalGames });
@@ -332,8 +333,8 @@ export function DraftAdvisor({ identity, posicionManual, onElegirPosicion }: Dra
                 <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                   {s.matchupWinRate !== undefined && s.matchupGames !== undefined
                     ? t(s.matchupSpecific ? "DraftAdvisor.matchupLabel" : "DraftAdvisor.roleWideLabel", {
-                        percent: Math.round(s.matchupWinRate * 100),
-                        games: nf.format(s.matchupGames),
+                        percent: formatPercent(locale, s.matchupWinRate),
+                        games: s.matchupGames,
                       })
                     : t("DraftAdvisor.matchupNone")}
                 </span>

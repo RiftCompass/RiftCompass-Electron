@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { patchLabel } from "../lib/patch-label";
 import { MagnifyingGlass, PencilSimple, Plus, Trash, X } from "@phosphor-icons/react";
 import type {
   AccountUser,
@@ -542,11 +543,11 @@ export function ChampionBuilds() {
 
           {board && (board.dataPatches?.length ?? 1) > 1 ? (
             <p style={{ fontSize: TYPE.body, color: COLORS.gold, margin: 0 }}>
-              {t("ChampionBuilds.dataFromPatches", { patches: board.patch, current: board.currentPatch })}
+              {t("ChampionBuilds.dataFromPatches", { patches: patchLabel(board.patch), current: patchLabel(board.currentPatch) })}
             </p>
           ) : board && board.patch !== board.currentPatch ? (
             <p style={{ fontSize: TYPE.body, color: COLORS.gold, margin: 0 }}>
-              {t("ChampionBuilds.dataFromPatch", { patch: board.patch, current: board.currentPatch })}
+              {t("ChampionBuilds.dataFromPatch", { patch: patchLabel(board.patch), current: patchLabel(board.currentPatch) })}
             </p>
           ) : null}
 
@@ -555,7 +556,7 @@ export function ChampionBuilds() {
               <h2 style={sectionTitle}>{t("ChampionBuilds.popularBuild")}</h2>
               {board ? (
                 <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
-                  {t("ChampionBuilds.popularBuildSource", { patch: board.patch })}
+                  {t("ChampionBuilds.popularBuildSource", { patch: patchLabel(board.patch) })}
                   {openTool && champion ? (
                     <>
                       {" · "}
@@ -782,7 +783,7 @@ export function ChampionBuilds() {
                         </span>
                         {build.source === "crawler" && build.sourcePatch ? (
                           <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
-                            {t("ChampionBuilds.fromTrackedGames", { patch: build.sourcePatch })}
+                            {t("ChampionBuilds.fromTrackedGames", { patch: patchLabel(build.sourcePatch) })}
                           </span>
                         ) : null}
                       </div>

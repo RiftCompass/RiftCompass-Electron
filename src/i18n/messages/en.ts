@@ -154,7 +154,7 @@ export const en = {
     rankTrendEmptyBody: "Only ranked {queue} games move this ladder: play a few and your real LP history builds up from every visit to this profile.",
     lpHistorySubtitle: "{count, plural, one {# real snapshot} other {# real snapshots}} tracked since {since}",
     activityCalendar: "Activity calendar",
-    activityDayTitle: "{games} games · {wins}W {losses}L",
+    activityDayTitle: "{games, plural, one {# game} other {# games}} · {wins}W {losses}L",
     activityLegendLoss: "Bad day",
     activityLegendWin: "Good day",
     previousMonth: "Previous month",
@@ -243,6 +243,7 @@ export const en = {
     csPerMin: {
       title: "Farming (CS/min)",
       short: "farm",
+      tipEven: "Level with your lane opponents on farm. The next step is turning even farm into a lead: take the extra wave when they recall.",
       tipAbove: {
         default: "You out-farm your lane opponents. Look for windows to convert that gold lead into map pressure.",
         learning: "You're already out-farming your lane opponents. Keep prioritizing minions over unnecessary trades.",
@@ -259,6 +260,7 @@ export const en = {
     visionPerMin: {
       title: "Vision score / min",
       short: "vision",
+      tipEven: "Level with your lane opponents on vision. One more control ward per game is the cheapest way to pull ahead.",
       tipAbove: {
         default: "You see more of the map than your lane opponents. Keep denying enemy wards near objectives.",
         learning: "Better ward instinct than your opponents already. Keep it up as a habit, not an afterthought.",
@@ -275,6 +277,7 @@ export const en = {
     damagePerMin: {
       title: "Damage to champions / min",
       short: "damage",
+      tipEven: "Level with your lane opponents on damage. Look for one more safe trade per lane cycle.",
       tipAbove: {
         default: "You deal more damage than your lane opponents. Make sure it lands on the right targets in teamfights, not just on whoever is closest.",
         learning: "You out-damage your lane opponents. Keep trading when your abilities are up and theirs aren't.",
@@ -291,6 +294,7 @@ export const en = {
     killParticipation: {
       title: "Kill participation",
       short: "kill participation",
+      tipEven: "Level with your lane opponents on kill participation. Being in position for the next objective fight is what tips it.",
       tipAbove: {
         default: "You're in more of your team's kills than your lane opponents are in theirs. Keep showing up, and make sure you leave lane with the wave in a safe state.",
         learning: "You're around for more of your team's kills than your opponents. Good instinct; keep following up on plays.",
@@ -307,6 +311,7 @@ export const en = {
     kda: {
       title: "KDA ratio",
       short: "KDA",
+      tipEven: "Level with your lane opponents on KDA. Fewer solo deaths is the fastest way to move this one.",
       tipAbove: {
         default: "You trade better than your lane opponents. Start looking for more proactive plays to snowball leads.",
         learning: "You come out ahead of your lane opponents in fights. Keep playing to your strengths.",
@@ -323,6 +328,7 @@ export const en = {
     laningAdvantage: {
       title: "Laning phase lead",
       short: "laning phase",
+      tipEven: "Half your games ahead at the end of laning, half behind: the lane is a coin flip right now. Pick one matchup to study.",
       tipAbove: {
         laner: {
           default: "You're regularly ahead by the end of laning phase. The next step is spending that lead on the map, not just in lane.",
@@ -727,7 +733,7 @@ export const en = {
     yourStyleTitle: "Your play style",
     resultsTitle: "Your best-matching champions",
     resultsSubtitle: "Based on how closely your answers line up with each {role} champion's real stats.",
-    realWinrate: "{rate}% real WR ({games} games)",
+    realWinrate: "{rate} real WR ({games} games)",
     realWinrateTooltip: "Real win rate from RiftCompass's own tracked matches. Sample is still small and growing.",
     likert: { "2": "Strongly agree", "1": "Agree", "0": "Neutral", "-1": "Disagree", "-2": "Strongly disagree" },
     axis: { aggression: "Aggression", resilience: "Resilience", spellPower: "Spell power", complexity: "Complexity" },
@@ -751,7 +757,7 @@ export const en = {
     moveDown: "Move down",
     remove: "Remove",
     intro: "Build a focused pool of up to 6 champions per role: core picks you'll play most, flex picks for coverage, and one pocket pick. Saved automatically on this device.",
-    realWinrate: "{rate}% real WR ({games} games)",
+    realWinrate: "{rate} real WR ({games} games)",
     realWinrateTooltip: "Real win rate from RiftCompass's own tracked matches. Sample is still small and growing.",
     searchNoResults: "No champions found.",
     poolTitle: "Your pool",
@@ -827,7 +833,7 @@ export const en = {
     methodologyNote: "Tiers are relative: S is the best-performing slice of what's been measured for that role so far, D the weakest, not a fixed win-rate cutoff, since the dataset is still small and growing daily.",
     noDataForRole: "Not enough tracked matches for this role and rank yet. Try another rank, or check back as more games get sampled.",
     dataFromPatch: "Data from patch {patch}; the current patch ({current}) doesn't have enough samples yet.",
-    chipTooltip: "{rate}% win rate over {games} tracked games",
+    chipTooltip: "{rate} win rate over {games} tracked games",
     noMatches: "No champion with that name is on this board.",
     rankTiers: {
       CHALLENGER: "Challenger",
@@ -959,12 +965,12 @@ export const en = {
     enemyKnown: "Lane opponent: {champion}",
     enemyUnknown: "Lane opponent not revealed yet: showing your role's overall picks.",
     empty: "Not enough data yet for a recommendation.",
-    matchupLabel: "{percent}% vs this matchup ({games} games)",
-    roleWideLabel: "{percent}% overall in this role ({games} games)",
+    matchupLabel: "{percent} vs this matchup ({games, plural, one {# game} other {# games}})",
+    roleWideLabel: "{percent} overall in this role ({games, plural, one {# game} other {# games}})",
     matchupNone: "No matchup data yet",
-    personalLabel: "You: {percent}% ({games} games)",
-    personalLabelOne: "You: {percent}% (only 1 game)",
-    personalLabelFew: "You: {percent}% (only {games} games)",
+    personalLabel: "You: {percent} ({games} games)",
+    personalLabelOne: "You: {percent} (only 1 game)",
+    personalLabelFew: "You: {percent} (only {games} games)",
     personalNone: "No recent games with this champion",
     tier: { good: "Good pick", solid: "Solid", risky: "Risky" },
   },
