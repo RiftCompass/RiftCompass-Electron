@@ -450,8 +450,8 @@ con la clave tapada, seis capturas 1200×750 de la app (herramientas, perfil,
 roadmap, Meta Tier List, champ select con la ventana de draft, overlay en
 partida con Tab), instrucciones de 1.918 caracteres (las tres ventanas, cómo
 se probó, y que el overlay solo corre en modo dev hasta la firma), Discord
-"No Discord server", Monetization "None", QA marcado, cuenta
-`la cuenta personal de Google del propietario`. El texto exacto queda en `overwolf-mvp.md`
+"No Discord server", Monetization "None", QA marcado, con la cuenta
+personal de Google del propietario. El texto exacto queda en `overwolf-mvp.md`
 de la carpeta raíz del proyecto. La víspera se probó la app en tres
 personalizadas contra bots (ventana de draft con la build aplicada, overlay
 visible en partida con `sandbox: true`, resumen post-partida); el material
