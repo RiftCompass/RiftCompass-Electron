@@ -40,6 +40,7 @@ import { LoadError } from "./LoadError";
 import { apiGet, saveErrorMessage, savedListError } from "../lib/api-fetch";
 import { DataQualityNote, type DataQuality } from "../DataQualityNote";
 import { AbilityBadge, RunePageView, SKILL_KEYS, SkillGrid, type Translate } from "./build-visuals";
+import { CompetitiveBuildBlock } from "../esports/CompetitiveBuild";
 import { COLORS, FONT_HEADING, cardStyle, inputStyle, pillStyle, TYPE } from "../theme";
 
 // The desktop half of the web's champion pages (/champions/<champion>):
@@ -731,6 +732,10 @@ export function ChampionBuilds() {
               </>
             )}
           </div>
+
+          {/* What the pros ran (esports.md, fase 3): absent until the
+              section has games of this champion, never an empty box. */}
+          {version ? <CompetitiveBuildBlock championId={champion.internalId} version={version} runeIndex={runeIndex} catalog={catalog} t={t} style={card} /> : null}
 
           <div style={{ ...card, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
@@ -1425,3 +1430,4 @@ function BuildEditor({
     </div>
   );
 }
+
