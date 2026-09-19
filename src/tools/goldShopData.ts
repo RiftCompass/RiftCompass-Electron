@@ -10,9 +10,16 @@ export const EPIC_LEGENDARY_BREAKPOINT = 1800;
 // Ghostcrawler boots + Mobility Boots: not in the live SR shop.
 export const BLACKLISTED_IDS = new Set(["3005", "3117"]);
 
-// Zephyr and Slightly Magical Footwear carry a "Boots" tag without being
-// shop boots.
-export const BOOTS_BLACKLIST = new Set(["3172", "2422"]);
+// Slightly Magical Footwear carries a "Boots" tag without being shop
+// boots (a rune reward). 3172 used to be Zephyr and sat here; since the
+// 2025 boots rework it is Gunmetal Greaves, a tier-3 boot without the tag.
+export const BOOTS_BLACKLIST = new Set(["2422"]);
+
+// Tier-3 boots (Feats of Strength upgrades of the eight tier-2 pairs).
+// Data Dragon sells them but does not tag Gunmetal Greaves as Boots, and
+// none of them are bought like a normal item: they get their own group so
+// they are never mistaken for a purchase (round 35).
+export const TIER3_BOOTS_IDS = new Set(["3172", "3175", "3174", "3173", "3170", "3168", "3176", "3171"]);
 
 // Cheap items that are still legendary tier: the support quest finals and
 // Mejai's.
@@ -26,10 +33,10 @@ export const BASIC_IDS = new Set([
 ]);
 
 export const STARTER_IDS = new Set([
-  "1101", "1102", "1103", "1056", "1054", "1055", "3865", "3070", "1082", "1083",
+  "1101", "1102", "1103", "1056", "1054", "1055", "3865", "3070", "1082", "1083", "1086", "1120",
 ]);
 
-export const CONSUMABLE_IDS = new Set(["2031", "2003", "2138", "2139", "2140"]);
+export const CONSUMABLE_IDS = new Set(["2031", "2003", "2138", "2139", "2140", "2055"]);
 
 // The support-quest line: what the reserved support slot accepts.
 export const SUPPORT_ITEM_IDS = new Set(["3865", "3867", "3869", "3870", "3871", "3876", "3877"]);
@@ -43,16 +50,16 @@ const FIGHTER = [
   "3057", "1031", "3067", "3123", "1011", "1053", "1057", "1043", "3044", "3051", "3133", "3077",
   "3140", "3155", "3035", "2020", "2019",
   "1029", "1042", "1036", "1028", "1033", "1037", "1038", "2022",
-  "1054", "1055", "1083", "1101", "1102", "1103", "3070",
+  "1054", "1055", "1083", "1101", "1102", "1103", "3070", "1120",
 ];
 
 const MARKSMAN = [
   "3004", "3033", "3094", "3095", "3026", "3046", "3036", "3139", "3508", "6676", "3156", "3153",
   "3031", "3085", "3072", "6675", "6694", "3302", "6672", "3087", "6673", "3124", "3115", "3091",
-  "3032", "3172", "2512", "2523",
+  "3032", "2512", "2523",
   "3057", "1031", "3123", "1053", "1043", "3133", "3086", "3140", "3155", "6670", "3035", "3051", "3144",
   "1029", "1042", "1036", "1028", "1033", "1037", "1038", "2022", "1018",
-  "1054", "1055", "1083", "1101", "1102", "1103", "3070",
+  "1054", "1055", "1083", "1101", "1102", "1103", "3070", "1086",
 ];
 
 const ASSASSIN = [
@@ -66,8 +73,8 @@ const ASSASSIN = [
 const MAGE = [
   "3041", "3135", "3165", "3157", "3102", "3003", "3100", "3116", "3115", "4628", "4629", "3089",
   "4645", "3871", "3877", "3876", "3870", "3869", "6657", "3152", "3118", "4646", "3137", "6655",
-  "6653", "4633", "2503", "4010", "3146", "2522", "2510",
-  "3057", "3067", "3916", "3113", "1011", "3191", "3108", "3145", "4632", "4630", "3802", "3803",
+  "6653", "4633", "2503", "8010", "3146", "2522", "2510",
+  "3057", "3067", "3916", "3113", "1011", "3108", "3145", "4632", "4630", "3802", "3803",
   "3147", "2420", "2508",
   "1004", "1029", "1027", "1028", "1052", "1033", "1026", "1058", "2022",
   "1082", "1056", "1054", "3070", "1101", "1102", "1103", "3865",
@@ -79,7 +86,7 @@ const TANK = [
   "3801", "1031", "3066", "3067", "3076", "1011", "1057", "3024", "3082", "6660", "3211", "3077",
   "3044", "3803", "4638", "3105",
   "1029", "1028", "1033", "2022", "1006", "1027",
-  "1054", "1055", "1101", "1102", "1103", "3070",
+  "1054", "1055", "1101", "1102", "1103", "3070", "1120",
 ];
 
 const SUPPORT = [
@@ -111,7 +118,7 @@ export interface ShopItemLike {
 }
 
 export function isShopBoots(item: ShopItemLike): boolean {
-  return item.tags.includes("Boots") && !BOOTS_BLACKLIST.has(item.id);
+  return (item.tags.includes("Boots") || TIER3_BOOTS_IDS.has(item.id)) && !BOOTS_BLACKLIST.has(item.id);
 }
 
 // Whether the shop grid shows this item at all: the curated whitelist,
@@ -121,13 +128,14 @@ export function isShopItem(item: ShopItemLike): boolean {
   return (WHITELIST.has(item.id) && item.totalGold > 0) || isShopBoots(item);
 }
 
-export type ShopGroupId = "legendary" | "epic" | "basic" | "starter" | "boots" | "consumable";
+export type ShopGroupId = "legendary" | "epic" | "basic" | "starter" | "boots" | "boots3" | "consumable";
 
-export const SHOP_GROUP_ORDER: ShopGroupId[] = ["legendary", "epic", "basic", "starter", "boots", "consumable"];
+export const SHOP_GROUP_ORDER: ShopGroupId[] = ["legendary", "epic", "basic", "starter", "boots", "boots3", "consumable"];
 
 export function shopGroupOf(item: ShopItemLike): ShopGroupId {
   if (CONSUMABLE_IDS.has(item.id)) return "consumable";
   if (STARTER_IDS.has(item.id)) return "starter";
+  if (TIER3_BOOTS_IDS.has(item.id)) return "boots3";
   if (isShopBoots(item)) return "boots";
   if (BASIC_IDS.has(item.id)) return "basic";
   if (EPIC_OVERRIDES.has(item.id)) return "epic";

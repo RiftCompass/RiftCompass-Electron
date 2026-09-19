@@ -8,6 +8,7 @@ import { apiGet } from "../lib/api-fetch";
 import { LoadError } from "../tools/LoadError";
 import { fetchChampionMap, fetchLatestVersion, fetchRuneStyles, runeIconUrl, type ChampionMaps, type RuneStyle } from "../ddragon";
 import { rolesOf } from "../lib/champion-roles";
+import { formatPercent } from "../lib/profile-analysis";
 import type { LcuIdentity, RecommendedItemSet, SavedChampionBuild } from "../riftcompass";
 
 // La ventana del acompañante de draft: aparece sola al entrar en champ select
@@ -582,7 +583,7 @@ export function ChampSelectView() {
                   : o.origen === "alternativa"
                     ? t("ChampSelect.alternativeStats", {
                         games: nf.format(o.muestra ?? 0),
-                        percent: String(Math.round(((o.victorias ?? 0) / Math.max(1, o.muestra ?? 0)) * 100)),
+                        percent: formatPercent(locale, (o.victorias ?? 0) / Math.max(1, o.muestra ?? 0)),
                       })
                     : t("ChampSelect.fromSample", { games: o.muestra ?? 0 })}
                 {o.itemIds.length > 0 ? ` · ${t("ChampSelect.withItems", { count: o.itemIds.length })}` : ""}

@@ -612,7 +612,7 @@ function RankCard({
   const { t, locale } = useI18n();
   const emblem = entry ? rankEmblemUrl(entry.tier) : null;
   const total = entry ? entry.wins + entry.losses : 0;
-  const winPct = total > 0 && entry ? Math.round((entry.wins / total) * 100) : 0;
+  const winPct = formatPercent(locale, total > 0 && entry ? entry.wins / total : 0);
   // Máximo por temporada (ver computeSeasonPeaks), igual que la RankCard de
   // la web: la temporada en curso siempre que haya algún snapshot, y las
   // anteriores según se vayan pillando reinicios de temporada.
@@ -1111,7 +1111,7 @@ function ChampionPoolCard({
   matches: RecentMatchSummary[];
   ddragonVersion: string;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const pools = computeChampionPool(matches);
   if (pools.length === 0) return null;
 
@@ -1133,7 +1133,7 @@ function ChampionPoolCard({
                 </div>
                 {top ? (
                   <span style={{ fontSize: TYPE.caption, color: isOneTrick ? COLORS.gold : COLORS.muted }}>
-                    {t("ProfileSearch.championPoolConcentration", { percent: Math.round(topShare * 100), champion: top.championName })}
+                    {t("ProfileSearch.championPoolConcentration", { percent: formatPercent(locale, topShare), champion: top.championName })}
                     {isOneTrick ? ` · ${t("ProfileSearch.championPoolOneTrick")}` : ""}
                   </span>
                 ) : null}
@@ -1148,7 +1148,7 @@ function ChampionPoolCard({
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {pool.champions.map((c) => {
-                  const winPct = c.games > 0 ? Math.round((c.wins / c.games) * 100) : 0;
+                  const winPct = formatPercent(locale, c.games > 0 ? c.wins / c.games : 0);
                   return (
                     <div
                       key={c.championName}

@@ -758,7 +758,10 @@ export function GoldCalculator() {
               </div>
             )}
 
-            {selected.from.length > 0 && (
+            {/* Only when a component resolves in the catalog: the support finals
+                build from Bounty of Worlds, which is not purchasable and so not
+                in the catalog, and showed an empty "Combine cost: 0g" block. */}
+            {catalog && selected.from.some((id) => catalog.byId[id]) && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={detailLabelStyle}>{t("GoldCalculator.buildPath")}</span>
                 <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>

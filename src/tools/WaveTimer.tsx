@@ -15,9 +15,10 @@ interface WaveComposition {
 }
 
 // Wave economy per game-time bracket, from the League Wiki's minion page
-// (season 2026): waves every 30s from 1:05, speeding up to 25s at 14:00
-// and 20s at 30:00; the cannon joins every 3rd wave, then every 2nd from
-// 14:00 and every wave from 25:00, REPLACING a melee minion in its wave.
+// (season 2026, patch 26.1 notes): waves every 30s from 0:30, speeding up
+// to 25s at 14:00 and 20s at 30:00; the cannon joins every 3rd wave, then
+// every 2nd from 14:00 and every wave from 25:00. Before 14:00 it is ADDED
+// to the usual six; from 14:00 it REPLACES a melee minion in its wave.
 // Melee 20g, caster 14g; cannon gold scales with game time (50 → 69).
 const PHASES: {
   range: string;
@@ -27,11 +28,11 @@ const PHASES: {
   cannonWave: WaveComposition;
 }[] = [
   {
-    range: "1:05 – 14:00",
+    range: "0:30 – 14:00",
     cadence: 30,
     cannonEvery: 3,
     normal: { melee: 3, caster: 3, cannon: 0, gold: "102" },
-    cannonWave: { melee: 2, caster: 3, cannon: 1, gold: "132 – 141" },
+    cannonWave: { melee: 3, caster: 3, cannon: 1, gold: "152 – 161" },
   },
   {
     range: "14:00 – 25:00",

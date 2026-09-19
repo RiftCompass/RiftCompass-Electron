@@ -5,6 +5,29 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.27
+
+Incluye la 0.3.26 (sección Esports), que se quedó en borrador.
+
+- Builds de campeón: el orden de habilidades ya no propone rutas imposibles
+  (Darius Top Retador ponía siete puntos en la E); ahora es la ruta legal
+  con más partidas detrás, y el "Orden de maximización" sale de ella.
+- "N partidas registradas" contaba diez filas por partida; ahora son
+  partidas de verdad (la cifra baja diez veces, no los datos).
+- Objetos del núcleo sin componentes a medias (Espada B. F., Capítulo
+  perdido, Martillo de Caulfield).
+- Temporizador de oleadas: la primera oleada sale a los 0:30 y antes del
+  14:00 el cañón se suma a los seis súbditos; notas corregidas.
+- Calculadora de oro: Maldición del sangrador de la Grieta, Arco y Yelmo
+  de Doran y Guardián de control ya existen para el buscador; las botas de
+  nivel 3 (Hazañas de fuerza) van en su propio grupo; sin bloque de
+  componentes vacío en los objetos de support.
+- Jungle XP: el Escarabajo apagado explica que no da XP hasta el nivel 3.
+- Porcentajes con el formato del idioma ("52 %") también en el carril de
+  perfiles, el resumen de campeones, las builds y la ventana de draft;
+  "Objetos del núcleo", "Orden de maximización" y "Partidas registradas"
+  como en la web.
+
 ## 0.3.26
 
 - Nueva sección **Esports** en la pantalla de herramientas: calendario,

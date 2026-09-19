@@ -54,6 +54,7 @@ import {
   type ToolNavigationRequest,
 } from "./tool-navigation";
 import { formatTierRank, rankToLpValue, PLATFORM_LABELS } from "./lib/rank-lp";
+import { formatPercent } from "./lib/profile-analysis";
 import { fetchLatestVersion, profileIconUrl } from "./ddragon";
 import type { AccountUser, FlashSide, LcuIdentity, OverlayModules, SavedProfileFolder, SavedProfileWithRank } from "./riftcompass";
 
@@ -1549,9 +1550,9 @@ function SavedProfileRow({
   onAssign: (profileId: string, groupId: string) => void;
   onSetMain: (profileId: string, isMain: boolean) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const rank = profile.rank;
-  const winrate = rank && rank.wins + rank.losses > 0 ? Math.round((rank.wins / (rank.wins + rank.losses)) * 100) : null;
+  const winrate = rank && rank.wins + rank.losses > 0 ? formatPercent(locale, rank.wins / (rank.wins + rank.losses)) : null;
   return (
     <div
       draggable
