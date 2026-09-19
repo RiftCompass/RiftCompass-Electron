@@ -10,14 +10,19 @@ import { COLORS, TYPE } from "./theme";
 // field the API started sending on 2026-09-12; older responses simply show
 // nothing.
 export interface DataQuality {
+  /** Champion rows summed: ten per tracked game. */
   games: number;
+  /** Tracked games (round 35, additive); servers before it only send `games`. */
+  matches?: number;
   updatedAt: string | null;
 }
 
 export function DataQualityNote({ quality, patches }: { quality: DataQuality | undefined; patches: string[] }) {
   const { t, locale } = useI18n();
   if (!quality) return null;
-  const games = new Intl.NumberFormat(locale).format(quality.games);
+  // Games, not champion rows: `games` counts each tracked game ten times
+  // (one row per participant).
+  const games = new Intl.NumberFormat(locale).format(quality.matches ?? Math.round(quality.games / 10));
   const patch = patchLabel(patches);
   const updated = quality.updatedAt ? formatRelativeTime(new Date(quality.updatedAt).getTime(), locale) : null;
   return (

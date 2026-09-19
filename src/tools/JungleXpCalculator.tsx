@@ -87,7 +87,9 @@ export function JungleXpCalculator() {
                 <button
                   onClick={() => !disabled && setRoute((prev) => [...prev, { campId: camp.id, campLevel: override }])}
                   disabled={disabled}
-                  title={t(`JungleXpCalculator.camps.${camp.id}`)}
+                  // A greyed-out Scuttler at level 2 looked like a broken
+                  // button (round 35): the title says why it is off.
+                  title={disabled && camp.id === "riftScuttler" ? t("JungleXpCalculator.scuttlerLocked") : t(`JungleXpCalculator.camps.${camp.id}`)}
                   style={{
                     display: "flex",
                     flexDirection: "column",

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { patchLabel } from "../lib/patch-label";
+import { formatPercent } from "../lib/profile-analysis";
 import { X } from "@phosphor-icons/react";
 import {
   fetchChampionDetail,
@@ -161,7 +162,7 @@ export function MatchupCard({
   const anyGeneral = pieces.some((p) => !p.matchupSpecific);
   const sample = (piece: { games: number; wins: number; matchupSpecific: boolean }) => (
     <span style={labelStyle}>
-      {t("ChampionBuilds.itemSample", { games: piece.games, rate: Math.round((piece.wins / Math.max(piece.games, 1)) * 100) })}
+      {t("ChampionBuilds.itemSample", { games: piece.games, rate: formatPercent(locale, piece.wins / Math.max(piece.games, 1)) })}
       {!piece.matchupSpecific && !allGeneral ? ` · ${t("Matchups.cardGeneralTag")}` : ""}
     </span>
   );

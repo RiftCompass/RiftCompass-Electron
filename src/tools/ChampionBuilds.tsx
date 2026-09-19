@@ -895,7 +895,7 @@ const PLAN_SUBTITLE: React.CSSProperties = {
 };
 
 function ItemPlanView({ plan, version, catalog }: { plan: ItemPlan; version: string; catalog: ItemCatalog | null }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   if (plan.startingItems.length === 0 && plan.itemOrder.length === 0) return null;
   const icon = (itemId: number, label: string) => (
     <img
@@ -907,7 +907,7 @@ function ItemPlanView({ plan, version, catalog }: { plan: ItemPlan; version: str
       style={{ width: 26, height: 26, borderRadius: 6 }}
     />
   );
-  const sample = (e: ItemPlanEntry) => t("ChampionBuilds.itemSample", { games: e.games, rate: Math.round(e.winRate * 100) });
+  const sample = (e: ItemPlanEntry) => t("ChampionBuilds.itemSample", { games: e.games, rate: formatPercent(locale, e.winRate) });
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {plan.startingItems.length > 0 ? (
