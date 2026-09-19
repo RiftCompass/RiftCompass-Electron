@@ -30,6 +30,7 @@ import { PostGameReport } from "./profile/PostGameReport";
 import { scheduleRankSnapshot } from "./lib/rank-snapshot";
 import { ESPORTS, SQUAD_SYNERGY, TOOLS, type ToolId, type ToolMeta } from "./tool-meta";
 import { EsportsView } from "./esports/EsportsView";
+import { OpenEsportsProvider, type EsportsEntry } from "./esports/esports-navigation";
 import { GoldCalculator } from "./tools/GoldCalculator";
 import { WaveTimer } from "./tools/WaveTimer";
 import { JungleXpCalculator } from "./tools/JungleXpCalculator";
@@ -187,6 +188,9 @@ export function MainView() {
   // previous tool instead of always dropping to the menu. Empty whenever a
   // tool was opened from the menu itself.
   const [toolTrail, setToolTrail] = useState<ToolId[]>([]);
+  // The series or pro the esports screen opens on when another screen sent
+  // the user there (esports-navigation.tsx); null when opened from the menu.
+  const [esportsEntry, setEsportsEntry] = useState<EsportsEntry | null>(null);
   const [lcuStatus, setLcuStatus] = useState<"connected" | "disconnected">("disconnected");
   // Gameflow phase as state (round 33): Settings disables ability-bar
   // calibration outside a game (it only makes sense with the real HUD on
@@ -565,7 +569,7 @@ export function MainView() {
               >
                 <ArrowLeft size={15} /> {t("Common.backToTools")}
               </button>
-              <EsportsView />
+              <EsportsView key={esportsEntry ? `${esportsEntry.kind}-${"id" in esportsEntry ? esportsEntry.id : esportsEntry.slug}` : "menu"} initialView={esportsEntry ?? undefined} />
             </div>
           ) : panel === "postgame" && postGameContext ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -656,7 +660,14 @@ export function MainView() {
                   <OpenAccountPanelProvider value={() => setPanel("settings")}>
                     <OpenToolProvider value={openToolFrom}>
                       <RequestedChampionProvider value={requestedChampion}>
-                        <NativeView />
+                        <OpenEsportsProvider
+                          value={(entry) => {
+                            setEsportsEntry(entry);
+                            setPanel("esports");
+                          }}
+                        >
+                          <NativeView />
+                        </OpenEsportsProvider>
                       </RequestedChampionProvider>
                     </OpenToolProvider>
                   </OpenAccountPanelProvider>
@@ -669,7 +680,10 @@ export function MainView() {
               onGoHome={goHome}
               onSearchProfile={openProfile}
               onOpenCompare={() => setPanel("compare")}
-              onOpenEsports={() => setPanel("esports")}
+              onOpenEsports={() => {
+                setEsportsEntry(null);
+                setPanel("esports");
+              }}
               localIdentity={localIdentity}
               leagueDetected={lcuStatus === "connected"}
               onOpenMyProfile={() =>

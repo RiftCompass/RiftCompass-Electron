@@ -107,3 +107,56 @@ export function dragonKey(kind: string): string | null {
   const lower = kind.toLowerCase();
   return DRAGON_KINDS.includes(lower) ? lower : null;
 }
+
+// Leaguepedia writes a player's country as its English name; the screen
+// shows it in the app's language through Intl.DisplayNames, which wants the
+// ISO code (same list as the web's format.ts). Unknown names come back as
+// they came.
+const COUNTRY_CODES: Record<string, string> = {
+  germany: "DE", spain: "ES", france: "FR", denmark: "DK", sweden: "SE", norway: "NO", finland: "FI", iceland: "IS",
+  poland: "PL", "czech republic": "CZ", czechia: "CZ", slovakia: "SK", slovenia: "SI", croatia: "HR", serbia: "RS",
+  "bosnia and herzegovina": "BA", montenegro: "ME", "north macedonia": "MK", albania: "AL", kosovo: "XK", bulgaria: "BG",
+  romania: "RO", hungary: "HU", austria: "AT", switzerland: "CH", belgium: "BE", netherlands: "NL", luxembourg: "LU",
+  "united kingdom": "GB", england: "GB", scotland: "GB", wales: "GB", "northern ireland": "GB", ireland: "IE",
+  italy: "IT", greece: "GR", cyprus: "CY", malta: "MT", portugal: "PT", turkey: "TR", "türkiye": "TR", ukraine: "UA",
+  russia: "RU", belarus: "BY", moldova: "MD", lithuania: "LT", latvia: "LV", estonia: "EE", georgia: "GE", armenia: "AM",
+  azerbaijan: "AZ", kazakhstan: "KZ", uzbekistan: "UZ", kyrgyzstan: "KG", israel: "IL", iran: "IR", egypt: "EG",
+  morocco: "MA", algeria: "DZ", tunisia: "TN", "saudi arabia": "SA", "united arab emirates": "AE", "south africa": "ZA",
+  nigeria: "NG", "south korea": "KR", korea: "KR", china: "CN", taiwan: "TW", "hong kong": "HK", macau: "MO", japan: "JP",
+  vietnam: "VN", thailand: "TH", philippines: "PH", indonesia: "ID", malaysia: "MY", singapore: "SG", india: "IN",
+  pakistan: "PK", mongolia: "MN", australia: "AU", "new zealand": "NZ", "united states": "US", usa: "US", canada: "CA",
+  mexico: "MX", brazil: "BR", argentina: "AR", chile: "CL", peru: "PE", colombia: "CO", venezuela: "VE", uruguay: "UY",
+  paraguay: "PY", bolivia: "BO", ecuador: "EC", "costa rica": "CR", panama: "PA", "puerto rico": "PR",
+  "dominican republic": "DO", cuba: "CU", guatemala: "GT",
+};
+
+export function localizedCountryName(country: string, locale: string): string {
+  const code = COUNTRY_CODES[country.trim().toLowerCase()];
+  if (!code) return country;
+  try {
+    return new Intl.DisplayNames([locale], { type: "region" }).of(code) ?? country;
+  } catch {
+    return country;
+  }
+}
+
+/** The same podium twice (Leaguepedia's join repeats it per roster row) is one podium. */
+export function dedupePodiums<T extends { event: string; place: string; team: string }>(podiums: T[]): T[] {
+  const seen = new Set<string>();
+  return podiums.filter((podium) => {
+    const key = [podium.event, podium.place, podium.team].join("|");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** A kick-off that has passed while the sync still says "unstarted" reads as started, not upcoming. */
+export function matchStateKey(match: { state: string; startTime: string }, nowMs = Date.now()): string {
+  return match.state === "unstarted" && Date.parse(match.startTime) <= nowMs ? "started" : match.state;
+}
+
+/** Dates carry their year only when it is not the current one: last year's final read as the November ahead without it. */
+export function yearIfNotCurrent(iso: string): { year?: "numeric" } {
+  return new Date(iso).getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" };
+}

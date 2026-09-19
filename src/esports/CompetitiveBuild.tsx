@@ -6,6 +6,7 @@ import { API_BASE_URL } from "../shared/api";
 import { COLORS, FONT_HEADING, TYPE } from "../theme";
 import { RunePageView, type RuneIndex, type Translate } from "../tools/build-visuals";
 import { runePageFromPerks } from "./format";
+import { useOpenEsports } from "./esports-navigation";
 import type { CompetitiveBuild } from "./types";
 
 // "How the pros played it" (the web's competitive-build.tsx): the rune
@@ -31,6 +32,7 @@ export function CompetitiveBuildBlock({
   style?: CSSProperties;
 }) {
   const [build, setBuild] = useState<CompetitiveBuild | null>(null);
+  const openEsports = useOpenEsports();
   useEffect(() => {
     let cancelled = false;
     setBuild(null);
@@ -84,12 +86,22 @@ export function CompetitiveBuildBlock({
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <p style={subTitle}>{t("Esports.competitive.recent")}</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: TYPE.body }}>
-          {build.recent.map((game) => (
-            <span key={game.gameId}>
-              {game.summonerName}
-              <span style={{ marginLeft: 4, fontSize: TYPE.label, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>
-            </span>
-          ))}
+          {build.recent.map((game) => {
+            const outcome = <span style={{ marginLeft: 4, fontSize: TYPE.label, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>;
+            // Each game opens its series in the esports screen, as the web's
+            // block links to /esports/<league>/<series>.
+            return openEsports ? (
+              <button key={game.gameId} onClick={() => openEsports({ kind: "match", id: game.matchId })} style={{ background: "none", border: "none", padding: 0, font: "inherit", color: COLORS.text, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
+                {game.summonerName}
+                {outcome}
+              </button>
+            ) : (
+              <span key={game.gameId}>
+                {game.summonerName}
+                {outcome}
+              </span>
+            );
+          })}
         </div>
       </div>
     </div>

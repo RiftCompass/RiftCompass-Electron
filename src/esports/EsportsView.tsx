@@ -3,14 +3,15 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
 import { championSquareUrl, fetchChampionMap, fetchItemCatalog, fetchLatestVersion, fetchRuneStyles, itemIconUrl, type ChampionMaps, type ItemCatalog, type RuneStyle } from "../ddragon";
 import { useI18n } from "../i18n";
-import { apiGet } from "../lib/api-fetch";
+import { ApiFailed, apiGet } from "../lib/api-fetch";
 import { patchLabel } from "../lib/patch-label";
 import { formatPercent, formatRelativeTime } from "../lib/profile-analysis";
 import { API_BASE_URL, webUrl } from "../shared/api";
 import { COLORS, FONT_HEADING, cardStyle, pillStyle, TYPE } from "../theme";
 import { indexRunes, RunePageView, type Translate } from "../tools/build-visuals";
 import { LoadError } from "../tools/LoadError";
-import { dragonKey, formatGameDuration, pickVods, roleKey, runePageFromPerks, teamHue } from "./format";
+import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickVods, roleKey, runePageFromPerks, teamHue, yearIfNotCurrent } from "./format";
+import type { EsportsEntry } from "./esports-navigation";
 import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeaguesResponse, MatchDetail, MatchSummary, PlayerResponse, StageMatchRef, StageSection, TeamTotals } from "./types";
 
 // The web's /esports section (esports.md), as one screen with four views:
@@ -24,7 +25,15 @@ import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeaguesResponse, M
 // the same RunePageView Champion Builds uses; teams are codes in tinted
 // tags, no logos, like the web.
 
-type View = { kind: "leagues" } | { kind: "league"; slug: string; tournament?: string } | { kind: "match"; id: string } | { kind: "player"; slug: string };
+type View = { kind: "leagues" } | { kind: "league"; slug: string; tournament?: string } | EsportsEntry;
+
+// A 404 from /api/v1/esports/* is "the section has nothing here yet" (a
+// series or a pro the sync has not written; the league route answers 200
+// with empty lists), never a connection problem: the same sentence the
+// web shows, not "check your connection".
+function isNotReady(error: unknown): boolean {
+  return error instanceof ApiFailed && error.status === 404;
+}
 
 function useApi<T>(url: string | null): { data: T | null; error: unknown; loading: boolean; retry: () => void } {
   const [state, setState] = useState<{ url: string | null; data: T | null; error: unknown; loading: boolean }>({ url, data: null, error: null, loading: Boolean(url) });
@@ -75,9 +84,11 @@ function useCatalogs(locale: string): Catalogs | null {
   return catalogs;
 }
 
-export function EsportsView() {
+export function EsportsView({ initialView }: { initialView?: EsportsEntry }) {
   const { t, locale } = useI18n();
-  const [trail, setTrail] = useState<View[]>([{ kind: "leagues" }]);
+  // Opened from another screen on a series or a pro (esports-navigation.tsx):
+  // that view sits on top of the leagues, so "back" leads there.
+  const [trail, setTrail] = useState<View[]>(initialView ? [{ kind: "leagues" }, initialView] : [{ kind: "leagues" }]);
   const view = trail[trail.length - 1];
   const open = useCallback((next: View) => setTrail((current) => [...current, next]), []);
   const back = useCallback(() => setTrail((current) => (current.length > 1 ? current.slice(0, -1) : current)), []);
@@ -143,7 +154,7 @@ function Muted({ children, size = TYPE.body }: { children: ReactNode; size?: num
 }
 
 function dayKey(iso: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(new Date(iso));
+  return new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", ...yearIfNotCurrent(iso) }).format(new Date(iso));
 }
 
 function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false }: { matches: MatchSummary[]; onOpen: (id: string) => void; emptyLabel: string; t: Translate; locale: string; showNames?: boolean }) {
@@ -171,6 +182,7 @@ function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false }
 
 function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary; onOpen: (id: string) => void; t: Translate; locale: string; showNames: boolean }) {
   const played = match.state !== "unstarted";
+  const stateKey = matchStateKey(match);
   const team1Won = played && match.team1.wins > match.team2.wins;
   const team2Won = played && match.team2.wins > match.team1.wins;
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(new Date(match.startTime));
@@ -217,7 +229,7 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
       <span style={{ display: "flex", gap: 10, fontSize: TYPE.label, color: COLORS.muted, whiteSpace: "nowrap" }}>
         {match.blockName ? <span>{match.blockName}</span> : null}
         <span>{t("Esports.bestOf", { count: match.bestOf })}</span>
-        <span style={{ color: match.state === "inProgress" ? COLORS.roseBright : COLORS.muted }}>{t(`Esports.states.${match.state}`)}</span>
+        <span style={{ color: stateKey === "inProgress" || stateKey === "started" ? COLORS.roseBright : COLORS.muted }}>{t(`Esports.states.${stateKey}`)}</span>
       </span>
     </>
   );
@@ -234,7 +246,7 @@ function DataNote({ games, updatedAt, t, locale }: { games: number; updatedAt: s
   const updated = updatedAt ? formatRelativeTime(new Date(updatedAt).getTime(), locale) : null;
   return (
     <p style={{ margin: 0, fontSize: TYPE.label, color: COLORS.muted }}>
-      {updated ? t("Esports.dataNote", { games, updated }) : t("Esports.dataNoteNoUpdate")} {t("Esports.attribution")}{" "}
+      {updated ? t("Esports.dataNote", { games, updated }) : t("Esports.dataNoteNoUpdate")} <Attribution t={t} />{" "}
       <button
         onClick={() => window.riftcompass.openExternal(webUrl(locale, "/methodology"))}
         style={{ background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.label, cursor: "pointer", padding: 0, textDecoration: "underline" }}
@@ -243,6 +255,43 @@ function DataNote({ games, updatedAt, t, locale }: { games: number; updatedAt: s
       </button>
     </p>
   );
+}
+
+// The attribution sentence with its three names as links (CC BY-SA asks
+// for the licence to be linked, not just named): the catalogs keep the
+// plain sentence and the names are found in it, so a translation only has
+// to keep them spelled the same.
+const ATTRIBUTION_LINKS: { label: string; url: string }[] = [
+  { label: "LoL Esports", url: "https://lolesports.com" },
+  { label: "Leaguepedia", url: "https://lol.fandom.com" },
+  { label: "CC BY-SA 3.0", url: "https://creativecommons.org/licenses/by-sa/3.0/" },
+];
+
+function Attribution({ t }: { t: Translate }) {
+  const text = t("Esports.attribution");
+  const parts: ReactNode[] = [];
+  let rest = text;
+  while (rest) {
+    const next = ATTRIBUTION_LINKS.map((link) => ({ link, at: rest.indexOf(link.label) }))
+      .filter((hit) => hit.at >= 0)
+      .sort((a, b) => a.at - b.at)[0];
+    if (!next) {
+      parts.push(rest);
+      break;
+    }
+    if (next.at > 0) parts.push(rest.slice(0, next.at));
+    parts.push(
+      <button
+        key={`${next.link.label}-${parts.length}`}
+        onClick={() => window.riftcompass.openExternal(next.link.url)}
+        style={{ background: "none", border: "none", color: "inherit", font: "inherit", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+      >
+        {next.link.label}
+      </button>,
+    );
+    rest = rest.slice(next.at + next.link.label.length);
+  }
+  return <>{parts}</>;
 }
 
 // ---- leagues --------------------------------------------------------------
@@ -257,10 +306,12 @@ function LeaguesScreen({ open, t, locale }: { open: (view: View) => void; t: Tra
         <Muted>{t("Esports.intro")}</Muted>
         {data?.leagues.length ? <Muted size={TYPE.label}>{t("Esports.coverage", { leagues: data.leagues.map((league) => league.name).join(", ") })}</Muted> : null}
       </div>
-      {error ? <LoadError onRetry={retry} error={error} /> : null}
+      {error ? isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} /> : null}
       {loading ? <Muted>…</Muted> : null}
       {data && data.leagues.length === 0 ? <Muted>{t("Esports.noData")}</Muted> : null}
       {data?.leagues.map((league) => (
+        // A kick-off that has passed while the sync still says "unstarted"
+        // belongs under "live" (the rows label it as started).
         <section key={league.id} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <button onClick={() => open({ kind: "league", slug: league.slug })} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "baseline", gap: 10 }}>
             <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading + 2, color: COLORS.text }}>{league.name}</span>
@@ -269,7 +320,7 @@ function LeaguesScreen({ open, t, locale }: { open: (view: View) => void; t: Tra
           </button>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-              <SectionTitle>{league.live.length ? t("Esports.live") : t("Esports.upcoming")}</SectionTitle>
+              <SectionTitle>{league.live.length || league.upcoming.some((match) => matchStateKey(match) === "started") ? t("Esports.live") : t("Esports.upcoming")}</SectionTitle>
               <MatchList matches={[...league.live, ...league.upcoming]} onOpen={(id) => open({ kind: "match", id })} emptyLabel={t("Esports.noUpcoming")} t={t} locale={locale} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
@@ -294,10 +345,13 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
   const pending = data?.matches.filter((match) => match.state !== "completed") ?? [];
   const played = [...(data?.matches.filter((match) => match.state === "completed") ?? [])].reverse();
   const openMatch = (id: string) => open({ kind: "match", id });
+  // A tournament that is over has nothing left to play, which is not "nothing in the next seven days".
+  const today = new Date().toISOString().slice(0, 10);
+  const nothingPending = data?.tournament && data.tournament.endDate < today ? t("Esports.noPending") : t("Esports.noUpcoming");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <ChampionSplashAccent championId="Renekton" opacity={18} style={{ top: -40, right: -40, width: 520, height: 340, transform: "rotate(1deg)" }} />
-      {error ? <LoadError onRetry={retry} error={error} /> : null}
+      {error ? isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} /> : null}
       {loading ? <Muted>…</Muted> : null}
       {data ? (
         <>
@@ -323,7 +377,7 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
                 <div key={stage.slug} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <h3 style={{ margin: 0, fontSize: TYPE.body, fontWeight: 600 }}>{stage.name}</h3>
                   {stage.structure.sections.map((section, index) => (
-                    <StageSectionView key={index} section={section} stored={stored} onOpenMatch={openMatch} t={t} />
+                    <StageSectionView key={index} section={section} stageName={stage.name} stored={stored} onOpenMatch={openMatch} t={t} />
                   ))}
                 </div>
               ))}
@@ -334,7 +388,7 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
               <section style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
                 <SectionTitle>{t("Esports.schedule")}</SectionTitle>
                 <Muted size={TYPE.label}>{t("Esports.timeZoneNote")}</Muted>
-                <MatchList matches={pending} onOpen={openMatch} emptyLabel={t("Esports.noUpcoming")} t={t} locale={locale} />
+                <MatchList matches={pending} onOpen={openMatch} emptyLabel={nothingPending} t={t} locale={locale} />
               </section>
               <section style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
                 <SectionTitle>{t("Esports.results")}</SectionTitle>
@@ -342,18 +396,22 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
               </section>
             </div>
           ) : null}
-          <Muted size={TYPE.label}>{t("Esports.attribution")}</Muted>
+          <Muted size={TYPE.label}>
+            <Attribution t={t} />
+          </Muted>
         </>
       ) : null}
     </div>
   );
 }
 
-function StageSectionView({ section, stored, onOpenMatch, t }: { section: StageSection; stored: Set<string>; onOpenMatch: (id: string) => void; t: Translate }) {
+function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { section: StageSection; stageName: string; stored: Set<string>; onOpenMatch: (id: string) => void; t: Translate }) {
+  // A section named like the stage above it ("Playoffs" inside "Playoffs") is not repeated.
+  const heading = section.name && section.name !== stageName ? <Muted size={TYPE.caption}>{section.name}</Muted> : null;
   if (section.type === "group") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <Muted size={TYPE.caption}>{section.name}</Muted>
+        {heading}
         <table style={{ borderCollapse: "collapse", maxWidth: 520, fontSize: TYPE.body }}>
           <thead>
             <tr style={{ color: COLORS.muted, fontSize: TYPE.label, textTransform: "uppercase", letterSpacing: 0.6, textAlign: "left" }}>
@@ -382,13 +440,25 @@ function StageSectionView({ section, stored, onOpenMatch, t }: { section: StageS
       </div>
     );
   }
+  // A bracket nobody has qualified for yet (Worlds before the play-ins) is
+  // one sentence, not eighty "to be determined" boxes.
+  const matches = section.columns.flatMap((column) => column.cells.flatMap((cell) => cell.matches));
+  if (matches.length && matches.every((match) => match.teams.every((slot) => !slot.team))) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {heading}
+        <Muted>{t("Esports.bracketPending", { count: matches.length })}</Muted>
+      </div>
+    );
+  }
+  // Five columns of 180 px with 14 px gaps fit the pane; 210/20 cut the finals column.
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <Muted size={TYPE.caption}>{section.name}</Muted>
-      <div style={{ overflowX: "auto", paddingBottom: 6 }}>
-        <div style={{ display: "flex", alignItems: "stretch", gap: 20, minWidth: "max-content" }}>
+      {heading}
+      <div style={{ overflowX: "auto", paddingBottom: 6, scrollbarWidth: "thin" }}>
+        <div style={{ display: "flex", alignItems: "stretch", gap: 14, minWidth: "max-content" }}>
           {section.columns.map((column, columnIndex) => (
-            <div key={columnIndex} style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", gap: 18, width: 210 }}>
+            <div key={columnIndex} style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", gap: 18, width: 180 }}>
               {column.cells.map((cell) => (
                 <div key={cell.slug || cell.name} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontSize: TYPE.label, textTransform: "uppercase", letterSpacing: 0.6, color: COLORS.muted }}>{cell.name}</span>
@@ -435,9 +505,12 @@ function MatchScreen({ id, open, catalogs, t, locale }: { id: string; open: (vie
   const { data, error, loading, retry } = useApi<MatchDetail>(`${API_BASE_URL}/api/v1/esports/match?id=${id}`);
   const [selected, setSelected] = useState<string | null>(null);
   const runeIndex = useMemo(() => (catalogs ? indexRunes(catalogs.runeStyles) : null), [catalogs]);
-  if (error) return <LoadError onRetry={retry} error={error} />;
+  if (error) return isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} />;
   if (loading || !data) return <Muted>…</Muted>;
   const { match, games } = data;
+  // What the screen says where the games would be: by the series' state
+  // and whether its games have been fetched (same rule as the web page).
+  const emptyKey = match.state === "unstarted" ? "seriesUnstarted" : match.state === "inProgress" ? "seriesLive" : match.hasGames ? "gameNoStats" : "seriesPending";
   const game = games.find((candidate) => candidate.id === selected) ?? games[0];
   const played = match.state !== "unstarted";
   const team1Won = played && match.team1.wins > match.team2.wins;
@@ -457,7 +530,7 @@ function MatchScreen({ id, open, catalogs, t, locale }: { id: string; open: (vie
           {" · "}
           {t("Esports.bestOf", { count: match.bestOf })}
           {" · "}
-          {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(match.startTime))}
+          {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(match.startTime), hour: "2-digit", minute: "2-digit" }).format(new Date(match.startTime))}
         </Muted>
         <h1 style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 10, color: team2Won ? COLORS.muted : COLORS.text }}>
@@ -480,10 +553,10 @@ function MatchScreen({ id, open, catalogs, t, locale }: { id: string; open: (vie
             <TeamTag code={match.team2.code || t("Esports.tbd")} name={match.team2.name} size="lg" muted={!match.team2.code} />
           </span>
         </h1>
-        <Muted>{t(`Esports.states.${match.state}`)}</Muted>
+        <Muted>{t(`Esports.states.${matchStateKey(match)}`)}</Muted>
       </div>
 
-      {games.length === 0 ? <Muted>{played ? t("Esports.gameNoStats") : t("Esports.noData")}</Muted> : null}
+      {games.length === 0 ? <Muted>{t(`Esports.${emptyKey}`)}</Muted> : null}
       {game ? (
         <>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -532,7 +605,9 @@ function MatchScreen({ id, open, catalogs, t, locale }: { id: string; open: (vie
           )}
         </>
       ) : null}
-      <Muted size={TYPE.label}>{t("Esports.attribution")}</Muted>
+      <Muted size={TYPE.label}>
+        <Attribution t={t} />
+      </Muted>
     </div>
   );
 }
@@ -640,13 +715,16 @@ function TeamBoard({ game, side, catalogs, runeIndex, championName, open, t, loc
 
 function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open: (view: View) => void; catalogs: Catalogs | null; t: Translate; locale: string }) {
   const { data, error, loading, retry } = useApi<PlayerResponse>(`${API_BASE_URL}/api/v1/esports/player?slug=${encodeURIComponent(slug)}`);
-  if (error) return <LoadError onRetry={retry} error={error} />;
+  if (error) return isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} />;
   if (loading || !data) return <Muted>…</Muted>;
   const { player, recentGames, champions } = data;
   const year = (date: string) => date.slice(0, 4);
-  const podiums = [...player.podiums].sort((a, b) => (a.place === b.place ? b.date.localeCompare(a.date) : a.place.localeCompare(b.place)));
+  const podiums = dedupePodiums([...player.podiums]).sort((a, b) => (a.place === b.place ? b.date.localeCompare(a.date) : a.place.localeCompare(b.place)));
   const championName = (id: string) => catalogs?.champions.byInternalId[id]?.name ?? id;
-  const pendingText = player.fetchedAt ? t("Esports.pro.careerUnknown") : t("Esports.pro.careerPending");
+  // Three different "nothing here": Leaguepedia not asked yet, asked and no
+  // page matched, or a page matched with no entries for this list.
+  const careerNote = player.leaguepediaId ? t("Esports.pro.careerEmpty") : player.fetchedAt ? t("Esports.pro.careerUnknown") : t("Esports.pro.careerPending");
+  const podiumsNote = player.leaguepediaId ? t("Esports.pro.noPodiums") : player.fetchedAt ? t("Esports.pro.careerUnknown") : t("Esports.pro.careerPending");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <ChampionSplashAccent championId="Yone" opacity={16} style={{ top: -40, right: -40, width: 520, height: 340, transform: "rotate(2deg)" }} />
@@ -665,7 +743,7 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
           ) : null}
           {player.country ? (
             <span>
-              {t("Esports.pro.country")} <span style={{ color: COLORS.text }}>{player.country}</span>
+              {t("Esports.pro.country")} <span style={{ color: COLORS.text }}>{localizedCountryName(player.country, locale)}</span>
             </span>
           ) : null}
         </div>
@@ -687,7 +765,7 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
                 ))}
               </ol>
             ) : (
-              <Muted>{pendingText}</Muted>
+              <Muted>{careerNote}</Muted>
             )}
           </section>
           <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -708,7 +786,7 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
                 ))}
               </ul>
             ) : (
-              <Muted>{player.fetchedAt && player.leaguepediaId ? t("Esports.pro.noPodiums") : pendingText}</Muted>
+              <Muted>{podiumsNote}</Muted>
             )}
           </section>
         </div>
@@ -727,7 +805,7 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
                         </span>
                         <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                           {t("Esports.pro.vs", { team: game.opponentCode })} · {t("Esports.gameNumber", { number: game.number })}
-                          {game.startedAt ? ` · ${new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(game.startedAt))}` : ""}
+                          {game.startedAt ? ` · ${new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(game.startedAt) }).format(new Date(game.startedAt))}` : ""}
                         </span>
                       </span>
                       <span style={{ fontSize: TYPE.label, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>
@@ -755,7 +833,9 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
           ) : null}
         </div>
       </div>
-      <Muted size={TYPE.label}>{t("Esports.attribution")}</Muted>
+      <Muted size={TYPE.label}>
+        <Attribution t={t} />
+      </Muted>
     </div>
   );
 }

@@ -5,6 +5,28 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.28
+
+Esports, antes de que la sección salga al público (ronda 36).
+
+- Una serie sin descargar ya no dice que "su feed en directo se detuvo":
+  según su estado dice que aún no se ha jugado, que está en juego o que
+  las partidas llegan con la siguiente pasada horaria.
+- Una serie que ya ha empezado se marca "En juego, resultado pendiente" en
+  vez de "Próximamente".
+- Sin datos todavía (la hora siguiente a una publicación), la sección lo
+  dice así en vez de "comprueba tu conexión".
+- El cuadro de playoffs ya no corta la columna de la final; un cuadro sin
+  equipos aún es una línea y no ochenta cajas "Por determinar".
+- Fechas del año pasado con su año; "Terminada" en vez de "Final" junto a
+  "Finals"; cabeceras "Playoffs / Playoffs" sin repetir; un torneo acabado
+  dice que no quedan partidos, no que no hay en siete días.
+- Ficha de pro: país en tu idioma, podios sin duplicar, texto honesto
+  cuando Leaguepedia tiene la página pero no la trayectoria.
+- "Así lo jugaron los pros": cada partida abre su serie en Esports.
+- Atribución de LoL Esports y Leaguepedia con enlaces (CC BY-SA 3.0).
+- Francés y alemán con un solo término para "partida" en toda la sección.
+
 ## 0.3.27
 
 Incluye la 0.3.26 (sección Esports), que se quedó en borrador.
