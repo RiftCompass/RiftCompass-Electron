@@ -1,0 +1,109 @@
+import { STAT_SHARD_ROWS } from "../ddragon";
+import type { ChampionBuildRunes } from "../riftcompass";
+import type { Vod } from "./types";
+
+// Port of RiftCompass-Web/src/lib/esports/format.ts: same rules, same
+// results. A change on one side is replicated on the other.
+
+/** 2489 → "41:29". */
+export function formatGameDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${minutes}:${rest.toString().padStart(2, "0")}`;
+}
+
+/**
+ * The feed's `perks` is a set, not the nine slots: a shard taken in two rows
+ * appears once, so the list can have eight entries. The rows are known
+ * (STAT_SHARD_ROWS), so the three slots are rebuilt by trying every row
+ * assignment and keeping the one that uses every listed shard, in order.
+ */
+export function expandStatShards(shardIds: number[]): [number, number, number] {
+  const listed = shardIds.filter((id) => STAT_SHARD_ROWS.some((row) => row.some((shard) => shard.id === id)));
+  if (listed.length === 0) return [0, 0, 0];
+  const candidates = STAT_SHARD_ROWS.map((row) => listed.filter((id) => row.some((shard) => shard.id === id)));
+  let best: [number, number, number] | null = null;
+  let bestScore = -1;
+  for (const first of candidates[0].length ? candidates[0] : [0]) {
+    for (const second of candidates[1].length ? candidates[1] : [0]) {
+      for (const third of candidates[2].length ? candidates[2] : [0]) {
+        const chosen = [first, second, third];
+        const covered = listed.filter((id) => chosen.includes(id)).length;
+        const inOrder = chosen.every((id, i) => i === 0 || id === 0 || chosen[i - 1] === 0 || listed.indexOf(id) >= listed.indexOf(chosen[i - 1]));
+        const score = covered * 2 + (inOrder ? 1 : 0);
+        if (score > bestScore) {
+          bestScore = score;
+          best = [first, second, third];
+        }
+      }
+    }
+  }
+  return best ?? [0, 0, 0];
+}
+
+/** A pro's final rune page in the shape RunePageView draws (perks: 6 runes then the shards). */
+export function runePageFromPerks(runeStyle: number, runeSubStyle: number, perks: number[]): ChampionBuildRunes {
+  const [statPerk0, statPerk1, statPerk2] = expandStatShards(perks.slice(6));
+  return {
+    primaryStyleId: runeStyle,
+    subStyleId: runeSubStyle,
+    perk0: perks[0] ?? 0,
+    perk1: perks[1] ?? 0,
+    perk2: perks[2] ?? 0,
+    perk3: perks[3] ?? 0,
+    perk4: perks[4] ?? 0,
+    perk5: perks[5] ?? 0,
+    statPerk0,
+    statPerk1,
+    statPerk2,
+  };
+}
+
+const VOD_PROVIDERS: Record<string, { label: string; url: (vod: Vod) => string }> = {
+  youtube: {
+    label: "YouTube",
+    url: (vod) => `https://www.youtube.com/watch?v=${encodeURIComponent(vod.parameter)}${vod.startMillis ? `&t=${Math.floor(vod.startMillis / 1000)}s` : ""}`,
+  },
+  twitch: {
+    label: "Twitch",
+    url: (vod) => `https://www.twitch.tv/videos/${encodeURIComponent(vod.parameter)}${vod.startMillis ? `?t=${Math.floor(vod.startMillis / 1000)}s` : ""}`,
+  },
+};
+
+/** Own language first, then English, one link per provider and language; links only, never embeds. */
+export function pickVods(vods: Vod[], locale: string): { label: string; url: string; locale: string }[] {
+  const seen = new Set<string>();
+  const score = (vod: Vod) => (vod.locale.startsWith(locale) ? 0 : vod.locale.startsWith("en") ? 1 : 2);
+  return [...vods]
+    .sort((a, b) => score(a) - score(b))
+    .flatMap((vod) => {
+      const provider = VOD_PROVIDERS[vod.provider.toLowerCase()];
+      if (!provider) return [];
+      const key = `${provider.label}:${vod.locale}`;
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [{ label: provider.label, url: provider.url(vod), locale: vod.locale }];
+    })
+    .slice(0, 4);
+}
+
+/** A stable hue per team code (no logos: the code in a tinted tag, same as the web). */
+export function teamHue(code: string): number {
+  let hash = 0;
+  for (const char of code) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return hash % 360;
+}
+
+export type EsportsRoleKey = "top" | "jungle" | "mid" | "bottom" | "support" | "unknown";
+
+export function roleKey(role: string): EsportsRoleKey {
+  const lower = role.toLowerCase();
+  return lower === "top" || lower === "jungle" || lower === "mid" || lower === "bottom" || lower === "support" ? lower : "unknown";
+}
+
+const DRAGON_KINDS = ["mountain", "cloud", "infernal", "ocean", "hextech", "chemtech", "elder"];
+
+export function dragonKey(kind: string): string | null {
+  const lower = kind.toLowerCase();
+  return DRAGON_KINDS.includes(lower) ? lower : null;
+}

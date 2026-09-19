@@ -28,7 +28,8 @@ import { LoadError } from "./tools/LoadError";
 import { savedListError } from "./lib/api-fetch";
 import { PostGameReport } from "./profile/PostGameReport";
 import { scheduleRankSnapshot } from "./lib/rank-snapshot";
-import { SQUAD_SYNERGY, TOOLS, type ToolId, type ToolMeta } from "./tool-meta";
+import { ESPORTS, SQUAD_SYNERGY, TOOLS, type ToolId, type ToolMeta } from "./tool-meta";
+import { EsportsView } from "./esports/EsportsView";
 import { GoldCalculator } from "./tools/GoldCalculator";
 import { WaveTimer } from "./tools/WaveTimer";
 import { JungleXpCalculator } from "./tools/JungleXpCalculator";
@@ -85,7 +86,7 @@ const NATIVE_VIEWS: Record<ToolId, React.ComponentType> = {
 // to bury in a settings page.
 const TITLEBAR_HEIGHT = 40;
 
-type Panel = "tools" | "settings" | "profile" | "compare" | "postgame";
+type Panel = "tools" | "settings" | "profile" | "compare" | "postgame" | "esports";
 
 // Three splash-art accents per tool detail screen — same champions and same
 // top/bottom-same-side + mid-height-opposite-side zigzag riftcompass.com's
@@ -543,6 +544,28 @@ export function MainView() {
                 initialTarget={compareInitial}
               />
             </div>
+          ) : panel === "esports" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Same back-to-menu control every other screen has. */}
+              <button
+                onClick={goHome}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  alignSelf: "flex-start",
+                  background: "none",
+                  border: "none",
+                  color: COLORS.muted,
+                  fontSize: TYPE.body,
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                <ArrowLeft size={15} /> {t("Common.backToTools")}
+              </button>
+              <EsportsView />
+            </div>
           ) : panel === "postgame" && postGameContext ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Same back-to-menu control every other screen has (profile,
@@ -645,6 +668,7 @@ export function MainView() {
               onGoHome={goHome}
               onSearchProfile={openProfile}
               onOpenCompare={() => setPanel("compare")}
+              onOpenEsports={() => setPanel("esports")}
               localIdentity={localIdentity}
               leagueDetected={lcuStatus === "connected"}
               onOpenMyProfile={() =>
@@ -1673,12 +1697,12 @@ function InlineLpSparkline({ values }: { values: number[] }) {
 // MainView's own `panel` state, not the openTool/NATIVE_VIEWS switch), so
 // compare is spliced into the grid as its own entry kind rather than
 // forced into the ToolMeta/TOOLS shape.
-type GridEntry = { kind: "tool"; tool: ToolMeta } | { kind: "duo" };
+type GridEntry = { kind: "tool"; tool: ToolMeta } | { kind: "duo" } | { kind: "esports" };
 
 // Tool order must match the web's grid (TOOL_ROUTES), which ends with
 // "duo" — its equivalent of this card — so "Comparar perfiles" goes last.
 function buildGridEntries(): GridEntry[] {
-  return [...TOOLS.map((tool): GridEntry => ({ kind: "tool", tool })), { kind: "duo" }];
+  return [...TOOLS.map((tool): GridEntry => ({ kind: "tool", tool })), { kind: "duo" }, { kind: "esports" }];
 }
 
 function ToolsIndex({
@@ -1686,6 +1710,7 @@ function ToolsIndex({
   onGoHome,
   onSearchProfile,
   onOpenCompare,
+  onOpenEsports,
   localIdentity,
   leagueDetected,
   onOpenMyProfile,
@@ -1694,6 +1719,7 @@ function ToolsIndex({
   onGoHome: () => void;
   onSearchProfile: (target: ProfileTarget) => void;
   onOpenCompare: () => void;
+  onOpenEsports: () => void;
   localIdentity: LcuIdentity | null;
   leagueDetected: boolean;
   onOpenMyProfile: () => void;
@@ -1740,6 +1766,9 @@ function ToolsIndex({
         {entries.map((entry) => {
           if (entry.kind === "duo") {
             return <GridCard key="duo" icon={SQUAD_SYNERGY.icon} accent={SQUAD_SYNERGY.accent} label={t("ToolsIndex.duo")} onClick={onOpenCompare} />;
+          }
+          if (entry.kind === "esports") {
+            return <GridCard key="esports" icon={ESPORTS.icon} accent={ESPORTS.accent} label={t("Esports.title")} onClick={onOpenEsports} />;
           }
           const tool = entry.tool;
           return (

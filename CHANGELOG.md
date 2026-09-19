@@ -5,6 +5,18 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.26
+
+- Nueva sección **Esports** en la pantalla de herramientas: calendario,
+  resultados y cuadros de la LEC y de Worlds, y en cada partida ya jugada
+  lo que cada pro llevaba al terminar: campeón, runas, objetos, KDA, oro,
+  CS y objetivos. Pulsa un jugador para ver sus equipos a lo largo de los
+  años, sus títulos y sus últimas partidas. Necesita que riftcompass.com
+  haya publicado la sección (sale con la web del 2026-09-20).
+- Builds de campeón: bloque "Así lo jugaron los pros" con las páginas de
+  runas y los objetos finales más repetidos en competitivo, como recuentos
+  de partidas, nunca winrates.
+
 ## 0.3.25
 
 Incluye la 0.3.23 y la 0.3.24, que se quedaron en borrador.

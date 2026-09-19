@@ -10,6 +10,7 @@ import {
   Sword,
   Timer,
   Tree,
+  Trophy,
   Users,
   Waves,
   type Icon,
@@ -79,3 +80,10 @@ export const TOOLS: ToolMeta[] = [
 // ToolMeta/TOOLS, which are specifically the routes that mirror the web's
 // TOOL_ROUTES order.
 export const SQUAD_SYNERGY = { icon: Users, accent: "#c93a9e" } as const;
+
+// The esports section (esports.md): schedules, results, brackets and the
+// end state of every competitive game. Like Squad Synergy, not a ToolId
+// (it is content, not a practice tool, and on the web it lives at /esports
+// next to About, not under /tools); a card at the end of the grid with its
+// own hue, bronze, which no tool uses.
+export const ESPORTS = { icon: Trophy, accent: "#b5651d" } as const;
