@@ -7,6 +7,8 @@ programa (eso va en los mensajes de commit).
 
 ## 0.3.28
 
+Incluye la 0.3.27 (ronda 35), que se quedó en borrador.
+
 Esports, antes de que la sección salga al público (ronda 36).
 
 - Una serie sin descargar ya no dice que "su feed en directo se detuvo":
