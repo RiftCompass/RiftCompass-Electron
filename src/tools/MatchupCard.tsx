@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { patchLabel } from "../lib/patch-label";
 import { formatPercent } from "../lib/profile-analysis";
 import { X } from "@phosphor-icons/react";
@@ -33,6 +33,13 @@ import { AbilityBadge, RunePageView, SkillGrid, indexRunes } from "./build-visua
 // de partidas contra ese rival, se enseña la general del campeón y se dice;
 // el orden de habilidades es siempre el general hasta que el crawler lo
 // guarde por rival (fase B).
+//
+// Una sola caja (la ficha es la pieza interactiva de la pantalla) y dentro
+// secciones separadas por una línea, no cajas dentro de la caja.
+
+// El color de la herramienta Matchups (tool-meta.ts, la lima de la web),
+// que el retrato de la cabecera lleva como anillo.
+export const MATCHUPS_ACCENT = "#8fbf3a";
 
 interface BuildPiece<T> {
   value: T;
@@ -60,16 +67,30 @@ interface MatchupCardResponse {
 }
 
 // Cuatro tonos, como el tablero (COLORS.good/goodMild/badMild/bad).
-function winRateTone(winRate: number): "good" | "goodMild" | "badMild" | "bad" {
+export function winRateTone(winRate: number): "good" | "goodMild" | "badMild" | "bad" {
   if (winRate >= 0.55) return "good";
   if (winRate >= 0.5) return "goodMild";
   if (winRate >= 0.45) return "badMild";
   return "bad";
 }
 
-const cardStyle = makeCardStyle({ borderRadius: 12, padding: 16 });
-const blockStyle = { display: "flex", flexDirection: "column" as const, gap: 10, borderRadius: 10, border: `1px solid ${COLORS.cardBorder}`, background: `${COLORS.background}66`, padding: 12 };
-const labelStyle = { fontSize: TYPE.label, color: COLORS.muted };
+// La barra bajo cada cifra: rellena hasta el winrate en su tono, con la
+// marca del 50 %. `md` es la mas alta, bajo el resumen de la linea y la
+// cifra grande de la ficha.
+export function WinRateBar({ winRate, size = "sm", style }: { winRate: number; size?: "sm" | "md"; style?: CSSProperties }) {
+  return (
+    <div style={{ position: "relative", height: size === "md" ? 8 : 6, width: "100%", borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "clip", ...style }} aria-hidden="true">
+      <div style={{ height: "100%", borderRadius: 999, width: `${Math.round(winRate * 100)}%`, background: COLORS[winRateTone(winRate)] }} />
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, background: "rgba(247,243,245,0.5)" }} />
+    </div>
+  );
+}
+
+const cardStyle = makeCardStyle({ borderRadius: 12, padding: 18 });
+const sectionStyle: CSSProperties = { display: "flex", flexDirection: "column", gap: 10, paddingTop: 14, borderTop: `1px solid ${COLORS.cardBorder}` };
+const labelStyle: CSSProperties = { fontSize: TYPE.label, color: COLORS.muted };
+const subLabelStyle: CSSProperties = { ...labelStyle, textTransform: "uppercase", letterSpacing: "0.04em" };
+const linkPillStyle: CSSProperties = { ...pillStyle(false, "compact"), color: COLORS.muted, cursor: "pointer" };
 
 export function MatchupCard({
   champion,
@@ -167,16 +188,21 @@ export function MatchupCard({
     </span>
   );
   const tone = matchup?.winRate == null ? null : winRateTone(matchup.winRate);
+  const portrait: CSSProperties = { width: 56, height: 56, borderRadius: 12, border: `1px solid ${COLORS.cardBorder}` };
 
   return (
-    <section style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 14, borderColor: `${COLORS.rose}66` }} aria-label={t("Matchups.cardTitle", { champion: champion.name, enemy: enemy.name })}>
+    <section style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 16, borderColor: `${COLORS.rose}66` }} aria-label={t("Matchups.cardTitle", { champion: champion.name, enemy: enemy.name })}>
+      {/* Quien contra quien: los dos retratos a tamano de cabecera con el
+          "contra" entre ellos, como un cartel de combate. */}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src={champion.iconUrl} alt="" style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${COLORS.cardBorder}` }} />
-          <span style={{ fontSize: TYPE.label, color: COLORS.muted, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("Matchups.cardVersus")}</span>
-          <img src={enemy.iconUrl} alt="" style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${COLORS.cardBorder}` }} />
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img src={champion.iconUrl} alt="" style={portrait} />
+            <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.label, color: COLORS.muted, textTransform: "uppercase", letterSpacing: "0.08em", padding: "2px 8px", borderRadius: 999, background: "rgba(247,243,245,0.1)" }}>{t("Matchups.cardVersus")}</span>
+            <img src={enemy.iconUrl} alt="" style={portrait} />
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <h2 style={{ fontFamily: FONT_HEADING, fontSize: 17, fontWeight: 400, margin: 0 }}>
+            <h2 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, lineHeight: 1.2, margin: 0 }}>
               {t("Matchups.cardTitle", { champion: champion.name, enemy: enemy.name })}
             </h2>
             <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
@@ -185,7 +211,7 @@ export function MatchupCard({
             </span>
           </div>
         </div>
-        <button onClick={onClose} style={{ ...pillStyle(false, "compact"), display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+        <button onClick={onClose} style={{ ...linkPillStyle, display: "flex", alignItems: "center", gap: 4 }}>
           <X size={12} />
           {t("Matchups.cardClose")}
         </button>
@@ -199,24 +225,19 @@ export function MatchupCard({
         <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.loading")}</p>
       ) : (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 12px" }}>
-              <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.display, lineHeight: 1.1, color: tone ? COLORS[tone] : COLORS.muted }}>
+              <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.display + 4, lineHeight: 1, color: tone ? COLORS[tone] : COLORS.muted }}>
                 {matchup.winRate == null ? "–" : pct.format(matchup.winRate)}
               </span>
               <span style={{ fontSize: TYPE.body, color: COLORS.muted }}>{t("Matchups.cardWinrate", { champion: champion.name, enemy: enemy.name })}</span>
               <span style={labelStyle}>{t("Matchups.games", { games: matchup.games })}</span>
             </div>
-            {matchup.winRate != null ? (
-              <div style={{ position: "relative", height: 6, maxWidth: 440, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "clip" }} aria-hidden="true">
-                <div style={{ height: "100%", borderRadius: 999, width: `${Math.round(matchup.winRate * 100)}%`, background: tone ? COLORS[tone] : COLORS.muted }} />
-                <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, background: "rgba(247,243,245,0.5)" }} />
-              </div>
-            ) : null}
+            {matchup.winRate != null ? <WinRateBar winRate={matchup.winRate} size="md" style={{ maxWidth: 480 }} /> : null}
             {matchup.games < minGames ? <p style={{ ...labelStyle, margin: 0 }}>{t("Matchups.cardThinSample", { min: minGames })}</p> : null}
           </div>
 
-          <div style={blockStyle}>
+          <div style={sectionStyle}>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <h3 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 }}>{t("Matchups.cardBuildTitle", { enemy: enemy.name })}</h3>
               <p style={{ ...labelStyle, margin: 0 }}>
@@ -230,18 +251,18 @@ export function MatchupCard({
             {pieces.length === 0 ? (
               <p style={{ fontSize: TYPE.body, color: COLORS.muted, margin: 0 }}>{t("ChampionBuilds.noBuildData")}</p>
             ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: "1 1 320px", minWidth: 0 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "16px 32px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: "1 1 320px", minWidth: 0 }}>
                   {matchup.build.runes ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <span style={labelStyle}>{t("ChampionBuilds.runes")}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      <span style={subLabelStyle}>{t("ChampionBuilds.runes")}</span>
                       <RunePageView runes={matchup.build.runes.value} index={runeIndex} t={t} />
                       {sample(matchup.build.runes)}
                     </div>
                   ) : null}
                   {matchup.build.items ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <span style={labelStyle}>{t("ChampionBuilds.coreItems")}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      <span style={subLabelStyle}>{t("ChampionBuilds.coreItems")}</span>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                         {matchup.build.items.value.coreItemsKey
                           .split(",")
@@ -254,7 +275,8 @@ export function MatchupCard({
                                 src={itemIconUrl(version, id)}
                                 alt={item?.name ?? id}
                                 title={item ? `${item.name} (${item.totalGold})` : id}
-                                style={{ width: 34, height: 34, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }}
+                                loading="lazy"
+                                style={{ width: 36, height: 36, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }}
                               />
                             );
                           })}
@@ -264,15 +286,15 @@ export function MatchupCard({
                   ) : null}
                 </div>
                 {matchup.build.spells ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={labelStyle}>{t("ChampionBuilds.summonerSpells")}</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={subLabelStyle}>{t("ChampionBuilds.summonerSpells")}</span>
                     <div style={{ display: "flex", gap: 5 }}>
                       {[matchup.build.spells.value.spellLow, matchup.build.spells.value.spellHigh].map((id) => {
                         const spell = spellsById.get(id);
                         return spell ? (
-                          <img key={id} src={spell.iconUrl} alt={spell.name} title={spell.name} style={{ width: 34, height: 34, borderRadius: 6 }} />
+                          <img key={id} src={spell.iconUrl} alt={spell.name} title={spell.name} loading="lazy" style={{ width: 36, height: 36, borderRadius: 6 }} />
                         ) : (
-                          <span key={id} style={{ width: 34, height: 34, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} />
+                          <span key={id} style={{ width: 36, height: 36, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} />
                         );
                       })}
                     </div>
@@ -283,7 +305,7 @@ export function MatchupCard({
             )}
           </div>
 
-          <div style={blockStyle}>
+          <div style={sectionStyle}>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <h3 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 }}>{t("ChampionBuilds.skillOrder")}</h3>
               <p style={{ ...labelStyle, margin: 0 }}>{t("Matchups.cardSkillOrderGeneral", { champion: champion.name })}</p>
@@ -291,7 +313,7 @@ export function MatchupCard({
             {matchup.skillOrder && matchup.skillOrder.path.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
-                  <span style={labelStyle}>{t("ChampionBuilds.maxOrder")}</span>
+                  <span style={subLabelStyle}>{t("ChampionBuilds.maxOrder")}</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {matchup.skillOrder.maxPriority.map((slot, index) => (
                       <span key={slot} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -309,12 +331,14 @@ export function MatchupCard({
             )}
           </div>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
-            <button onClick={onSwap} style={{ background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}>
+          {/* Pildoras, no dos lineas de texto pegadas: cada una llega a los
+              24 px de alto de un objetivo tactil, como en la web. */}
+          <div style={{ ...sectionStyle, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+            <button onClick={onSwap} style={linkPillStyle}>
               {t("Matchups.cardSwap", { enemy: enemy.name })}
             </button>
             {onOpenEnemyBuilds ? (
-              <button onClick={onOpenEnemyBuilds} style={{ background: "none", border: "none", color: COLORS.rose, fontSize: TYPE.caption, cursor: "pointer", padding: 0 }}>
+              <button onClick={onOpenEnemyBuilds} style={linkPillStyle}>
                 {t("Matchups.cardEnemyPage", { enemy: enemy.name })}
               </button>
             ) : null}

@@ -436,3 +436,46 @@ details[open] > summary svg {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The pulsing dot next to "Live" on the esports screen (the web's LiveDot):
+   a ring that grows and fades from the dot, the one animated thing on a
+   schedule so a running series is found without reading. Stops under
+   reduced motion; the dot itself stays. */
+.rc-live-dot {
+  position: relative;
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+}
+.rc-live-dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #f0538c;
+  opacity: 0.6;
+  animation: rc-live-ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.rc-live-dot::after {
+  content: "";
+  position: relative;
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #f0538c;
+}
+@keyframes rc-live-ping {
+  75%,
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rc-live-dot::before {
+    animation: none;
+    opacity: 0;
+  }
+}

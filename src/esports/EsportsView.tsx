@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, Medal, Trophy } from "@phosphor-icons/react";
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
 import { championSquareUrl, fetchChampionMap, fetchItemCatalog, fetchLatestVersion, fetchRuneStyles, itemIconUrl, type ChampionMaps, type ItemCatalog, type RuneStyle } from "../ddragon";
 import { useI18n } from "../i18n";
@@ -8,24 +8,31 @@ import { patchLabel } from "../lib/patch-label";
 import { formatPercent, formatRelativeTime } from "../lib/profile-analysis";
 import { API_BASE_URL, webUrl } from "../shared/api";
 import { COLORS, FONT_HEADING, cardStyle, pillStyle, TYPE } from "../theme";
+import { ESPORTS } from "../tool-meta";
 import { indexRunes, RunePageView, type Translate } from "../tools/build-visuals";
 import { LoadError } from "../tools/LoadError";
-import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickVods, roleKey, runePageFromPerks, teamHue, yearIfNotCurrent } from "./format";
+import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickHeadlineMatch, pickVods, roleKey, runePageFromPerks, teamHue, yearIfNotCurrent } from "./format";
 import type { EsportsEntry } from "./esports-navigation";
-import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeaguesResponse, MatchDetail, MatchSummary, PlayerResponse, StageMatchRef, StageSection, TeamTotals } from "./types";
+import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeaguesResponse, MatchDetail, MatchSummary, MatchTeam, PlayerResponse, StageMatchRef, StageSection, TeamTotals } from "./types";
 
 // The web's /esports section (esports.md), as one screen with four views:
-// the covered leagues (live, next seven days, latest results), a league
-// (tournaments, stages, schedule and results), a series (game by game,
-// the end state of every player: champion, KDA, gold, CS, kill and damage
-// share, wards, final items, rune page) and a pro (career, podiums,
-// latest games, most played champions). Everything from
-// /api/v1/esports/*, which only reads the tables the crawler's sync fills;
-// nothing here talks to LoL Esports or Leaguepedia. Runes are drawn with
-// the same RunePageView Champion Builds uses; teams are codes in tinted
-// tags, no logos, like the web.
+// the covered leagues (the series to look at right now drawn big, then
+// live, next seven days and latest results), a league (tournaments,
+// stages, schedule and results), a series (game by game, the end state of
+// every player: champion, KDA, gold, CS, kill and damage share, wards,
+// final items, rune page) and a pro (career, podiums, latest games, most
+// played champions). Everything from /api/v1/esports/*, which only reads
+// the tables the crawler's sync fills; nothing here talks to LoL Esports
+// or Leaguepedia. Runes are drawn with the same RunePageView Champion
+// Builds uses; teams are codes in tinted tags, no logos, like the web.
 
 type View = { kind: "leagues" } | { kind: "league"; slug: string; tournament?: string } | EsportsEntry;
+
+// The web's gem tokens this screen borrows (globals.css): the game's two
+// sides, the podium metals and the mono face the scores use.
+const SIDE_COLOR: Record<GameSide, string> = { blue: "#4d7fe8", red: "#d6394a" };
+const SILVER = "#9aa5b1";
+const FONT_MONO = "'JetBrains Mono', 'Cascadia Code', Consolas, monospace";
 
 // A 404 from /api/v1/esports/* is "the section has nothing here yet" (a
 // series or a pro the sync has not written; the league route answers 200
@@ -133,10 +140,11 @@ function TeamTag({ code, name, size = "md", muted = false }: { code: string; nam
     border: `1px solid ${muted ? COLORS.cardBorder : `oklch(0.62 0.13 ${hue} / 0.55)`}`,
     background: muted ? "none" : `oklch(0.62 0.13 ${hue} / 0.12)`,
     color: muted ? COLORS.muted : `oklch(0.86 0.09 ${hue})`,
-    fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace",
+    fontFamily: FONT_MONO,
     fontWeight: 600,
     fontSize: font,
     letterSpacing: 0.5,
+    flexShrink: 0,
   };
   return (
     <span title={name && name !== code ? name : undefined} style={style}>
@@ -152,6 +160,28 @@ function SectionTitle({ children }: { children: ReactNode }) {
 function Muted({ children, size = TYPE.body }: { children: ReactNode; size?: number }) {
   return <p style={{ margin: 0, fontSize: size, color: COLORS.muted }}>{children}</p>;
 }
+
+// The pulsing dot next to "Live" (global.css, the web's LiveDot): the one
+// animated thing on a schedule, only ever next to its label.
+function LiveDot() {
+  return <span className="rc-live-dot" aria-hidden="true" />;
+}
+
+function isLive(stateKey: string): boolean {
+  return stateKey === "inProgress" || stateKey === "started";
+}
+
+function StateLine({ stateKey, label, size = TYPE.label }: { stateKey: string; label: string; size?: number }) {
+  const live = isLive(stateKey);
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: size, fontWeight: live ? 500 : 400, color: live ? COLORS.roseBright : stateKey === "completed" ? COLORS.muted : `${COLORS.text}b3` }}>
+      {live ? <LiveDot /> : null}
+      {label}
+    </span>
+  );
+}
+
+const OVERLINE: CSSProperties = { fontSize: TYPE.label, textTransform: "uppercase", letterSpacing: 0.6, color: COLORS.muted };
 
 function dayKey(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", ...yearIfNotCurrent(iso) }).format(new Date(iso));
@@ -170,7 +200,7 @@ function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false }
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {days.map((day) => (
         <section key={day.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <h3 style={{ margin: 0, fontSize: TYPE.label, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6, color: COLORS.muted }}>{day.key}</h3>
+          <h3 style={{ ...OVERLINE, margin: 0, fontWeight: 500 }}>{day.key}</h3>
           {day.matches.map((match) => (
             <MatchRow key={match.id} match={match} onOpen={onOpen} t={t} locale={locale} showNames={showNames} />
           ))}
@@ -192,12 +222,13 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
     gridTemplateColumns: "3.5rem minmax(0, 1fr) auto",
     alignItems: "center",
     gap: 10,
-    padding: "7px 6px",
+    padding: "7px 8px",
+    margin: "0 -8px",
+    width: "calc(100% + 16px)",
     borderTop: `1px solid ${COLORS.cardBorder}`,
     background: "none",
     border: "none",
     color: COLORS.text,
-    width: "100%",
     textAlign: "left",
     cursor: played ? "pointer" : "default",
     borderRadius: 6,
@@ -211,7 +242,7 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
           {showNames ? <span style={{ fontSize: TYPE.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{match.team1.name}</span> : null}
           <TeamTag code={match.team1.code || t("Esports.tbd")} name={match.team1.name} muted={!match.team1.code} />
         </span>
-        <span style={{ width: 44, textAlign: "center", fontSize: TYPE.body, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+        <span style={{ width: 48, textAlign: "center", fontFamily: FONT_MONO, fontSize: TYPE.subheading, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
           {played ? (
             <>
               <span style={{ color: team1Won ? COLORS.text : COLORS.muted, fontWeight: team1Won ? 600 : 400 }}>{match.team1.wins}</span>
@@ -219,7 +250,7 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
               <span style={{ color: team2Won ? COLORS.text : COLORS.muted, fontWeight: team2Won ? 600 : 400 }}>{match.team2.wins}</span>
             </>
           ) : (
-            <span style={{ color: COLORS.muted }}>vs</span>
+            <span style={{ color: COLORS.muted, fontSize: TYPE.body }}>vs</span>
           )}
         </span>
         <span style={{ display: "flex", flex: 1, alignItems: "center", gap: 8, minWidth: 0, color: team1Won ? COLORS.muted : COLORS.text }}>
@@ -227,10 +258,10 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
           {showNames ? <span style={{ fontSize: TYPE.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{match.team2.name}</span> : null}
         </span>
       </span>
-      <span style={{ display: "flex", gap: 10, fontSize: TYPE.label, color: COLORS.muted, whiteSpace: "nowrap" }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: TYPE.label, color: COLORS.muted, whiteSpace: "nowrap" }}>
         {match.blockName ? <span>{match.blockName}</span> : null}
         <span>{t("Esports.bestOf", { count: match.bestOf })}</span>
-        <span style={{ color: stateKey === "inProgress" || stateKey === "started" ? COLORS.roseBright : COLORS.muted }}>{t(`Esports.states.${stateKey}`)}</span>
+        <StateLine stateKey={stateKey} label={t(`Esports.states.${stateKey}`)} />
       </span>
     </>
   );
@@ -240,6 +271,73 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
     </button>
   ) : (
     <div style={row}>{content}</div>
+  );
+}
+
+// The series a schedule leads with (pickHeadlineMatch, the web's
+// FeaturedMatch): the two teams at header size around a big score, the
+// round and kick-off above and the state below. The one box on these
+// screens, because it is one button.
+function FeaturedMatch({ match, onOpen, t, locale }: { match: MatchSummary; onOpen: (id: string) => void; t: Translate; locale: string }) {
+  const played = match.state !== "unstarted";
+  const stateKey = matchStateKey(match);
+  const team1Won = played && match.team1.wins > match.team2.wins;
+  const team2Won = played && match.team2.wins > match.team1.wins;
+  const tbd = t("Esports.tbd");
+  const side = (team: MatchTeam, lost: boolean, align: "end" | "start") => {
+    const tag = <TeamTag code={team.code || tbd} name={team.name} size="lg" muted={!team.code} />;
+    return (
+      <span style={{ display: "flex", flex: 1, minWidth: 0, alignItems: "center", gap: 12, justifyContent: align === "end" ? "flex-end" : "flex-start", color: lost ? COLORS.muted : COLORS.text }}>
+        {align === "start" ? tag : null}
+        <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading - 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name || team.code || tbd}</span>
+        {align === "end" ? tag : null}
+      </span>
+    );
+  };
+  const box: CSSProperties = {
+    ...cardStyle({ borderRadius: 12, padding: 16 }),
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    width: "100%",
+    color: COLORS.text,
+    textAlign: "left",
+    font: "inherit",
+    cursor: played ? "pointer" : "default",
+  };
+  const inner = (
+    <>
+      <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px", ...OVERLINE }}>
+        {match.blockName ? <span>{match.blockName}</span> : null}
+        <span>{t("Esports.bestOf", { count: match.bestOf })}</span>
+        <span style={{ textTransform: "none", letterSpacing: 0 }}>
+          {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(match.startTime), hour: "numeric", minute: "2-digit" }).format(new Date(match.startTime))}
+        </span>
+      </span>
+      <span style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        {side(match.team1, team2Won, "end")}
+        <span style={{ flexShrink: 0, fontFamily: FONT_HEADING, fontSize: TYPE.display + 2, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+          {played ? (
+            <>
+              <span style={{ color: team1Won ? COLORS.text : COLORS.muted }}>{match.team1.wins}</span>
+              <span style={{ color: COLORS.muted }}> : </span>
+              <span style={{ color: team2Won ? COLORS.text : COLORS.muted }}>{match.team2.wins}</span>
+            </>
+          ) : (
+            <span style={{ color: COLORS.muted, fontSize: TYPE.heading }}>vs</span>
+          )}
+        </span>
+        {side(match.team2, team1Won, "start")}
+      </span>
+      <StateLine stateKey={stateKey} label={t(`Esports.states.${stateKey}`)} size={TYPE.body} />
+    </>
+  );
+  return played ? (
+    <button onClick={() => onOpen(match.id)} style={box}>
+      {inner}
+    </button>
+  ) : (
+    <div style={box}>{inner}</div>
   );
 }
 
@@ -299,38 +397,57 @@ function Attribution({ t }: { t: Translate }) {
 
 function LeaguesScreen({ open, t, locale }: { open: (view: View) => void; t: Translate; locale: string }) {
   const { data, error, loading, retry } = useApi<LeaguesResponse>(`${API_BASE_URL}/api/v1/esports/leagues`);
+  const openMatch = (id: string) => open({ kind: "match", id });
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <ChampionSplashAccent championId="Azir" opacity={20} style={{ top: -40, right: -40, width: 520, height: 340, transform: "rotate(2deg)" }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>{t("Esports.title")}</h1>
+        <h1 style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
+          <Trophy size={24} weight="fill" color={ESPORTS.accent} aria-hidden="true" />
+          {t("Esports.title")}
+        </h1>
         <Muted>{t("Esports.intro")}</Muted>
         {data?.leagues.length ? <Muted size={TYPE.label}>{t("Esports.coverage", { leagues: data.leagues.map((league) => league.name).join(", ") })}</Muted> : null}
       </div>
       {error ? isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} /> : null}
       {loading ? <Muted>…</Muted> : null}
       {data && data.leagues.length === 0 ? <Muted>{t("Esports.noData")}</Muted> : null}
-      {data?.leagues.map((league) => (
+      {data?.leagues.map((league) => {
+        const headline = pickHeadlineMatch(league.live, league.upcoming, league.recent);
         // A kick-off that has passed while the sync still says "unstarted"
         // belongs under "live" (the rows label it as started).
-        <section key={league.id} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <button onClick={() => open({ kind: "league", slug: league.slug })} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "baseline", gap: 10 }}>
-            <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.subheading + 2, color: COLORS.text }}>{league.name}</span>
-            <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{league.region}</span>
-            <span style={{ fontSize: TYPE.caption, color: COLORS.roseBright }}>{t("Esports.schedule")} →</span>
-          </button>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-              <SectionTitle>{league.live.length || league.upcoming.some((match) => matchStateKey(match) === "started") ? t("Esports.live") : t("Esports.upcoming")}</SectionTitle>
-              <MatchList matches={[...league.live, ...league.upcoming]} onOpen={(id) => open({ kind: "match", id })} emptyLabel={t("Esports.noUpcoming")} t={t} locale={locale} />
+        const liveNow = league.live.length > 0 || league.upcoming.some((match) => matchStateKey(match) === "started");
+        return (
+          <section key={league.id} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* The league as a band: name, region and the way into its full
+                schedule on one underlined line. */}
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "6px 16px", paddingBottom: 10, borderBottom: `1px solid ${COLORS.cardBorder}` }}>
+              <button onClick={() => open({ kind: "league", slug: league.slug })} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "baseline", gap: 10, color: COLORS.text }}>
+                <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading + 2 }}>{league.name}</span>
+                <span style={OVERLINE}>{league.region}</span>
+              </button>
+              <button onClick={() => open({ kind: "league", slug: league.slug })} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: TYPE.body, color: COLORS.roseBright }}>
+                {t("Esports.schedule")}
+                <ArrowRight size={14} aria-hidden="true" />
+              </button>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-              <SectionTitle>{t("Esports.recent")}</SectionTitle>
-              <MatchList matches={league.recent} onOpen={(id) => open({ kind: "match", id })} emptyLabel={t("Esports.noRecent")} t={t} locale={locale} />
+            {headline ? <FeaturedMatch match={headline} onOpen={openMatch} t={t} locale={locale} /> : null}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+                <h2 style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 }}>
+                  {liveNow ? <LiveDot /> : null}
+                  {liveNow ? t("Esports.live") : t("Esports.upcoming")}
+                </h2>
+                <MatchList matches={[...league.live, ...league.upcoming]} onOpen={openMatch} emptyLabel={t("Esports.noUpcoming")} t={t} locale={locale} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+                <SectionTitle>{t("Esports.recent")}</SectionTitle>
+                <MatchList matches={league.recent} onOpen={openMatch} emptyLabel={t("Esports.noRecent")} t={t} locale={locale} />
+              </div>
             </div>
-          </div>
-        </section>
-      ))}
+          </section>
+        );
+      })}
       {data?.leagues.length ? <Muted size={TYPE.label}>{t("Esports.timeZoneNote")}</Muted> : null}
       {data ? <DataNote games={data.dataQuality.games} updatedAt={data.dataQuality.updatedAt} t={t} locale={locale} /> : null}
     </div>
@@ -346,6 +463,13 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
   const stored = useMemo(() => new Set(data?.matches.map((match) => match.id) ?? []), [data]);
   const pending = data?.matches.filter((match) => match.state !== "completed") ?? [];
   const played = [...(data?.matches.filter((match) => match.state === "completed") ?? [])].reverse();
+  const headline = data
+    ? pickHeadlineMatch(
+        data.matches.filter((match) => match.state === "inProgress"),
+        data.matches.filter((match) => match.state === "unstarted"),
+        played,
+      )
+    : null;
   const openMatch = (id: string) => open({ kind: "match", id });
   // Three honest empties, as the web: the tournament is over, it has not
   // started (LoL Esports publishes the schedule weeks late), or it is
@@ -365,7 +489,10 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
       {data ? (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>{data.league.name}</h1>
+            <h1 style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 10, fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
+              {data.league.name}
+              {data.league.region ? <span style={OVERLINE}>{data.league.region}</span> : null}
+            </h1>
             {data.tournaments.length > 1 ? (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {data.tournaments.map((candidate) => (
@@ -379,6 +506,7 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
             ) : null}
           </div>
           {!data.tournament ? <Muted>{t("Esports.noData")}</Muted> : null}
+          {headline ? <FeaturedMatch match={headline} onOpen={openMatch} t={t} locale={locale} /> : null}
           {data.stages.length ? (
             <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <SectionTitle>{t("Esports.standings")}</SectionTitle>
@@ -421,29 +549,42 @@ function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { sect
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {heading}
-        <table style={{ borderCollapse: "collapse", maxWidth: 520, fontSize: TYPE.body }}>
+        <table style={{ borderCollapse: "collapse", maxWidth: 620, width: "100%", fontSize: TYPE.body }}>
           <thead>
-            <tr style={{ color: COLORS.muted, fontSize: TYPE.label, textTransform: "uppercase", letterSpacing: 0.6, textAlign: "left" }}>
+            <tr style={{ ...OVERLINE, textAlign: "left" }}>
               <th style={{ padding: "4px 6px", fontWeight: 500, width: 28 }}>{t("Esports.rank")}</th>
               <th style={{ padding: "4px 6px", fontWeight: 500 }}>{t("Esports.team")}</th>
+              {/* The record as a bar (wins over series played), so the
+                  table reads top to bottom; the digits stay beside it. */}
+              <th style={{ padding: "4px 6px", width: 110 }} aria-hidden="true" />
               <th style={{ padding: "4px 6px", fontWeight: 500, textAlign: "right", width: 40 }}>{t("Esports.wins")}</th>
               <th style={{ padding: "4px 6px", fontWeight: 500, textAlign: "right", width: 40 }}>{t("Esports.losses")}</th>
             </tr>
           </thead>
           <tbody>
-            {section.rankings.map((row) => (
-              <tr key={`${row.ordinal}-${row.team.code}`} style={{ borderTop: `1px solid ${COLORS.cardBorder}` }}>
-                <td style={{ padding: "5px 6px", color: COLORS.muted, fontVariantNumeric: "tabular-nums" }}>{row.ordinal}</td>
-                <td style={{ padding: "5px 6px" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <TeamTag code={row.team.code} name={row.team.name} size="sm" />
-                    <span>{row.team.name}</span>
-                  </span>
-                </td>
-                <td style={{ padding: "5px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{row.wins}</td>
-                <td style={{ padding: "5px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums", color: COLORS.muted }}>{row.losses}</td>
-              </tr>
-            ))}
+            {section.rankings.map((row) => {
+              const playedCount = row.wins + row.losses;
+              return (
+                <tr key={`${row.ordinal}-${row.team.code}`} style={{ borderTop: `1px solid ${COLORS.cardBorder}` }}>
+                  <td style={{ padding: "6px", color: COLORS.muted, fontFamily: FONT_MONO, fontSize: TYPE.caption, fontVariantNumeric: "tabular-nums" }}>{row.ordinal}</td>
+                  <td style={{ padding: "6px" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <TeamTag code={row.team.code} name={row.team.name} size="sm" />
+                      <span style={{ fontWeight: 500 }}>{row.team.name}</span>
+                    </span>
+                  </td>
+                  <td style={{ padding: "6px 16px 6px 6px" }} aria-hidden="true">
+                    {playedCount > 0 ? (
+                      <span style={{ display: "block", height: 6, width: "100%", borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "clip" }}>
+                        <span style={{ display: "block", height: "100%", borderRadius: 999, width: `${Math.round((row.wins / playedCount) * 100)}%`, background: `${ESPORTS.accent}b3` }} />
+                      </span>
+                    ) : null}
+                  </td>
+                  <td style={{ padding: "6px", textAlign: "right", fontFamily: FONT_MONO, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{row.wins}</td>
+                  <td style={{ padding: "6px", textAlign: "right", fontFamily: FONT_MONO, fontVariantNumeric: "tabular-nums", color: COLORS.muted }}>{row.losses}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -470,7 +611,7 @@ function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { sect
             <div key={columnIndex} style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", gap: 18, width: 180 }}>
               {column.cells.map((cell) => (
                 <div key={cell.slug || cell.name} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ fontSize: TYPE.label, textTransform: "uppercase", letterSpacing: 0.6, color: COLORS.muted }}>{cell.name}</span>
+                  <span style={OVERLINE}>{cell.name}</span>
                   {cell.matches.map((match) => (
                     <BracketMatch key={match.id} match={match} onOpen={stored.has(match.id) ? () => onOpenMatch(match.id) : null} t={t} />
                   ))}
@@ -495,7 +636,7 @@ function BracketMatch({ match, onOpen, t }: { match: StageMatchRef; onOpen: (() 
           {slot.team ? <TeamTag code={slot.team.code} name={slot.team.name} size="sm" /> : <TeamTag code={t("Esports.tbd")} size="sm" muted />}
           <span style={{ fontSize: TYPE.label, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{slot.team?.name ?? ""}</span>
         </span>
-        <span style={{ fontSize: TYPE.body, fontVariantNumeric: "tabular-nums", fontWeight: won ? 600 : 400 }}>{match.state === "unstarted" ? "" : slot.gameWins}</span>
+        <span style={{ fontFamily: FONT_MONO, fontSize: TYPE.body, fontVariantNumeric: "tabular-nums", fontWeight: won ? 600 : 400 }}>{match.state === "unstarted" ? "" : slot.gameWins}</span>
       </span>
     );
   });
@@ -528,45 +669,52 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
   const played = match.state !== "unstarted";
   const team1Won = played && match.team1.wins > match.team2.wins;
   const team2Won = played && match.team2.wins > match.team1.wins;
+  // The series is decided once a side has more than half of the games.
+  const decided = Math.max(match.team1.wins, match.team2.wins) > match.bestOf / 2;
   const winner = game?.winnerSide ? (game.winnerSide === "blue" ? game.blue : game.red) : null;
   const vods = game ? pickVods(game.vods, locale) : [];
   const championName = (champion: string) => catalogs?.champions.byInternalId[champion]?.name ?? champion;
+  const trophy = <Trophy size={18} weight="fill" color={COLORS.gold} aria-hidden="true" style={{ flexShrink: 0 }} />;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <ChampionSplashAccent championId="Kassadin" opacity={16} style={{ top: -40, right: -40, width: 520, height: 340, transform: "rotate(2deg)" }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <Muted>
-          {data.league.name}
-          {data.tournament ? ` · ${data.tournament.name}` : ""}
-          {match.blockName ? ` · ${match.blockName}` : ""}
-          {" · "}
-          {t("Esports.bestOf", { count: match.bestOf })}
-          {" · "}
-          {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(match.startTime), hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(match.startTime))}
-        </Muted>
-        <h1 style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
+        <span style={{ ...OVERLINE, display: "flex", flexWrap: "wrap", gap: "2px 8px" }}>
+          <span>{data.league.name}</span>
+          {data.tournament ? <span>· {data.tournament.name}</span> : null}
+          {match.blockName ? <span>· {match.blockName}</span> : null}
+          <span>· {t("Esports.bestOf", { count: match.bestOf })}</span>
+          <span style={{ textTransform: "none", letterSpacing: 0 }}>
+            · {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(match.startTime), hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(match.startTime))}
+          </span>
+        </span>
+        {/* The scoreline as the screen's headline: codes, names and a big
+            score, the loser dimmed and a trophy by the winner. */}
+        <h1 style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 18px", fontFamily: FONT_HEADING, fontSize: TYPE.heading + 2, fontWeight: 400, margin: 0 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 10, color: team2Won ? COLORS.muted : COLORS.text }}>
             <TeamTag code={match.team1.code || t("Esports.tbd")} name={match.team1.name} size="lg" muted={!match.team1.code} />
             <span>{match.team1.name}</span>
+            {decided && team1Won ? trophy : null}
           </span>
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ fontFamily: FONT_MONO, fontSize: TYPE.display + 6, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
             {played ? (
               <>
                 <span style={{ color: team1Won ? COLORS.text : COLORS.muted }}>{match.team1.wins}</span>
-                <span style={{ color: COLORS.muted }}> : </span>
+                <span style={{ color: COLORS.muted, padding: "0 8px" }}>:</span>
                 <span style={{ color: team2Won ? COLORS.text : COLORS.muted }}>{match.team2.wins}</span>
               </>
             ) : (
-              <span style={{ color: COLORS.muted }}>vs</span>
+              <span style={{ color: COLORS.muted, fontSize: TYPE.heading }}>vs</span>
             )}
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 10, color: team1Won ? COLORS.muted : COLORS.text }}>
+            {decided && team2Won ? trophy : null}
             <span>{match.team2.name}</span>
             <TeamTag code={match.team2.code || t("Esports.tbd")} name={match.team2.name} size="lg" muted={!match.team2.code} />
           </span>
         </h1>
-        <Muted>{t(`Esports.states.${matchStateKey(match)}`)}</Muted>
+        <StateLine stateKey={stateKey} label={t(`Esports.states.${stateKey}`)} size={TYPE.body} />
       </div>
 
       {games.length === 0 ? <Muted>{t(`Esports.${emptyKey}`)}</Muted> : null}
@@ -583,9 +731,12 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
               );
             })}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: TYPE.body, color: COLORS.muted }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 16px", fontSize: TYPE.body, color: COLORS.muted }}>
             <span style={{ color: COLORS.text, fontWeight: 500 }}>{t("Esports.gameNumber", { number: game.number })}</span>
-            <span>{winner ? t("Esports.winner", { team: winner.name }) : t("Esports.winnerUnknown")}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              {winner ? <Trophy size={14} weight="fill" color={COLORS.gold} aria-hidden="true" /> : null}
+              {winner ? t("Esports.winner", { team: winner.name }) : t("Esports.winnerUnknown")}
+            </span>
             {game.durationS ? (
               <span>
                 {t("Esports.duration")}: {formatGameDuration(game.durationS)}
@@ -597,10 +748,10 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
               </span>
             ) : null}
             {vods.length ? (
-              <span style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                 <span>{t("Esports.vods")}:</span>
                 {vods.map((vod) => (
-                  <button key={`${vod.label}-${vod.locale}`} onClick={() => window.riftcompass.openExternal(vod.url)} style={{ background: "none", border: "none", padding: 0, color: COLORS.muted, textDecoration: "underline", cursor: "pointer", font: "inherit" }}>
+                  <button key={`${vod.label}-${vod.locale}`} onClick={() => window.riftcompass.openExternal(vod.url)} style={{ background: "none", border: "none", padding: 0, minHeight: 24, color: COLORS.muted, textDecoration: "underline", cursor: "pointer", font: "inherit" }}>
                     {vod.label} ({vod.tag})
                   </button>
                 ))}
@@ -608,7 +759,7 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
             ) : null}
           </div>
           {game.blue.totals && game.red.totals ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 24 }}>
               {(["blue", "red"] as const).map((side) => (
                 <TeamBoard key={side} game={game} side={side} catalogs={catalogs} runeIndex={runeIndex} championName={championName} open={open} t={t} locale={locale} />
               ))}
@@ -625,54 +776,54 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
   );
 }
 
+// Each side wears its colour along its left edge (the game's own blue and
+// red) so the two boards read as two teams at a glance; the team line
+// above its five players carries the tag, the name (with the trophy when
+// it took the game), the side chip and the objectives as labelled figures.
 function TeamBoard({ game, side, catalogs, runeIndex, championName, open, t, locale }: { game: GameDetail; side: GameSide; catalogs: Catalogs | null; runeIndex: ReturnType<typeof indexRunes> | null; championName: (id: string) => string; open: (view: View) => void; t: Translate; locale: string }) {
   const team: GameTeam = side === "blue" ? game.blue : game.red;
   const totals = team.totals as TeamTotals;
   const won = game.winnerSide === side;
-  const stat = (label: string, value: string) => (
-    <span style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 44 }}>
+  const sideColor = SIDE_COLOR[side];
+  const figure = (label: string, value: string, mono = true) => (
+    <span key={label} style={{ display: "flex", flexDirection: "column" }}>
       <span style={{ fontSize: TYPE.micro, textTransform: "uppercase", letterSpacing: 0.6, color: COLORS.muted }}>{label}</span>
-      <span style={{ fontSize: TYPE.caption, fontVariantNumeric: "tabular-nums" }}>{value}</span>
+      <span style={{ fontSize: TYPE.caption, fontFamily: mono ? FONT_MONO : undefined, fontVariantNumeric: "tabular-nums", color: COLORS.text }}>{value}</span>
     </span>
   );
+  const stat = (label: string, value: string, strong = false) => (
+    <span style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 44 }}>
+      <span style={{ fontSize: TYPE.micro, textTransform: "uppercase", letterSpacing: 0.6, color: COLORS.muted }}>{label}</span>
+      <span style={{ fontSize: TYPE.caption, fontFamily: FONT_MONO, fontWeight: strong ? 600 : 400, fontVariantNumeric: "tabular-nums" }}>{value}</span>
+    </span>
+  );
+  const dragons = totals.dragons.length
+    ? totals.dragons
+        .map((kind) => {
+          const key = dragonKey(kind);
+          return key ? t(`Esports.dragonKinds.${key}`) : kind;
+        })
+        .join(", ")
+    : t("Esports.noDragons");
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 14px" }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <section style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0, borderLeft: `2px solid ${sideColor}80`, paddingLeft: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px" }}>
           <TeamTag code={team.code} name={team.name} size="lg" />
-          <span style={{ fontSize: TYPE.body, fontWeight: won ? 600 : 400, color: won ? COLORS.text : COLORS.muted }}>{team.name}</span>
-          <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t(`Esports.sides.${side}`)}</span>
-        </span>
-        <span style={{ display: "flex", flexWrap: "wrap", gap: "2px 12px", fontSize: TYPE.label, color: COLORS.muted }}>
-          <span>
-            {t("Esports.gold")} <b style={{ color: COLORS.text, fontWeight: 500 }}>{new Intl.NumberFormat(locale).format(totals.gold)}</b>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: FONT_HEADING, fontSize: TYPE.subheading, color: won ? COLORS.text : COLORS.muted }}>
+            {team.name}
+            {won ? <Trophy size={15} weight="fill" color={COLORS.gold} aria-hidden="true" /> : null}
           </span>
-          <span>
-            {t("Esports.kills")} <b style={{ color: COLORS.text, fontWeight: 500 }}>{totals.kills}</b>
-          </span>
-          <span>
-            {t("Esports.towers")} <b style={{ color: COLORS.text, fontWeight: 500 }}>{totals.towers}</b>
-          </span>
-          <span>
-            {t("Esports.inhibitors")} <b style={{ color: COLORS.text, fontWeight: 500 }}>{totals.inhibitors}</b>
-          </span>
-          <span>
-            {t("Esports.barons")} <b style={{ color: COLORS.text, fontWeight: 500 }}>{totals.barons}</b>
-          </span>
-          <span>
-            {t("Esports.dragons")}{" "}
-            <b style={{ color: COLORS.text, fontWeight: 500 }}>
-              {totals.dragons.length
-                ? totals.dragons
-                    .map((kind) => {
-                      const key = dragonKey(kind);
-                      return key ? t(`Esports.dragonKinds.${key}`) : kind;
-                    })
-                    .join(", ")
-                : t("Esports.noDragons")}
-            </b>
-          </span>
-        </span>
+          <span style={{ ...OVERLINE, padding: "2px 8px", borderRadius: 999, border: `1px solid ${sideColor}80`, background: `${sideColor}1a`, color: `${COLORS.text}e6`, fontWeight: 500 }}>{t(`Esports.sides.${side}`)}</span>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "4px 16px" }}>
+          {figure(t("Esports.gold"), new Intl.NumberFormat(locale).format(totals.gold))}
+          {figure(t("Esports.kills"), String(totals.kills))}
+          {figure(t("Esports.towers"), String(totals.towers))}
+          {figure(t("Esports.inhibitors"), String(totals.inhibitors))}
+          {figure(t("Esports.barons"), String(totals.barons))}
+          {figure(t("Esports.dragons"), dragons, false)}
+        </div>
       </div>
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
         {game.players
@@ -681,7 +832,7 @@ function TeamBoard({ game, side, catalogs, runeIndex, championName, open, t, loc
             <li key={player.participantId} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 0", borderTop: `1px solid ${COLORS.cardBorder}` }}>
               <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px" }}>
                 {catalogs ? (
-                  <img src={championSquareUrl(catalogs.version, player.champion)} alt={championName(player.champion)} title={t("Esports.skillOrder", { order: player.skillOrder.join(" ") })} style={{ width: 40, height: 40, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} />
+                  <img src={championSquareUrl(catalogs.version, player.champion)} alt={championName(player.champion)} title={t("Esports.skillOrder", { order: player.skillOrder.join(" ") })} loading="lazy" style={{ width: 40, height: 40, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} />
                 ) : null}
                 <span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                   {player.playerSlug ? (
@@ -696,7 +847,7 @@ function TeamBoard({ game, side, catalogs, runeIndex, championName, open, t, loc
                   </span>
                 </span>
                 <span style={{ display: "flex", gap: 6 }}>
-                  {stat(t("Esports.kda"), `${player.kills}/${player.deaths}/${player.assists}`)}
+                  {stat(t("Esports.kda"), `${player.kills}/${player.deaths}/${player.assists}`, true)}
                   {stat(t("Esports.gold"), new Intl.NumberFormat(locale).format(player.gold))}
                   {stat(t("Esports.cs"), String(player.cs))}
                   {stat(t("Esports.killParticipation"), formatPercent(locale, player.killParticipation))}
@@ -708,7 +859,7 @@ function TeamBoard({ game, side, catalogs, runeIndex, championName, open, t, loc
                   <span style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                     {player.items.map((item, index) => {
                       const info = catalogs.items.byId[String(item)];
-                      return <img key={`${item}-${index}`} src={itemIconUrl(catalogs.version, item)} alt={info?.name ?? String(item)} title={info?.name} style={{ width: 28, height: 28, borderRadius: 4, border: `1px solid ${COLORS.cardBorder}` }} />;
+                      return <img key={`${item}-${index}`} src={itemIconUrl(catalogs.version, item)} alt={info?.name ?? String(item)} title={info?.name} loading="lazy" style={{ width: 28, height: 28, borderRadius: 4, border: `1px solid ${COLORS.cardBorder}` }} />;
                     })}
                   </span>
                 ) : null}
@@ -726,6 +877,12 @@ function TeamBoard({ game, side, catalogs, runeIndex, championName, open, t, loc
 
 // ---- player ---------------------------------------------------------------
 
+// Medal colours by place: gold, silver and bronze. The place is always
+// written next to the medal (relief rule), and the bronze only ever
+// colours the icon, never small text.
+const PLACE_ICON: Record<string, string> = { "1": COLORS.gold, "2": SILVER, "3": ESPORTS.accent, "3-4": ESPORTS.accent };
+const PLACE_TEXT: Record<string, string> = { "1": COLORS.gold, "2": SILVER, "3": COLORS.muted, "3-4": COLORS.muted };
+
 function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open: (view: View) => void; catalogs: Catalogs | null; t: Translate; locale: string }) {
   const { data, error, loading, retry } = useApi<PlayerResponse>(`${API_BASE_URL}/api/v1/esports/player?slug=${encodeURIComponent(slug)}`);
   if (error) return isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} />;
@@ -738,11 +895,13 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
   // page matched, or a page matched with no entries for this list.
   const careerNote = player.leaguepediaId ? t("Esports.pro.careerEmpty") : player.fetchedAt ? t("Esports.pro.careerUnknown") : t("Esports.pro.careerPending");
   const podiumsNote = player.leaguepediaId ? t("Esports.pro.noPodiums") : player.fetchedAt ? t("Esports.pro.careerUnknown") : t("Esports.pro.careerPending");
+  const career = [...player.career].reverse();
+  const mostGames = champions[0]?.games ?? 0;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <ChampionSplashAccent championId="Yone" opacity={16} style={{ top: -40, right: -40, width: 520, height: 340, transform: "rotate(2deg)" }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>{player.alias}</h1>
+        <h1 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading + 6, fontWeight: 400, margin: 0 }}>{player.alias}</h1>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 20px", fontSize: TYPE.body, color: COLORS.muted }}>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {t("Esports.pro.team")}
@@ -765,17 +924,24 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
         <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
           <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <SectionTitle>{t("Esports.pro.career")}</SectionTitle>
-            {player.career.length ? (
-              <ol style={{ listStyle: "none", margin: 0, padding: "0 0 0 14px", borderLeft: `1px solid ${COLORS.cardBorder}`, display: "flex", flexDirection: "column", gap: 4 }}>
-                {[...player.career].reverse().map((entry) => (
-                  <li key={`${entry.team}-${entry.from}`} style={{ display: "flex", gap: 12, fontSize: TYPE.body }}>
-                    <span style={{ width: 96, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted, fontVariantNumeric: "tabular-nums" }}>
-                      {year(entry.from)}
-                      {entry.to ? (year(entry.to) !== year(entry.from) ? ` – ${year(entry.to)}` : "") : ` – ${t("Esports.pro.current")}`}
-                    </span>
-                    <span>{entry.team}</span>
-                  </li>
-                ))}
+            {career.length ? (
+              // A timeline: one dot per stay on a vertical line, the current
+              // team lit in rose at the top.
+              <ol style={{ listStyle: "none", margin: 0, padding: "0 0 0 20px", position: "relative", display: "flex", flexDirection: "column", gap: 8 }}>
+                <span aria-hidden="true" style={{ position: "absolute", left: 3, top: 8, bottom: 8, width: 1, background: COLORS.cardBorder }} />
+                {career.map((entry, index) => {
+                  const current = index === 0 && entry.to === null;
+                  return (
+                    <li key={`${entry.team}-${entry.from}`} style={{ position: "relative", display: "flex", gap: 12, fontSize: TYPE.body, color: current ? COLORS.text : COLORS.muted }}>
+                      <span aria-hidden="true" style={{ position: "absolute", left: -20, top: 5, width: 7, height: 7, borderRadius: 999, background: current ? COLORS.roseBright : COLORS.cardBorder, boxShadow: current ? `0 0 0 2px ${COLORS.rose}4d` : undefined }} />
+                      <span style={{ width: 96, flexShrink: 0, fontFamily: FONT_MONO, fontSize: TYPE.label, fontVariantNumeric: "tabular-nums" }}>
+                        {year(entry.from)}
+                        {entry.to ? (year(entry.to) !== year(entry.from) ? ` – ${year(entry.to)}` : "") : ` – ${t("Esports.pro.current")}`}
+                      </span>
+                      <span style={{ color: COLORS.text, fontWeight: current ? 500 : 400 }}>{entry.team}</span>
+                    </li>
+                  );
+                })}
               </ol>
             ) : (
               <Muted>{careerNote}</Muted>
@@ -785,18 +951,22 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
             <SectionTitle>{t("Esports.pro.podiums")}</SectionTitle>
             {podiums.length ? (
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
-                {podiums.map((podium) => (
-                  <li key={`${podium.event}-${podium.date}-${podium.team}`} style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "2px 12px", padding: "5px 0", borderTop: `1px solid ${COLORS.cardBorder}`, fontSize: TYPE.body }}>
-                    <span style={{ width: 110, flexShrink: 0, fontSize: TYPE.label, textTransform: "uppercase", letterSpacing: 0.6, color: podium.place === "1" ? COLORS.roseBright : COLORS.muted, fontWeight: podium.place === "1" ? 600 : 400 }}>
-                      {t(`Esports.pro.place.${podium.place}`)}
-                    </span>
-                    <span style={{ flex: 1, minWidth: 0 }}>{podium.event}</span>
-                    <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
-                      {podium.team}
-                      {podium.date ? ` · ${year(podium.date)}` : ""}
-                    </span>
-                  </li>
-                ))}
+                {podiums.map((podium) => {
+                  const Icon = podium.place === "1" ? Trophy : Medal;
+                  return (
+                    <li key={`${podium.event}-${podium.date}-${podium.team}`} style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "2px 12px", padding: "5px 0", borderTop: `1px solid ${COLORS.cardBorder}`, fontSize: TYPE.body }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, width: 120, flexShrink: 0, fontSize: TYPE.label, textTransform: "uppercase", letterSpacing: 0.6, color: PLACE_TEXT[podium.place] ?? COLORS.muted, fontWeight: podium.place === "1" ? 600 : 400 }}>
+                        <Icon size={13} weight="fill" color={PLACE_ICON[podium.place] ?? COLORS.muted} aria-hidden="true" />
+                        {t(`Esports.pro.place.${podium.place}`)}
+                      </span>
+                      <span style={{ flex: 1, minWidth: 0 }}>{podium.event}</span>
+                      <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
+                        {podium.team}
+                        {podium.date ? ` · ${year(podium.date)}` : ""}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <Muted>{podiumsNote}</Muted>
@@ -809,19 +979,19 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
             {recentGames.length ? (
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
                 {recentGames.map((game) => (
-                  <li key={game.gameId}>
-                    <button onClick={() => open({ kind: "match", id: game.matchId })} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "6px 0", background: "none", border: "none", borderTop: `1px solid ${COLORS.cardBorder}`, color: COLORS.text, textAlign: "left", cursor: "pointer", font: "inherit" }}>
-                      {catalogs ? <img src={championSquareUrl(catalogs.version, game.champion)} alt="" style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} /> : null}
+                  <li key={game.gameId} style={{ borderTop: `1px solid ${COLORS.cardBorder}` }}>
+                    <button onClick={() => open({ kind: "match", id: game.matchId })} style={{ display: "flex", alignItems: "center", gap: 10, width: "calc(100% + 16px)", margin: "0 -8px", padding: "7px 8px", borderRadius: 6, background: "none", border: "none", color: COLORS.text, textAlign: "left", cursor: "pointer", font: "inherit" }}>
+                      {catalogs ? <img src={championSquareUrl(catalogs.version, game.champion)} alt="" loading="lazy" style={{ width: 34, height: 34, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} /> : null}
                       <span style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
                         <span style={{ fontSize: TYPE.body }}>
-                          {championName(game.champion)} · {game.kills}/{game.deaths}/{game.assists}
+                          {championName(game.champion)} · <span style={{ fontFamily: FONT_MONO, fontVariantNumeric: "tabular-nums" }}>{game.kills}/{game.deaths}/{game.assists}</span>
                         </span>
                         <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>
                           {t("Esports.pro.vs", { team: game.opponentCode })} · {t("Esports.gameNumber", { number: game.number })}
                           {game.startedAt ? ` · ${new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(game.startedAt) }).format(new Date(game.startedAt))}` : ""}
                         </span>
                       </span>
-                      <span style={{ fontSize: TYPE.label, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>
+                      <span style={{ fontSize: TYPE.label, fontWeight: 500, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>
                     </button>
                   </li>
                 ))}
@@ -833,12 +1003,21 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
           {champions.length ? (
             <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <SectionTitle>{t("Esports.pro.mostPlayed")}</SectionTitle>
-              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+              {/* A bar per champion, scaled to the most played one, so the
+                  pool's shape is visible before the counts are read. */}
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                 {champions.map((entry) => (
                   <li key={entry.champion} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: TYPE.body }}>
-                    {catalogs ? <img src={championSquareUrl(catalogs.version, entry.champion)} alt="" style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} /> : null}
-                    <span>{championName(entry.champion)}</span>
-                    <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Esports.pro.gamesCount", { games: entry.games, wins: entry.wins })}</span>
+                    {catalogs ? <img src={championSquareUrl(catalogs.version, entry.champion)} alt="" loading="lazy" style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} /> : null}
+                    <span style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+                      <span style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "0 8px" }}>
+                        <span>{championName(entry.champion)}</span>
+                        <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>{t("Esports.pro.gamesCount", { games: entry.games, wins: entry.wins })}</span>
+                      </span>
+                      <span aria-hidden="true" style={{ display: "block", height: 6, width: "100%", maxWidth: 260, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "clip" }}>
+                        <span style={{ display: "block", height: "100%", borderRadius: 999, width: `${mostGames ? Math.round((entry.games / mostGames) * 100) : 0}%`, background: `${ESPORTS.accent}b3` }} />
+                      </span>
+                    </span>
                   </li>
                 ))}
               </ul>

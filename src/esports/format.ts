@@ -167,3 +167,17 @@ export function matchStateKey(match: { state: string; startTime: string }, nowMs
 export function yearIfNotCurrent(iso: string): { year?: "numeric" } {
   return new Date(iso).getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" };
 }
+
+// How far ahead a kick-off still counts as the headline of a schedule.
+export const HEADLINE_UPCOMING_MS = 48 * 60 * 60 * 1000;
+
+/**
+ * The series a schedule leads with, drawn big above the lists (the web's
+ * pickHeadlineMatch): one in progress, else the next kick-off within two
+ * days, else the latest result, else the next series at all. The lists
+ * below stay complete; the headline repeats one of them.
+ */
+export function pickHeadlineMatch<T extends { startTime: string }>(live: T[], upcoming: T[], recent: T[], nowMs = Date.now()): T | null {
+  const soon = upcoming.find((match) => Date.parse(match.startTime) - nowMs < HEADLINE_UPCOMING_MS);
+  return live[0] ?? soon ?? recent[0] ?? upcoming[0] ?? null;
+}
