@@ -5,6 +5,26 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.31
+
+Esports y Matchups de línea más visuales, con la misma composición que la
+web.
+
+- Esports: cada liga abre con la serie que toca mirar ahora (la que está en
+  juego, la siguiente si empieza en menos de dos días o, si no, el último
+  resultado) a tamaño de cabecera; un punto que late junto a "En directo";
+  la clasificación lleva una barra de victorias; el marcador de una serie es
+  más grande, con un trofeo junto al ganador, el color de cada lado a lo
+  largo de su tablero y los totales del equipo como cifras etiquetadas; y
+  la ficha de un pro enseña su trayectoria como línea de tiempo, medallas
+  por puesto y una barra bajo cada campeón según lo jugado.
+- Matchups de línea: el campeón elegido preside la pantalla (retrato con el
+  anillo de la herramienta, posición, rango y parche), el resumen de la
+  línea y los dos tableros van sin cajas, cada fila se pulsa entera y la
+  ficha de un matchup es una sola caja con cabecera de enfrentamiento y
+  secciones separadas por líneas.
+- Las imágenes de la sección de esports cargan solo al hacerse visibles.
+
 ## 0.3.30
 
 Más ligera y más legible (ronda 40, rendimiento y accesibilidad medidos).
