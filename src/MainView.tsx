@@ -442,7 +442,9 @@ export function MainView() {
         color: COLORS.text,
       }}
     >
-      <div
+      {/* <header>, not <div>: the 40 px strip was the one thing outside any
+          landmark in every view (axe region, round 40). */}
+      <header
         style={{
           height: TITLEBAR_HEIGHT,
           flexShrink: 0,
@@ -468,7 +470,7 @@ export function MainView() {
           {lcuStatus === "connected" ? t("Common.leagueConnected") : t("Common.leagueNotDetected")}
         </span>
         <WindowControls />
-      </div>
+      </header>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <main style={{ position: "relative", zIndex: 0, flex: 1, minWidth: 0, overflowY: "auto", overflowX: "hidden", padding: "20px clamp(16px, 3vw, 48px)" }}>
           {/* No synthetic ambient glow here, on purpose (a blurred blob

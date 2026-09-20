@@ -1,5 +1,17 @@
+import { API_BASE_URL } from "./shared/api";
+
 // Same public Data Dragon source the main RiftCompass web app uses for
 // champion data — no API key needed, just the current patch version.
+//
+// Champion and rune icons, though, come from riftcompass.com's own WebP set
+// (round 40; the web's scripts/build-icons.ts): Data Dragon's PNGs weighed
+// 27-30 KB per champion and up to 366 KB per rune, 1.7 MB for one esports
+// series or one Meta Tier List in this app. The web serves
+// /icons/<patch>/champion/<id>.webp and /icons/<patch>/perk-images/... at
+// ~3-8 KB, immutable, and redirects to Data Dragon anything its set does
+// not have (a patch newer than the set, a new champion), so nothing renders
+// broken when the two are out of step. Items and summoner spells stay on
+// Data Dragon (64 px, 6 KB).
 export interface ChampionInfo {
   id: number;
   internalId: string;
@@ -39,6 +51,7 @@ export async function fetchChampionMap(): Promise<ChampionMaps> {
     r.json(),
   );
   const version = versions[0];
+  rememberIconSet(version);
   const data = await fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/champion.json`).then(
     (r) => r.json(),
   );
@@ -57,7 +70,7 @@ export async function fetchChampionMap(): Promise<ChampionMaps> {
       id: Number(champ.key),
       internalId: champ.id,
       name: champ.name,
-      iconUrl: `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champ.image.full}`,
+      iconUrl: championSquareUrl(version, champ.id),
       tags: champ.tags,
       difficulty: champ.info.difficulty,
       attack: champ.info.attack,
@@ -98,7 +111,56 @@ export async function fetchLatestVersion(): Promise<string> {
   const versions: string[] = await fetch("https://ddragon.leagueoflegends.com/api/versions.json").then((r) =>
     r.json(),
   );
+  rememberIconSet(versions[0]);
   return versions[0];
+}
+
+// The patch a Data Dragon version belongs to ("16.18.1" → "16.18"): the name
+// of the icon set on riftcompass.com. Rune icons are versionless on Data
+// Dragon and their helpers take no version, so the last patch seen by any
+// fetch is remembered for them; before one is known they stay on Data Dragon.
+export function iconSetFor(version: string): string {
+  return version.split(".").slice(0, 2).join(".");
+}
+
+let currentIconSet: string | null = null;
+let currentVersion: string | null = null;
+
+function rememberIconSet(version: string): void {
+  currentIconSet = iconSetFor(version);
+  currentVersion = version;
+}
+
+// The original Data Dragon URL behind one of our /icons/ URLs, or null when
+// the URL is not one of ours (or a champion's before any version is known).
+export function dataDragonFallbackFor(src: string): string | null {
+  const prefix = `${API_BASE_URL}/icons/`;
+  if (!src.startsWith(prefix)) return null;
+  const [, kind, ...rest] = src.slice(prefix.length).split("/");
+  const png = rest.join("/").replace(/\.webp$/i, ".png");
+  if (kind === "champion" && rest.length === 1) {
+    return currentVersion ? `https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${png}` : null;
+  }
+  if (kind === "perk-images" && rest.length > 0) return `https://ddragon.leagueoflegends.com/cdn/img/perk-images/${png}`;
+  return null;
+}
+
+// When riftcompass.com cannot answer for an icon at all (the site unreachable
+// while Data Dragon is not, a build older than the app), the web's redirect
+// never happens: this swaps any failed <img> of ours to the original PNG. One
+// capture-phase listener for the whole document, installed once by main.tsx,
+// so the ~30 places that render champion or rune icons need nothing.
+export function installIconFallback(): void {
+  document.addEventListener(
+    "error",
+    (event) => {
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement)) return;
+      const fallback = dataDragonFallbackFor(img.src);
+      if (fallback && img.src !== fallback) img.src = fallback;
+    },
+    true,
+  );
 }
 
 // Same real-world Riot API inconsistency the main web app's ddragon.ts
@@ -122,7 +184,7 @@ export function toDDragonId(name: string): string {
 }
 
 export function championSquareUrl(version: string, championInternalId: string): string {
-  return `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${toDDragonId(championInternalId)}.png`;
+  return `${API_BASE_URL}/icons/${iconSetFor(version)}/champion/${toDDragonId(championInternalId)}.webp`;
 }
 
 export function profileIconUrl(version: string, iconId: number): string {
@@ -316,6 +378,7 @@ function stripRuneMarkup(html: string): string {
 }
 
 export async function fetchRuneStyles(version: string, locale: string): Promise<RuneStyle[]> {
+  rememberIconSet(version);
   const ddLocale = DDRAGON_LOCALES[locale] ?? "en_US";
   const json = (await fetch(
     `https://ddragon.leagueoflegends.com/cdn/${version}/data/${ddLocale}/runesReforged.json`,
@@ -343,7 +406,8 @@ export async function fetchRuneStyles(version: string, locale: string): Promise<
 
 // Rune icons are versionless on Data Dragon, unlike champion and item ones.
 export function runeIconUrl(icon: string): string {
-  return `https://ddragon.leagueoflegends.com/cdn/img/${icon}`;
+  if (!currentIconSet) return `https://ddragon.leagueoflegends.com/cdn/img/${icon}`;
+  return `${API_BASE_URL}/icons/${currentIconSet}/${icon.replace(/\.png$/i, ".webp")}`;
 }
 
 export interface StatShard {
@@ -374,7 +438,7 @@ export const STAT_SHARD_ROWS: StatShard[][] = [
 ];
 
 export function statShardIconUrl(shard: StatShard): string {
-  return `https://ddragon.leagueoflegends.com/cdn/img/perk-images/StatMods/${shard.iconFile}`;
+  return runeIconUrl(`perk-images/StatMods/${shard.iconFile}`);
 }
 
 export function statShardById(row: number, id: number): StatShard | undefined {

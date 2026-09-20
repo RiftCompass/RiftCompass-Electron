@@ -3,9 +3,14 @@ import { createRoot } from "react-dom/client";
 import { installBridge } from "./bridge";
 import { App } from "./App";
 import { initTelemetry } from "./telemetry";
+import { installIconFallback } from "./ddragon";
 import "./global.css";
 
 initTelemetry();
+
+// Champion and rune icons come from riftcompass.com; if one fails to load,
+// the <img> falls back to Data Dragon (see ddragon.ts).
+installIconFallback();
 
 // window.riftcompass must exist before any component mounts —
 // I18nProvider reads settings in its first effect.

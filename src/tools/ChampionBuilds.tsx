@@ -527,7 +527,7 @@ export function ChampionBuilds() {
                 >
                   {icon ? <img src={icon} alt="" style={{ width: 13, height: 13, opacity: 0.85 }} /> : null}
                   {t(`Profile.positions.${option.toLowerCase()}`)}
-                  {games > 0 ? <span style={{ fontSize: 10, opacity: 0.7 }}>{games}</span> : null}
+                  {games > 0 ? <span style={{ fontSize: 11 }}>{games}</span> : null}
                 </button>
               );
             })}

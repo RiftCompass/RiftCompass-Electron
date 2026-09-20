@@ -5,6 +5,20 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.30
+
+Más ligera y más legible (ronda 40, rendimiento y accesibilidad medidos).
+
+- Los iconos de campeones y runas llegan de riftcompass.com en WebP de unos
+  3 KB en vez de los PNG originales de Data Dragon (27-30 KB por campeón y
+  hasta 366 KB por una runa): una serie de esports o la Meta Tier List pasan
+  de 1,7 MB a unos 300 KB y se guardan en caché un año.
+- El contador de partidas de cada posición en Builds de campeón se lee
+  mejor (más grande y sin transparencia).
+- Las partidas de "Así lo jugaron los pros" tienen algo de aire entre sí:
+  antes eran filas de 18 px pegadas, difíciles de pulsar.
+- La barra de la ventana es una región propia para lectores de pantalla.
+
 ## 0.3.29
 
 Esports en producción el día de la final, builds con los resúmenes nuevos y

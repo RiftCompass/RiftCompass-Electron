@@ -75,7 +75,7 @@ export function CompetitiveBuildBlock({
               const item = catalog?.byId[String(entry.item)];
               return (
                 <span key={entry.item} title={item ? `${item.name}: ${t("Esports.competitive.inGames", { games: entry.games, total: build.games })}` : undefined} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                  <img src={itemIconUrl(version, entry.item)} alt={item?.name ?? String(entry.item)} style={{ width: 34, height: 34, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} />
+                  <img src={itemIconUrl(version, entry.item)} alt={item?.name ?? String(entry.item)} loading="lazy" style={{ width: 34, height: 34, borderRadius: 6, border: `1px solid ${COLORS.cardBorder}` }} />
                   <span style={{ fontSize: TYPE.label, color: COLORS.muted, fontVariantNumeric: "tabular-nums" }}>
                     {entry.games}/{build.games}
                   </span>
@@ -107,7 +107,9 @@ export function CompetitiveBuildBlock({
               </>
             );
             return openEsports ? (
-              <button key={game.gameId} onClick={() => openEsports({ kind: "match", id: game.matchId, game: game.gameNumber })} style={{ background: "none", border: "none", padding: 0, font: "inherit", color: COLORS.text, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, textAlign: "left" }}>
+              // padding 4px 0: ten of these stacked with no gap were 18 px
+              // tall targets (axe target-size, round 40).
+              <button key={game.gameId} onClick={() => openEsports({ kind: "match", id: game.matchId, game: game.gameNumber })} style={{ background: "none", border: "none", padding: "4px 0", font: "inherit", color: COLORS.text, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, textAlign: "left" }}>
                 {line}
               </button>
             ) : (
