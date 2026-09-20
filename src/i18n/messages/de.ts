@@ -940,6 +940,7 @@ export const de: Messages = {
     alternative: "Alternative: {runes}",
     alternativeStats: "{games} Spiele · {percent} Siegrate",
     fromSample: "{games, plural, one {# Partie} other {# Partien}}",
+    allRanks: "alle Ränge",
     withItems: "{count, plural, one {# Item in Reihenfolge} other {# Items in Reihenfolge}}",
     applying: "wird angewendet",
     applied: "angewendet",
@@ -991,6 +992,7 @@ export const de: Messages = {
     recent: "Letzte Ergebnisse",
     noUpcoming: "In den nächsten sieben Tagen sind keine Matches angesetzt.",
     noPending: "In diesem Turnier stehen keine Matches mehr aus.",
+    noScheduleYet: "Das Turnier beginnt am {date}: Der Spielplan erscheint hier, sobald LoL Esports ihn veröffentlicht.",
     noRecent: "Noch keine Ergebnisse.",
     noMatches: "Für dieses Turnier sind noch keine Matches erfasst.",
     noData: "Hier ist noch nichts: der erste Datendurchlauf ist noch nicht gelaufen.",
@@ -1050,7 +1052,7 @@ export const de: Messages = {
     dataNote: "{games, plural, one {# Profi-Spiel} other {# Profi-Spiele}} gespeichert, aktualisiert {updated}.",
     dataNoteNoUpdate: "Noch keine Profi-Spiele gespeichert.",
     timeZoneNote: "Zeiten in deiner Zeitzone.",
-    gamesStored: "Details pro Spiel verfügbar",
+    gamesStored: "Details Spiel für Spiel verfügbar",
     backToEsports: "Alle Ligen",
     backToLeague: "Zurück zur {league}",
     sides: {
@@ -1059,7 +1061,7 @@ export const de: Messages = {
     },
     pro: {
       career: "Teams im Laufe der Jahre",
-      careerPending: "Karriere und Titel noch nicht geladen: sie kommen im nächsten Datendurchlauf von Leaguepedia.",
+      careerPending: "Karriere und Titel folgen: Sie stammen von Leaguepedia und werden ergänzt, sobald es antwortet.",
       careerUnknown: "Keine Leaguepedia-Seite passt zu diesem Spieler, daher können Karriere und Titel nicht angezeigt werden.",
       careerEmpty: "Leaguepedia führt für diesen Spieler noch keine Teamhistorie.",
       current: "aktuell",

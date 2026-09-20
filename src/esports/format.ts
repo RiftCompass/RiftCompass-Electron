@@ -71,10 +71,10 @@ const VOD_PROVIDERS: Record<string, { label: string; url: (vod: Vod) => string }
 };
 
 /** Own language first, then English, one link per provider and language; links only, never embeds. */
-export function pickVods(vods: Vod[], locale: string): { label: string; url: string; locale: string }[] {
+export function pickVods(vods: Vod[], locale: string): { label: string; url: string; locale: string; tag: string }[] {
   const seen = new Set<string>();
   const score = (vod: Vod) => (vod.locale.startsWith(locale) ? 0 : vod.locale.startsWith("en") ? 1 : 2);
-  return [...vods]
+  const picked = [...vods]
     .sort((a, b) => score(a) - score(b))
     .flatMap((vod) => {
       const provider = VOD_PROVIDERS[vod.provider.toLowerCase()];
@@ -85,6 +85,13 @@ export function pickVods(vods: Vod[], locale: string): { label: string; url: str
       return [{ label: provider.label, url: provider.url(vod), locale: vod.locale }];
     })
     .slice(0, 4);
+  // The language in brackets, or the whole locale when two links of the
+  // same provider share a language ("YouTube (es-ES)", "YouTube (es-MX)").
+  const language = (value: string) => value.slice(0, 2);
+  return picked.map((vod) => {
+    const sameLanguage = picked.filter((other) => other.label === vod.label && language(other.locale) === language(vod.locale)).length;
+    return { ...vod, tag: sameLanguage > 1 ? vod.locale : language(vod.locale) };
+  });
 }
 
 /** A stable hue per team code (no logos: the code in a tinted tag, same as the web). */

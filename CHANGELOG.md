@@ -5,6 +5,30 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.29
+
+Esports en producción el día de la final, builds con los resúmenes nuevos y
+robustez (rondas 37, 38 y 39).
+
+- La página de una serie que ya ha empezado dice "Serie en juego" donde
+  irán las partidas, en vez de "aún no se ha jugado" debajo de "En juego".
+- Las horas salen como "3:00 PM" y no "03:00 PM" en los idiomas de doce
+  horas; la hora de una serie lleva su zona ("17:00 CEST") y la portada
+  recuerda que las horas van en tu zona horaria.
+- "Así lo jugaron los pros": cada partida dice contra quién, cuál de la
+  serie y qué día, y abre esa partida en la serie; una misma página de
+  runas ya no se cuenta dos veces según el orden de las secundarias.
+- Un torneo que aún no ha empezado dice cuándo empieza, en vez de "no hay
+  partidos en los próximos siete días".
+- Dos VOD del mismo idioma se distinguen por región ("es-ES", "es-MX").
+- Ficha de pro: "Trayectoria y títulos pendientes" sin prometer la próxima
+  pasada.
+- Champ select sin rango clasificado: la recomendada y las alternativas
+  salen de la misma población (todos los rangos) y la etiqueta lo dice;
+  antes las alternativas eran de Retador.
+- Las notas de una versión en GitHub incluyen las de las versiones
+  intermedias que no llegaron a publicarse.
+
 ## 0.3.28
 
 Incluye la 0.3.27 (ronda 35), que se quedó en borrador.

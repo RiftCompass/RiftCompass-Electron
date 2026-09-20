@@ -188,5 +188,5 @@ export interface CompetitiveBuild {
   games: number;
   runes: { runeStyle: number; runeSubStyle: number; perks: number[]; games: number }[];
   items: { item: number; games: number }[];
-  recent: { gameId: string; matchId: string; summonerName: string; leagueSlug: string; won: boolean | null }[];
+  recent: { gameId: string; matchId: string; gameNumber?: number; startTime?: string; opponentCode?: string; summonerName: string; leagueSlug: string; won: boolean | null }[];
 }

@@ -586,6 +586,7 @@ export function ChampSelectView() {
                         percent: formatPercent(locale, (o.victorias ?? 0) / Math.max(1, o.muestra ?? 0)),
                       })
                     : t("ChampSelect.fromSample", { games: o.muestra ?? 0 })}
+                {o.origen !== "guardada" && !rangoJugador ? ` · ${t("ChampSelect.allRanks")}` : ""}
                 {o.itemIds.length > 0 ? ` · ${t("ChampSelect.withItems", { count: o.itemIds.length })}` : ""}
                 {aplicando === o.clave ? ` · ${t("ChampSelect.applying")}` : ""}
                 {aplicada === o.clave ? ` · ${t("ChampSelect.applied")}` : ""}

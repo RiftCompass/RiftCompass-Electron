@@ -61,19 +61,65 @@ async function findByTag(api, token, tag, intentos = 4) {
 // Las notas de la version, sacadas de CHANGELOG.md (la seccion `## <version>`
 // hasta la siguiente), para que la pagina de la release en GitHub diga que
 // cambio en vez de estar vacia (EST-5, ronda 20). Sin seccion, sin cuerpo.
-export function changelogFor(version) {
-  let text;
+export function changelogFor(version, text = readChangelog()) {
+  const sections = changelogSections(text);
+  return sections.find((section) => section.version === version)?.body ?? "";
+}
+
+// Lo que lee quien instala: las secciones de TODAS las versiones que no han
+// salido aun, de la mas nueva a la mas vieja, cada una bajo su cabecera. El
+// tren publica solo el borrador mas reciente y las versiones que pliega se
+// quedan sin publicar (ronda 39: quien paso de la 0.3.25 a la 0.3.28 no leyo
+// en ningun sitio que la app tenia seccion de Esports, porque la 0.3.26 solo
+// existio como borrador). Sin `publishedVersion` (ninguna release publica
+// todavia), la seccion de la version y nada mas.
+export function releaseNotes(version, publishedVersion, text = readChangelog()) {
+  if (!publishedVersion) return changelogFor(version, text);
+  const sections = changelogSections(text).filter((section) => compareVersions(section.version, version) <= 0 && compareVersions(section.version, publishedVersion) > 0);
+  if (sections.length <= 1) return sections[0]?.body ?? "";
+  return sections.map((section) => `## ${section.version}\n\n${section.body}`).join("\n\n");
+}
+
+function readChangelog() {
   try {
-    text = readFileSync("CHANGELOG.md", "utf-8");
+    return readFileSync("CHANGELOG.md", "utf-8");
   } catch {
     return "";
   }
+}
+
+function changelogSections(text) {
   const lines = text.split(/\r?\n/);
-  const start = lines.findIndex((line) => new RegExp(`^## \\[?${version.replace(/\./g, "\\.")}\\]?(\\s|$)`).test(line));
-  if (start < 0) return "";
-  const rest = lines.slice(start + 1);
-  const end = rest.findIndex((line) => /^## /.test(line));
-  return rest.slice(0, end < 0 ? undefined : end).join("\n").trim();
+  const sections = [];
+  for (const line of lines) {
+    const heading = /^## \[?(\d+\.\d+\.\d+)\]?(\s|$)/.exec(line);
+    if (heading) {
+      sections.push({ version: heading[1], lines: [] });
+    } else if (sections.length) {
+      sections.at(-1).lines.push(line);
+    }
+  }
+  return sections.map((section) => ({ version: section.version, body: section.lines.join("\n").trim() }));
+}
+
+export function compareVersions(a, b) {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
+  }
+  return 0;
+}
+
+// La version publica mas reciente en GitHub, o null si no hay ninguna.
+async function latestPublishedVersion(api, token) {
+  const res = await fetch(`${api}/releases/latest`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "User-Agent": "riftcompass-build-win" },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`GET /releases/latest: ${res.status}`);
+  const release = await res.json();
+  return /^\d+\.\d+\.\d+$/.test(release.name ?? "") ? release.name : (release.tag_name ?? "").replace(/^v/, "") || null;
 }
 
 export async function ensureDraftRelease({ log = console.log } = {}) {
@@ -109,9 +155,10 @@ export async function ensureDraftRelease({ log = console.log } = {}) {
   if (!pushed.ok) {
     throw new Error(`El commit ${sha.slice(0, 7)} no esta en GitHub: haz push antes de publicar, o la release apuntaria a codigo que nadie puede ver.`);
   }
+  const published = await latestPublishedVersion(api, token);
   const created = await gh(`${api}/releases`, token, {
     method: "POST",
-    body: JSON.stringify({ tag_name: tag, name: version, target_commitish: sha, draft: true, body: changelogFor(version) }),
+    body: JSON.stringify({ tag_name: tag, name: version, target_commitish: sha, draft: true, body: releaseNotes(version, published) }),
   });
   log(`  • borrador de ${tag} creado antes de publicar (${created.html_url})`);
   return { ...target, id: created.id };

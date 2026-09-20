@@ -3,6 +3,7 @@ import { itemIconUrl, type ItemCatalog } from "../ddragon";
 import { patchLabel } from "../lib/patch-label";
 import { apiGet } from "../lib/api-fetch";
 import { API_BASE_URL } from "../shared/api";
+import { useI18n } from "../i18n";
 import { COLORS, FONT_HEADING, TYPE } from "../theme";
 import { RunePageView, type RuneIndex, type Translate } from "../tools/build-visuals";
 import { runePageFromPerks } from "./format";
@@ -31,6 +32,7 @@ export function CompetitiveBuildBlock({
   /** The surrounding page's card style, applied only when there is something to show. */
   style?: CSSProperties;
 }) {
+  const { locale } = useI18n();
   const [build, setBuild] = useState<CompetitiveBuild | null>(null);
   const openEsports = useOpenEsports();
   useEffect(() => {
@@ -85,21 +87,31 @@ export function CompetitiveBuildBlock({
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <p style={subTitle}>{t("Esports.competitive.recent")}</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: TYPE.body }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "4px 20px", fontSize: TYPE.body }}>
           {build.recent.map((game) => {
-            const outcome = <span style={{ marginLeft: 4, fontSize: TYPE.label, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>;
-            // Each game opens its series in the esports screen, as the web's
-            // block links to /esports/<league>/<series>.
+            // Rival, game number and day tell one game from the next (three
+            // "Supa · Win" in a row said nothing), and the link opens that
+            // game's tab in the series, as the web's ?game= does.
+            const detail = [
+              game.opponentCode ? t("Esports.pro.vs", { team: game.opponentCode }) : null,
+              game.gameNumber ? t("Esports.gameNumber", { number: game.gameNumber }) : null,
+              game.startTime ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(game.startTime)) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            const line = (
+              <>
+                <span>{game.summonerName}</span>
+                {detail ? <span style={{ marginLeft: 6, fontSize: TYPE.label, color: COLORS.muted }}>{detail}</span> : null}
+                <span style={{ marginLeft: 6, fontSize: TYPE.label, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>
+              </>
+            );
             return openEsports ? (
-              <button key={game.gameId} onClick={() => openEsports({ kind: "match", id: game.matchId })} style={{ background: "none", border: "none", padding: 0, font: "inherit", color: COLORS.text, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
-                {game.summonerName}
-                {outcome}
+              <button key={game.gameId} onClick={() => openEsports({ kind: "match", id: game.matchId, game: game.gameNumber })} style={{ background: "none", border: "none", padding: 0, font: "inherit", color: COLORS.text, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, textAlign: "left" }}>
+                {line}
               </button>
             ) : (
-              <span key={game.gameId}>
-                {game.summonerName}
-                {outcome}
-              </span>
+              <span key={game.gameId}>{line}</span>
             );
           })}
         </div>

@@ -112,7 +112,7 @@ export function EsportsView({ initialView }: { initialView?: EsportsEntry }) {
       ) : null}
       {view.kind === "leagues" ? <LeaguesScreen open={open} t={t} locale={locale} /> : null}
       {view.kind === "league" ? <LeagueScreen key={`${view.slug}-${view.tournament ?? ""}`} slug={view.slug} tournament={view.tournament} open={open} replace={(next) => setTrail((current) => [...current.slice(0, -1), next])} t={t} locale={locale} /> : null}
-      {view.kind === "match" ? <MatchScreen key={view.id} id={view.id} open={open} catalogs={catalogs} t={t} locale={locale} /> : null}
+      {view.kind === "match" ? <MatchScreen key={view.id} id={view.id} game={view.game} open={open} catalogs={catalogs} t={t} locale={locale} /> : null}
       {view.kind === "player" ? <PlayerScreen key={view.slug} slug={view.slug} open={open} catalogs={catalogs} t={t} locale={locale} /> : null}
     </div>
   );
@@ -185,7 +185,8 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
   const stateKey = matchStateKey(match);
   const team1Won = played && match.team1.wins > match.team2.wins;
   const team2Won = played && match.team2.wins > match.team1.wins;
-  const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(new Date(match.startTime));
+  // `hour: "numeric"`: "3:00 PM" in 12-hour locales, still "15:00" in the others.
+  const time = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(new Date(match.startTime));
   const row: CSSProperties = {
     display: "grid",
     gridTemplateColumns: "3.5rem minmax(0, 1fr) auto",
@@ -330,6 +331,7 @@ function LeaguesScreen({ open, t, locale }: { open: (view: View) => void; t: Tra
           </div>
         </section>
       ))}
+      {data?.leagues.length ? <Muted size={TYPE.label}>{t("Esports.timeZoneNote")}</Muted> : null}
       {data ? <DataNote games={data.dataQuality.games} updatedAt={data.dataQuality.updatedAt} t={t} locale={locale} /> : null}
     </div>
   );
@@ -345,9 +347,16 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
   const pending = data?.matches.filter((match) => match.state !== "completed") ?? [];
   const played = [...(data?.matches.filter((match) => match.state === "completed") ?? [])].reverse();
   const openMatch = (id: string) => open({ kind: "match", id });
-  // A tournament that is over has nothing left to play, which is not "nothing in the next seven days".
+  // Three honest empties, as the web: the tournament is over, it has not
+  // started (LoL Esports publishes the schedule weeks late), or it is
+  // running with a quiet week.
   const today = new Date().toISOString().slice(0, 10);
-  const nothingPending = data?.tournament && data.tournament.endDate < today ? t("Esports.noPending") : t("Esports.noUpcoming");
+  const nothingPending =
+    data?.tournament && data.tournament.endDate < today
+      ? t("Esports.noPending")
+      : data?.tournament && data.tournament.startDate > today
+        ? t("Esports.noScheduleYet", { date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(data.tournament.startDate)) })
+        : t("Esports.noUpcoming");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <ChampionSplashAccent championId="Renekton" opacity={18} style={{ top: -40, right: -40, width: 520, height: 340, transform: "rotate(1deg)" }} />
@@ -501,7 +510,7 @@ function BracketMatch({ match, onOpen, t }: { match: StageMatchRef; onOpen: (() 
 
 // ---- match ----------------------------------------------------------------
 
-function MatchScreen({ id, open, catalogs, t, locale }: { id: string; open: (view: View) => void; catalogs: Catalogs | null; t: Translate; locale: string }) {
+function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: { id: string; game?: number; open: (view: View) => void; catalogs: Catalogs | null; t: Translate; locale: string }) {
   const { data, error, loading, retry } = useApi<MatchDetail>(`${API_BASE_URL}/api/v1/esports/match?id=${id}`);
   const [selected, setSelected] = useState<string | null>(null);
   const runeIndex = useMemo(() => (catalogs ? indexRunes(catalogs.runeStyles) : null), [catalogs]);
@@ -509,9 +518,13 @@ function MatchScreen({ id, open, catalogs, t, locale }: { id: string; open: (vie
   if (loading || !data) return <Muted>…</Muted>;
   const { match, games } = data;
   // What the screen says where the games would be: by the series' state
-  // and whether its games have been fetched (same rule as the web page).
-  const emptyKey = match.state === "unstarted" ? "seriesUnstarted" : match.state === "inProgress" ? "seriesLive" : match.hasGames ? "gameNoStats" : "seriesPending";
-  const game = games.find((candidate) => candidate.id === selected) ?? games[0];
+  // read with the clock (a kick-off that has passed is "in progress" even
+  // while the hourly sync still says "unstarted"; the label above uses the
+  // same reading) and whether its games have been fetched. Same rule as the
+  // web page.
+  const stateKey = matchStateKey(match);
+  const emptyKey = stateKey === "unstarted" ? "seriesUnstarted" : stateKey === "started" || stateKey === "inProgress" ? "seriesLive" : match.hasGames ? "gameNoStats" : "seriesPending";
+  const game = games.find((candidate) => candidate.id === selected) ?? (requestedNumber ? games.find((candidate) => candidate.number === requestedNumber) : undefined) ?? games[0];
   const played = match.state !== "unstarted";
   const team1Won = played && match.team1.wins > match.team2.wins;
   const team2Won = played && match.team2.wins > match.team1.wins;
@@ -530,7 +543,7 @@ function MatchScreen({ id, open, catalogs, t, locale }: { id: string; open: (vie
           {" · "}
           {t("Esports.bestOf", { count: match.bestOf })}
           {" · "}
-          {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(match.startTime), hour: "2-digit", minute: "2-digit" }).format(new Date(match.startTime))}
+          {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(match.startTime), hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(match.startTime))}
         </Muted>
         <h1 style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 10, color: team2Won ? COLORS.muted : COLORS.text }}>
@@ -588,7 +601,7 @@ function MatchScreen({ id, open, catalogs, t, locale }: { id: string; open: (vie
                 <span>{t("Esports.vods")}:</span>
                 {vods.map((vod) => (
                   <button key={`${vod.label}-${vod.locale}`} onClick={() => window.riftcompass.openExternal(vod.url)} style={{ background: "none", border: "none", padding: 0, color: COLORS.muted, textDecoration: "underline", cursor: "pointer", font: "inherit" }}>
-                    {vod.label} ({vod.locale.slice(0, 2)})
+                    {vod.label} ({vod.tag})
                   </button>
                 ))}
               </span>

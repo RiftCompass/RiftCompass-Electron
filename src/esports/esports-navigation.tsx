@@ -5,7 +5,7 @@ import { createContext, useContext } from "react";
 // counted; on the web each one is a link to /esports/<league>/<series>).
 // Same shape as tool-navigation.tsx: MainView provides the function, the
 // esports screen opens on that view with "back" leading to the leagues.
-export type EsportsEntry = { kind: "match"; id: string } | { kind: "player"; slug: string };
+export type EsportsEntry = { kind: "match"; id: string; game?: number } | { kind: "player"; slug: string };
 
 const OpenEsportsContext = createContext<((entry: EsportsEntry) => void) | null>(null);
 
