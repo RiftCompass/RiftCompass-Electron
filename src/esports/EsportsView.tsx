@@ -11,7 +11,8 @@ import { COLORS, FONT_HEADING, cardStyle, pillStyle, TYPE } from "../theme";
 import { ESPORTS } from "../tool-meta";
 import { indexRunes, RunePageView, type Translate } from "../tools/build-visuals";
 import { LoadError } from "../tools/LoadError";
-import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickHeadlineMatch, pickVods, roleKey, runePageFromPerks, teamHue, yearIfNotCurrent } from "./format";
+import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickHeadlineMatch, pickVods, roleKey, runePageFromPerks, yearIfNotCurrent } from "./format";
+import { teamTagColors } from "./team-colors";
 import type { EsportsEntry } from "./esports-navigation";
 import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeaguesResponse, MatchDetail, MatchSummary, MatchTeam, PlayerResponse, StageMatchRef, StageSection, TeamTotals } from "./types";
 
@@ -127,8 +128,10 @@ export function EsportsView({ initialView }: { initialView?: EsportsEntry }) {
 
 // ---- shared pieces --------------------------------------------------------
 
+// The tint is the team's own brand colour when team-colors.ts knows it
+// and a hue derived from the code otherwise; the code is always the text.
 function TeamTag({ code, name, size = "md", muted = false }: { code: string; name?: string; size?: "sm" | "md" | "lg"; muted?: boolean }) {
-  const hue = teamHue(code);
+  const colors = muted ? null : teamTagColors(code);
   const font = size === "lg" ? TYPE.subheading : size === "sm" ? TYPE.label : TYPE.caption;
   const style: CSSProperties = {
     display: "inline-flex",
@@ -137,9 +140,9 @@ function TeamTag({ code, name, size = "md", muted = false }: { code: string; nam
     minWidth: size === "lg" ? 56 : size === "sm" ? 40 : 48,
     padding: size === "lg" ? "4px 8px" : "2px 6px",
     borderRadius: 6,
-    border: `1px solid ${muted ? COLORS.cardBorder : `oklch(0.62 0.13 ${hue} / 0.55)`}`,
-    background: muted ? "none" : `oklch(0.62 0.13 ${hue} / 0.12)`,
-    color: muted ? COLORS.muted : `oklch(0.86 0.09 ${hue})`,
+    border: `1px solid ${colors ? colors.border : COLORS.cardBorder}`,
+    background: colors ? colors.background : "none",
+    color: colors ? colors.text : COLORS.muted,
     fontFamily: FONT_MONO,
     fontWeight: 600,
     fontSize: font,

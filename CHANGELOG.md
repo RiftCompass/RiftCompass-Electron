@@ -5,6 +5,14 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.32
+
+- Las etiquetas de los equipos de esports llevan el color de la marca de
+  cada equipo (Karmine Corp azul, Vitality y NaVi amarillos, KOI morado,
+  Fnatic naranja, G2 y SK en gris por ser blanco y negro, T1 rojo, Gen.G
+  dorado…) en vez de un color al azar por código. Los equipos cuyo color
+  no se conoce siguen con el de antes.
+
 ## 0.3.31
 
 Esports y Matchups de línea más visuales, con la misma composición que la
