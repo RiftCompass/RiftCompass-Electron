@@ -5,6 +5,21 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.33
+
+Ronda 41: retoques a lo nuevo de la 0.3.31, sobre todo en ventanas estrechas.
+
+- Matchups de línea: la línea que separa el winrate de los matchups cómodos
+  y difíciles desaparece cuando estos pasan debajo por falta de ancho, y
+  los puntos que separan posición, rango y parche ya no se quedan sueltos
+  al final de una línea.
+- Esports: en un panel estrecho la serie destacada y el título de una serie
+  dejan solo los códigos y el marcador en una línea (los nombres pasan a la
+  línea de estado) en vez de recortarlos con puntos suspensivos; la fecha
+  de la serie destacada dice el día de la semana; cuando no hay partidos
+  próximos, los últimos resultados ocupan todo el ancho en dos columnas;
+  y una serie sin ningún equipo decidido nunca es la destacada.
+
 ## 0.3.32
 
 - Las etiquetas de los equipos de esports llevan el color de la marca de

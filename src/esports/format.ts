@@ -177,7 +177,18 @@ export const HEADLINE_UPCOMING_MS = 48 * 60 * 60 * 1000;
  * days, else the latest result, else the next series at all. The lists
  * below stay complete; the headline repeats one of them.
  */
-export function pickHeadlineMatch<T extends { startTime: string }>(live: T[], upcoming: T[], recent: T[], nowMs = Date.now()): T | null {
-  const soon = upcoming.find((match) => Date.parse(match.startTime) - nowMs < HEADLINE_UPCOMING_MS);
-  return live[0] ?? soon ?? recent[0] ?? upcoming[0] ?? null;
+export function pickHeadlineMatch<T extends { startTime: string; team1: { code: string }; team2: { code: string } }>(
+  live: T[],
+  upcoming: T[],
+  recent: T[],
+  nowMs = Date.now(),
+): T | null {
+  // Both slots still to be decided (Worlds play-ins the day the schedule
+  // appears): never the headline, two "TBD" tags say nothing.
+  const known = (match: T) => Boolean(match.team1.code || match.team2.code);
+  const liveKnown = live.filter(known);
+  const upcomingKnown = upcoming.filter(known);
+  const recentKnown = recent.filter(known);
+  const soon = upcomingKnown.find((match) => Date.parse(match.startTime) - nowMs < HEADLINE_UPCOMING_MS);
+  return liveKnown[0] ?? soon ?? recentKnown[0] ?? upcomingKnown[0] ?? null;
 }

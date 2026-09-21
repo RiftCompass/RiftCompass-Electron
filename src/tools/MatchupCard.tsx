@@ -245,7 +245,7 @@ export function MatchupCard({
                   ? t("Matchups.cardBuildGeneral", { enemy: enemy.name, games: nf.format(matchup.build.vsGames), min: minGames, champion: champion.name })
                   : anyGeneral
                     ? t("Matchups.cardBuildMixed", { enemy: enemy.name })
-                    : t("Matchups.cardBuildSpecific", { enemy: enemy.name })}
+                    : t("Matchups.cardBuildSpecific", { champion: champion.name, enemy: enemy.name })}
               </p>
             </div>
             {pieces.length === 0 ? (

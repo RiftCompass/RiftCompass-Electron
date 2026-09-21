@@ -479,3 +479,36 @@ details[open] > summary svg {
     opacity: 0;
   }
 }
+
+/* Matchups' lane summary (Matchups.tsx): the line between the win rate and
+   the matchup chips exists only while they sit side by side; below ~600px
+   of panel the chips wrap under the figure and the line separated nothing
+   (round 41). Container query like .rc-ab-grid, because the window can be
+   wide with the account panel taking a third of it. */
+.rc-matchups-summary {
+  container-type: inline-size;
+}
+
+@container (min-width: 600px) {
+  .rc-matchups-summary-figure {
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    padding-right: 32px;
+  }
+}
+
+/* Esports (EsportsView.tsx): below ~600px of panel the headline series and
+   the series title keep only the codes and the score on one line, as the
+   web does under `sm`; the names move to the state line (round 41). */
+.rc-team-names-inline {
+  display: none;
+}
+
+@container (max-width: 599px) {
+  .rc-team-name {
+    display: none;
+  }
+
+  .rc-team-names-inline {
+    display: inline;
+  }
+}

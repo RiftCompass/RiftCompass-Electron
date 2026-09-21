@@ -112,7 +112,10 @@ export function EsportsView({ initialView }: { initialView?: EsportsEntry }) {
   }, [back]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, position: "relative", zIndex: 0 }}>
+    // rc-stack: the container the narrow-width rules query (.rc-team-name,
+    // global.css), because the window can be wide with the account panel
+    // taking a third of it.
+    <div className="rc-stack" style={{ display: "flex", flexDirection: "column", gap: 20, position: "relative", zIndex: 0 }}>
       {trail.length > 1 ? (
         <button onClick={back} style={{ display: "flex", alignItems: "center", gap: 6, alignSelf: "flex-start", background: "none", border: "none", color: COLORS.muted, fontSize: TYPE.body, cursor: "pointer", padding: 0 }}>
           <ArrowLeft size={15} /> {t("Common.back")}
@@ -190,7 +193,9 @@ function dayKey(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", ...yearIfNotCurrent(iso) }).format(new Date(iso));
 }
 
-function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false }: { matches: MatchSummary[]; onOpen: (id: string) => void; emptyLabel: string; t: Translate; locale: string; showNames?: boolean }) {
+// `twoColumns`: the days flow in columns when the list has the whole width
+// because nothing is coming up (round 41).
+function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false, twoColumns = false }: { matches: MatchSummary[]; onOpen: (id: string) => void; emptyLabel: string; t: Translate; locale: string; showNames?: boolean; twoColumns?: boolean }) {
   if (matches.length === 0) return <Muted>{emptyLabel}</Muted>;
   const days: { key: string; matches: MatchSummary[] }[] = [];
   for (const match of matches) {
@@ -200,7 +205,7 @@ function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false }
     else days.push({ key, matches: [match] });
   }
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={twoColumns ? { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "14px 28px", alignItems: "start" } : { display: "flex", flexDirection: "column", gap: 14 }}>
       {days.map((day) => (
         <section key={day.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <h3 style={{ ...OVERLINE, margin: 0, fontWeight: 500 }}>{day.key}</h3>
@@ -292,7 +297,7 @@ function FeaturedMatch({ match, onOpen, t, locale }: { match: MatchSummary; onOp
     return (
       <span style={{ display: "flex", flex: 1, minWidth: 0, alignItems: "center", gap: 12, justifyContent: align === "end" ? "flex-end" : "flex-start", color: lost ? COLORS.muted : COLORS.text }}>
         {align === "start" ? tag : null}
-        <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading - 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name || team.code || tbd}</span>
+        <span className="rc-team-name" style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading - 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name || team.code || tbd}</span>
         {align === "end" ? tag : null}
       </span>
     );
@@ -314,7 +319,7 @@ function FeaturedMatch({ match, onOpen, t, locale }: { match: MatchSummary; onOp
         {match.blockName ? <span>{match.blockName}</span> : null}
         <span>{t("Esports.bestOf", { count: match.bestOf })}</span>
         <span style={{ textTransform: "none", letterSpacing: 0 }}>
-          {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(match.startTime), hour: "numeric", minute: "2-digit" }).format(new Date(match.startTime))}
+          {new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", ...yearIfNotCurrent(match.startTime), hour: "numeric", minute: "2-digit" }).format(new Date(match.startTime))}
         </span>
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: 20 }}>
@@ -420,6 +425,10 @@ function LeaguesScreen({ open, t, locale }: { open: (view: View) => void; t: Tra
         // A kick-off that has passed while the sync still says "unstarted"
         // belongs under "live" (the rows label it as started).
         const liveNow = league.live.length > 0 || league.upcoming.some((match) => matchStateKey(match) === "started");
+        const ahead = [...league.live, ...league.upcoming];
+        // Between splits there is nothing coming up: the sections stack and
+        // the results take the width, their days in columns (round 41).
+        const wide = ahead.length === 0;
         return (
           <section key={league.id} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {/* The league as a band: name, region and the way into its full
@@ -435,17 +444,17 @@ function LeaguesScreen({ open, t, locale }: { open: (view: View) => void; t: Tra
               </button>
             </div>
             {headline ? <FeaturedMatch match={headline} onOpen={openMatch} t={t} locale={locale} /> : null}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20 }}>
+            <div style={wide ? { display: "flex", flexDirection: "column", gap: 20 } : { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
                 <h2 style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 }}>
                   {liveNow ? <LiveDot /> : null}
                   {liveNow ? t("Esports.live") : t("Esports.upcoming")}
                 </h2>
-                <MatchList matches={[...league.live, ...league.upcoming]} onOpen={openMatch} emptyLabel={t("Esports.noUpcoming")} t={t} locale={locale} />
+                <MatchList matches={ahead} onOpen={openMatch} emptyLabel={t("Esports.noUpcoming")} t={t} locale={locale} />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
                 <SectionTitle>{t("Esports.recent")}</SectionTitle>
-                <MatchList matches={league.recent} onOpen={openMatch} emptyLabel={t("Esports.noRecent")} t={t} locale={locale} />
+                <MatchList matches={league.recent} onOpen={openMatch} emptyLabel={t("Esports.noRecent")} t={t} locale={locale} twoColumns={wide} />
               </div>
             </div>
           </section>
@@ -524,7 +533,9 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
             </section>
           ) : null}
           {data.tournament ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20 }}>
+            // A finished tournament has nothing pending: the schedule shrinks
+            // to its sentence and the results take the width (round 41).
+            <div style={pending.length === 0 ? { display: "flex", flexDirection: "column", gap: 20 } : { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20 }}>
               <section style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
                 <SectionTitle>{t("Esports.schedule")}</SectionTitle>
                 <Muted size={TYPE.label}>{t("Esports.timeZoneNote")}</Muted>
@@ -532,7 +543,7 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
               </section>
               <section style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
                 <SectionTitle>{t("Esports.results")}</SectionTitle>
-                <MatchList matches={played} onOpen={openMatch} emptyLabel={t("Esports.noMatches")} t={t} locale={locale} />
+                <MatchList matches={played} onOpen={openMatch} emptyLabel={t("Esports.noMatches")} t={t} locale={locale} twoColumns={pending.length === 0} />
               </section>
             </div>
           ) : null}
@@ -697,7 +708,7 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
         <h1 style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 18px", fontFamily: FONT_HEADING, fontSize: TYPE.heading + 2, fontWeight: 400, margin: 0 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 10, color: team2Won ? COLORS.muted : COLORS.text }}>
             <TeamTag code={match.team1.code || t("Esports.tbd")} name={match.team1.name} size="lg" muted={!match.team1.code} />
-            <span>{match.team1.name}</span>
+            <span className="rc-team-name">{match.team1.name}</span>
             {decided && team1Won ? trophy : null}
           </span>
           <span style={{ fontFamily: FONT_MONO, fontSize: TYPE.display + 6, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
@@ -713,11 +724,18 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 10, color: team1Won ? COLORS.muted : COLORS.text }}>
             {decided && team2Won ? trophy : null}
-            <span>{match.team2.name}</span>
+            <span className="rc-team-name">{match.team2.name}</span>
             <TeamTag code={match.team2.code || t("Esports.tbd")} name={match.team2.name} size="lg" muted={!match.team2.code} />
           </span>
         </h1>
-        <StateLine stateKey={stateKey} label={t(`Esports.states.${stateKey}`)} size={TYPE.body} />
+        {/* In a narrow panel the title keeps codes and score; the names
+            move down here, as the web's state line does on a phone. */}
+        <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 8px", fontSize: TYPE.body, color: COLORS.muted }}>
+          <span className="rc-team-names-inline">
+            {match.team1.name} · {match.team2.name} ·
+          </span>
+          <StateLine stateKey={stateKey} label={t(`Esports.states.${stateKey}`)} size={TYPE.body} />
+        </span>
       </div>
 
       {games.length === 0 ? <Muted>{t(`Esports.${emptyKey}`)}</Muted> : null}

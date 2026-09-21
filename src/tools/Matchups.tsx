@@ -262,7 +262,11 @@ export function Matchups() {
   const best = solidAs.filter((r) => r.winRate >= 0.5).slice(0, 4);
   const worst = [...solidAs].reverse().filter((r) => r.winRate < 0.5).slice(0, 4);
   const roleIcon = effectiveRole ? positionIconUrl(effectiveRole) : null;
-  const dot = <span aria-hidden="true">·</span>;
+  // Each separator travels inside the item it introduces: as loose flex
+  // children the dots were left hanging at the end of a line when the row
+  // wrapped (round 41).
+  const dot = <span aria-hidden="true">· </span>;
+  const item: CSSProperties = { whiteSpace: "nowrap" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -330,12 +334,16 @@ export function Matchups() {
                   {roleIcon ? <img src={roleIcon} alt="" style={{ width: 15, height: 15 }} /> : null}
                   {t(`Profile.positions.${effectiveRole.toLowerCase()}`)}
                 </span>
-                {dot}
-                <span>{t(`MetaTierList.rankTiers.${rank}`)}</span>
-                {dot}
-                <span>{t("ChampionBuilds.popularBuildSource", { patch: patchLabel(data.dataPatches) })}</span>
+                <span style={item}>
+                  {dot}
+                  {t(`MetaTierList.rankTiers.${rank}`)}
+                </span>
+                <span style={item}>
+                  {dot}
+                  {t("ChampionBuilds.popularBuildSource", { patch: patchLabel(data.dataPatches) })}
+                </span>
                 {openTool ? (
-                  <>
+                  <span style={item}>
                     {dot}
                     <button
                       onClick={() => openTool({ toolId: "championBuilds", championInternalId: champion.internalId, role: effectiveRole, rank })}
@@ -343,7 +351,7 @@ export function Matchups() {
                     >
                       {t("Matchups.openChampionBuilds")}
                     </button>
-                  </>
+                  </span>
                 ) : null}
               </span>
             </div>
@@ -367,8 +375,8 @@ export function Matchups() {
           ) : null}
           {/* Resumen sin caja: la cifra grande con su barra a un lado y los
               chips al otro, separados por una linea. */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "20px 32px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, width: 236, paddingRight: 32, borderRight: `1px solid ${COLORS.cardBorder}` }}>
+          <div className="rc-matchups-summary" style={{ display: "flex", flexWrap: "wrap", gap: "20px 32px" }}>
+            <div className="rc-matchups-summary-figure" style={{ display: "flex", flexDirection: "column", gap: 6, width: 236 }}>
               <span style={labelStyle}>{t("Matchups.laneWinrate")}</span>
               <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.display + 4, lineHeight: 1, color: summaryWinRate === null ? COLORS.muted : COLORS[winRateTone(summaryWinRate)] }}>
                 {summaryWinRate === null ? "–" : new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryWinRate)}
