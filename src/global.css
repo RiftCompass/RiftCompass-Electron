@@ -512,3 +512,44 @@ details[open] > summary svg {
     display: inline;
   }
 }
+
+/* Profile match rows (ProfileDetail.tsx): below ~720px of panel the row
+   keeps result, KDA, score, note and the chevron, and drops the champion
+   name, queue, CS and duration, as the web's row does under `sm`; at 640px
+   of window the seven fixed columns (615px) were cut in half with no note
+   and no chevron (round 42). Result and KDA shrink to their text, and score
+   and note stack in one 80 px column (the web's w-20 on a phone), because
+   with the panel at ~300 px the note had 7 px left beside the score. The
+   widths are inline styles, so the rules need !important to win. */
+.rc-match-list {
+  container-type: inline-size;
+}
+
+@container (max-width: 719px) {
+  .rc-match-champion,
+  .rc-match-queue,
+  .rc-match-cs,
+  .rc-match-duration {
+    display: none !important;
+  }
+
+  .rc-match-result,
+  .rc-match-kda,
+  .rc-match-score {
+    width: auto !important;
+  }
+
+  .rc-match-verdict {
+    display: flex !important;
+    flex: 0 0 80px;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 0;
+    margin-left: auto;
+  }
+
+  .rc-match-note {
+    width: auto !important;
+    max-width: 100%;
+  }
+}

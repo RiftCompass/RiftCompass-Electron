@@ -184,6 +184,12 @@ export function toDDragonId(name: string): string {
 }
 
 export function championSquareUrl(version: string, championInternalId: string): string {
+  // Registering the version here, not only in the catalog fetchers: the
+  // profile builds its icon URLs from the version the API payload carries,
+  // and when it was the first screen opened nobody had registered any, so
+  // dataDragonFallbackFor() had no version and a 404 from riftcompass.com
+  // left the whole profile without champion icons (round 42).
+  rememberIconSet(version);
   return `${API_BASE_URL}/icons/${iconSetFor(version)}/champion/${toDDragonId(championInternalId)}.webp`;
 }
 

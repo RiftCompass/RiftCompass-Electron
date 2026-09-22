@@ -20,6 +20,13 @@ import {
 } from "@phosphor-icons/react";
 import { API_BASE_URL } from "../shared/api";
 import { COLORS, FONT_HEADING, TYPE, inputStyle, pillStyle } from "../theme";
+
+// The title of each section of the profile: a real heading in the display
+// face, as the web's cards (round 42). They were 12 px captions in grey,
+// so the eye landed on the data before knowing what block it was in, and a
+// screen reader's heading list had nothing between the name and the list
+// of matches.
+const SECTION_TITLE = { fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400 as const, margin: 0, color: COLORS.text };
 import { useI18n } from "../i18n";
 import { championSquareUrl, profileIconUrl, itemIconUrl, fetchSummonerSpellIconsById } from "../ddragon";
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
@@ -632,7 +639,7 @@ function RankCard({
         : t("ProfileSearch.seasonsAgo", { count: index });
   return (
     <div style={{ ...cardStyle, borderTop: entry ? `2px solid ${lpTierColor(entry.tier)}` : cardStyle.border, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{title}</span>
+      <h2 style={{ fontSize: TYPE.caption, fontWeight: 400, color: COLORS.muted, margin: 0 }}>{title}</h2>
       {/* flex:1 + centered, not just marginTop — so a row that stretches
           this card taller than its own content re-centers the actual
           rank/role info in the extra height instead of leaving it pinned
@@ -641,7 +648,7 @@ function RankCard({
         {entry ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {emblem ? (
-              <img src={emblem} alt={entry.tier} style={{ width: 40, height: 40 }} />
+              <img src={emblem} alt="" style={{ width: 40, height: 40 }} />
             ) : null}
             <div style={{ display: "flex", flexDirection: "column" }}>
               <span style={{ fontSize: TYPE.subheading, fontWeight: 600 }}>
@@ -683,7 +690,7 @@ function RankCard({
               <div key={peak.from.toISOString()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: TYPE.caption }}>
                 <span style={{ color: COLORS.muted, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {seasonLabel(index)}
-                  <span style={{ opacity: 0.7 }}>
+                  <span style={{ opacity: 0.85 }}>
                     {" · "}
                     {index === 0
                       ? t("ProfileSearch.seasonSince", { date: shortDate(peak.from) })
@@ -753,7 +760,7 @@ function RankTrendCard({
 
   return (
     <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.rankTrend")}</span>
+      <h2 style={SECTION_TITLE}>{t("ProfileSearch.rankTrend")}</h2>
       <div role="group" aria-label={t("ProfileSearch.rankTrendQueueLabel")} style={{ display: "flex", gap: 6, marginTop: 8 }}>
         {RANKED_QUEUES.map((q) => (
           <button key={q} type="button" onClick={() => setQueue(q)} aria-pressed={queue === q} style={pillStyle(queue === q, "compact")}>
@@ -814,7 +821,7 @@ function LpHistoryBody({ history }: { history: ProfileApiResponse["lpHistory"] }
           instead of leaving empty space around a fixed-size one;
           preserveAspectRatio "none" already means the viewBox freely
           rescales to the real rendered box. */}
-      <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ marginTop: 8, display: "block", flex: 1, minHeight: 80 }}>
+      <svg aria-hidden="true" width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ marginTop: 8, display: "block", flex: 1, minHeight: 80 }}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity={0.35} />
@@ -868,7 +875,7 @@ function MomentumBody({ matches, queueLabel }: { matches: RecentMatchSummary[]; 
         <span style={{ fontSize: TYPE.subheading, fontWeight: 600, color }}>{signedNumber(current)}</span>
         <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.momentumSubtitle", { queue: queueLabel })}</span>
       </div>
-      <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ marginTop: 8, display: "block", flex: 1, minHeight: 80 }}>
+      <svg aria-hidden="true" width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ marginTop: 8, display: "block", flex: 1, minHeight: 80 }}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity={0.35} />
@@ -950,9 +957,9 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
   return (
     <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>
+        <h2 style={SECTION_TITLE}>
           {t("ProfileSearch.activityCalendar")} · {monthLabel}
-        </span>
+        </h2>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
           <button
             onClick={() => !isAtFloor && goToMonth(-1)}
@@ -1063,7 +1070,10 @@ function ActivityCalendarCard({ matches, puuid, platform }: { matches: RecentMat
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: TYPE.caption,
-                color: day.games === 0 ? COLORS.muted : COLORS.text,
+                // Dark digits on the two light "mild" levels (7.4:1 and
+                // 5.2:1); the light text measured 2.4:1 and 3.4:1 there
+                // (round 42, same as the web's calendar).
+                color: day.games === 0 ? COLORS.muted : bg === COLORS.goodMild || bg === COLORS.badMild ? COLORS.background : COLORS.text,
                 // Not-yet-played days stay in the grid (so the month never
                 // looks broken/empty right after it starts) but read as
                 // clearly distinct from real, already-played days.
@@ -1117,7 +1127,7 @@ function ChampionPoolCard({
 
   return (
     <div style={cardStyle}>
-      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.championPool")}</span>
+      <h2 style={SECTION_TITLE}>{t("ProfileSearch.championPool")}</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 12 }}>
         {pools.map((pool) => {
           const icon = positionIconUrl(pool.position);
@@ -1216,7 +1226,7 @@ function RoadmapCard({ matches, tier, history }: { matches: RecentMatchSummary[]
   if (!diagnostic.ready) {
     return (
       <div style={cardStyle}>
-        <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Roadmap.title")}</span>
+        <h2 style={SECTION_TITLE}>{t("Roadmap.title")}</h2>
         <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: "4px 0 0" }}>
           {t("Roadmap.notReady", { games: diagnostic.games, required: diagnostic.required, total: diagnostic.totalGames })}
         </p>
@@ -1227,7 +1237,7 @@ function RoadmapCard({ matches, tier, history }: { matches: RecentMatchSummary[]
   const topPriority = diagnostic.nodes.find((n) => n.status === "below");
   return (
     <div style={cardStyle}>
-      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("Roadmap.title")}</span>
+      <h2 style={SECTION_TITLE}>{t("Roadmap.title")}</h2>
       <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: "4px 0 0" }}>
         {t("Roadmap.subtitle", {
           games: diagnostic.games,
@@ -1239,7 +1249,7 @@ function RoadmapCard({ matches, tier, history }: { matches: RecentMatchSummary[]
         <SummaryPills diagnostic={diagnostic} />
         {topPriority ? (
           <p style={{ margin: 0, padding: "8px 10px", borderRadius: 6, border: `1px solid ${COLORS.rose}4d`, background: `${COLORS.rose}0d`, fontSize: TYPE.caption }}>
-            <span style={{ fontWeight: 600, color: COLORS.rose }}>{t("Roadmap.priorityLabel")}</span>{" "}
+            <span style={{ fontWeight: 600, color: COLORS.roseBright }}>{t("Roadmap.priorityLabel")}</span>{" "}
             <span style={{ color: COLORS.muted }}>{t(`Roadmap.${topPriority.metric}.title`)}</span>
           </p>
         ) : null}
@@ -1316,8 +1326,11 @@ export function DiagnosticBar({ node, height = 6 }: { node: DiagnosticNode; heig
   );
 }
 
+// Percentages through Intl like every other figure (the web's
+// diagnostic-bar.tsx does the same): "14 %" next to "20 %", not "14%".
 export function formatDiagnosticPair(node: DiagnosticNode, locale: string): { value: string; reference: string } {
   const unit = metricUnit(node.metric);
+  if (unit === "%") return { value: formatPercent(locale, node.value / 100), reference: formatPercent(locale, node.reference / 100) };
   return { value: `${formatDecimal(locale, node.value)}${unit}`, reference: `${formatDecimal(locale, node.reference)}${unit}` };
 }
 
@@ -1375,7 +1388,7 @@ function ChampionOverviewCard({ matches, ddragonVersion }: { matches: RecentMatc
 
   return (
     <div style={{ ...cardStyle, height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.championOverviewTitle")}</span>
+      <h2 style={SECTION_TITLE}>{t("ProfileSearch.championOverviewTitle")}</h2>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", marginTop: 10, overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: TYPE.caption }}>
           <thead>
@@ -1440,11 +1453,18 @@ function MatchHistoryCard({
 }) {
   const { t, locale } = useI18n();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // The translated position for the icon's alt: the raw token read as "Vi
+  // UTILITY" (round 42). It is also the only place the row says the role.
+  const positionLabel = (position: string): string => {
+    const key = position.toLowerCase();
+    return key === "top" || key === "jungle" || key === "middle" || key === "bottom" || key === "utility" ? t(`Profile.positions.${key}`) : position;
+  };
 
   return (
     <div style={cardStyle}>
-      <span style={{ fontSize: TYPE.caption, color: COLORS.muted }}>{t("ProfileSearch.recentMatches")}</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+      <h2 style={SECTION_TITLE}>{t("ProfileSearch.recentMatches")}</h2>
+      {/* rc-match-list: the container the narrow-panel rules query (global.css). */}
+      <div className="rc-match-list" style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
         {matches.length === 0 ? <p style={{ fontSize: TYPE.caption, color: COLORS.muted, margin: 0 }}>{t("ProfileSearch.noMatches")}</p> : null}
         {matches.map((m) => {
           const isOpen = expandedId === m.matchId;
@@ -1459,9 +1479,11 @@ function MatchHistoryCard({
                 })
             : "";
           return (
-            <div key={m.matchId} style={{ borderRadius: 8, overflow: "hidden", background: `${COLORS.background}66` }}>
+            <div key={m.matchId} id={`match-${m.matchId}`} style={{ borderRadius: 8, overflow: "hidden", background: `${COLORS.background}66` }}>
               <button
                 onClick={() => setExpandedId(isOpen ? null : m.matchId)}
+                aria-expanded={isOpen}
+                aria-controls={`match-${m.matchId}`}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1484,22 +1506,32 @@ function MatchHistoryCard({
                   {positionIconUrl(m.teamPosition) ? (
                     <img
                       src={positionIconUrl(m.teamPosition)!}
-                      alt={m.teamPosition}
+                      alt={positionLabel(m.teamPosition)}
                       style={{ position: "absolute", bottom: -3, right: -3, width: 13, height: 13, borderRadius: "50%", background: COLORS.background, padding: 1 }}
                     />
                   ) : null}
                 </div>
-                <span style={{ width: 60, flexShrink: 0, fontSize: TYPE.caption, fontWeight: 600, color: m.win ? COLORS.goodMild : COLORS.badMild }}>
+                {/* The champion's name as text, as the web's row (round 42);
+                    the narrow-panel rules hide it with the queue, CS and
+                    duration and let the note take the width. */}
+                <span className="rc-match-champion" style={{ width: 90, flexShrink: 0, fontSize: TYPE.caption, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {m.championName}
+                </span>
+                <span className="rc-match-result" style={{ width: 60, flexShrink: 0, fontSize: TYPE.caption, fontWeight: 600, color: m.win ? COLORS.goodMild : COLORS.badMild }}>
                   {m.win ? t("ProfileSearch.win") : t("ProfileSearch.loss")}
                 </span>
-                <span style={{ width: 80, flexShrink: 0, fontSize: TYPE.caption }}>
+                <span className="rc-match-kda" style={{ width: 80, flexShrink: 0, fontSize: TYPE.caption }}>
                   {m.kills}/{m.deaths}/{m.assists}
                 </span>
-                <span style={{ width: 70, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted }}>{m.cs} CS</span>
-                <span style={{ width: 90, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span className="rc-match-cs" style={{ width: 70, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted }}>{m.cs} CS</span>
+                <span className="rc-match-queue" style={{ width: 90, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {m.queueName}
                 </span>
+                {/* Score and note side by side; the narrow-panel rules stack
+                    them in one 80 px column, as the web's row on a phone. */}
+                <span className="rc-match-verdict" style={{ display: "contents" }}>
                 <span
+                  className="rc-match-score"
                   title={noteLabel}
                   style={{
                     width: 34,
@@ -1512,10 +1544,11 @@ function MatchHistoryCard({
                 >
                   {note ? formatDecimal(locale, note.score) : ""}
                 </span>
-                <span style={{ width: 108, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span className="rc-match-note" style={{ width: 108, flexShrink: 0, fontSize: TYPE.label, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {noteLabel}
                 </span>
-                <span style={{ flex: 1, fontSize: TYPE.label, color: COLORS.muted, textAlign: "right" }}>{formatDuration(m.durationSeconds)}</span>
+                </span>
+                <span className="rc-match-duration" style={{ flex: 1, fontSize: TYPE.label, color: COLORS.muted, textAlign: "right" }}>{formatDuration(m.durationSeconds)}</span>
                 {/* Same circular chevron badge as the web's
                     match-history.tsx (h-7 w-7 rounded-full border, rose
                     border/bg/text + 180° rotation when open), not a bare

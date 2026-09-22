@@ -5,6 +5,24 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.34
+
+Ronda 42: la ficha de perfil y la comparación de grupo, revisadas a fondo.
+
+- Si riftcompass.com no sirve un icono de campeón, el perfil vuelve al
+  icono original de Data Dragon en vez de quedarse con la imagen rota.
+- Cada bloque del perfil (tendencia, calendario, roadmap, campeones,
+  partidas) lleva ahora un título de verdad, como en la web, y los días del
+  calendario se leen también sobre las celdas claras.
+- En ventanas estrechas la fila de cada partida deja de cortarse: se queda
+  con resultado, KDA, nota y el botón de abrir, y el nombre del campeón
+  aparece como texto en ventanas anchas.
+- Los porcentajes del roadmap se escriben como el resto de cifras
+  ("14 %"), y varios textos dicen lo mismo que en la web ("Impulso de
+  rango", "Champion pool", "Dónde tenéis que centraros todos", "Try again").
+- Lectores de pantalla: cada partida anuncia si está desplegada, y los
+  iconos de posición dicen "Mid" en vez del código interno.
+
 ## 0.3.33
 
 Ronda 41: retoques a lo nuevo de la 0.3.31, sobre todo en ventanas estrechas.

@@ -133,7 +133,7 @@ export const fr: Messages = {
     flexQueue: "Classé Flexible",
     unranked: "Non classé",
     winLossRate: "{wins}V {losses}D · {rate} de victoires",
-    rankTrend: "Tendance de rang",
+    rankTrend: "Dynamique de rang",
     momentumSubtitle: "Victoires et défaites sur vos parties {queue} récentes",
     rankTrendQueueSolo: "Solo/Duo",
     rankTrendQueueFlex: "Flexible",
@@ -188,7 +188,7 @@ export const fr: Messages = {
     },
     headToHead: "Face à face",
     headToHeadIntro: "Moyennes sur les {count} dernières parties de chacun",
-    sharedFocusTitle: "Ce sur quoi vous devez vous concentrer",
+    sharedFocusTitle: "Là où vous devez tous progresser",
     sharedFocusNone: "Aucune faiblesse commune claire sur les {count} dernières parties de chacun. Vous vous couvrez bien mutuellement.",
     sharedTips: {
       csPerMin: "Vous perdez tous du farm. Entraînez-vous au last-hit ensemble dans un lobby bot, ou organisez des retours en base pour qu'un d'entre vous atteigne un pic de puissance en premier.",
