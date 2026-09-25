@@ -5,6 +5,16 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.35
+
+Ronda 43: dos textos que no decían lo que pasaba.
+
+- Una liga recién añadida (ahora LCK, LPL y LCS) ya no dice "aquí no hay
+  nada todavía" mientras se baja su historial, que tarda días: dice que se
+  está bajando y que sus primeras series aparecerán en unas horas.
+- El buscador de la cabecera explica qué falta cuando escribes un nombre
+  sin su tag, en vez de limitarse a poner el recuadro en rojo.
+
 ## 0.3.34
 
 Ronda 42: la ficha de perfil y la comparación de grupo, revisadas a fondo.

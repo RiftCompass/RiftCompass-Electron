@@ -1837,10 +1837,19 @@ function HeaderProfileSearch({ onSearch }: { onSearch: (target: ProfileTarget) =
               setError(false);
             }}
             placeholder={t("ProfileSearch.riotIdPlaceholder")}
+            aria-invalid={error || undefined}
+            aria-describedby={error ? "header-search-error" : undefined}
             style={{ ...headerSearchFieldStyle(error), width: 190, padding: "8px 10px 8px 28px" }}
           />
         </div>
       </div>
+      {/* A red border alone said nothing about what was missing: whoever
+          typed just "Faker" got a silent form (round 43). */}
+      {error ? (
+        <span id="header-search-error" role="alert" style={{ fontSize: TYPE.label, color: COLORS.badMild }}>
+          {t("ProfileSearch.riotIdNeedsTag")}
+        </span>
+      ) : null}
     </form>
   );
 }

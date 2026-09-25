@@ -517,7 +517,9 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
               <Muted>{data.tournament.name}</Muted>
             ) : null}
           </div>
-          {!data.tournament ? <Muted>{t("Esports.noData")}</Muted> : null}
+          {/* Una liga cubierta sin torneo es el sincronizador bajando
+              su atraso, que con una liga nueva dura dias (ronda 43). */}
+          {!data.tournament ? <Muted>{t("Esports.leagueBackfilling", { league: data.league.name })}</Muted> : null}
           {headline ? <FeaturedMatch match={headline} onOpen={openMatch} t={t} locale={locale} /> : null}
           {data.stages.length ? (
             <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
