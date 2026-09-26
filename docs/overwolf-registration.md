@@ -168,7 +168,7 @@ Lo que el propio correo pide antes de empezar:
   (GEP) Overview y su Developers Roadmap. Ofrecen soporte respondiendo a
   ese mismo correo, y tienen comunidad de desarrolladores.
 
-Qué queda, por orden (la lista viva está en el the project guide de la carpeta
+Qué queda, por orden (la lista viva está en la guía del proyecto de la carpeta
 raíz del proyecto, sección "Overlay y Overwolf"):
 
 1. Activar Dev Mode.

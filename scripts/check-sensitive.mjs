@@ -43,8 +43,10 @@ const OWNER_NAME_HASHES = new Set([
 // The tools this project is built with are not part of it either (owner's
 // rule, 2026-09-26): no mention of them, or of the field they belong to,
 // anywhere in the repository. Hashed for the same reason the identity is.
-// Single lowercase words in the first set, two-word phrases in the second;
-// add one with the same recipe as above.
+// Single lowercase words of three letters or more in the first set (a
+// two-letter token turns up in a Riot ID tag or a sentence about bots, and
+// a routine that trips on it goes silent for a day), two-word phrases in
+// the second, one per language; add one with the same recipe as above.
 const TOOLING_WORD_HASHES = new Set([
   "628d533c3440d2bda04f78d1e24310b2565197182c5859754bab5fc38391d10a",
   "7a050d6a668e434dbb9ea4b514646ab290bbd4bb8ac628c697ea65f62424dc76",
@@ -52,7 +54,6 @@ const TOOLING_WORD_HASHES = new Set([
   "a94b7b8c8e4bc462791be3e0e13236912a294270dd025444ddac11000fe20afb",
   "a196d22949518e30978f237d3657c06da3423e3d0d5f871ebacfac98f7f51bef",
   "2822a26bb6c63b47773fa74071a2c11976625a3920d765ef5088c43b8fb9d0d1",
-  "3ab0ed7b712774bf1731a86da575dfaacb78cceaa2f6b9fafe557ed4269fcbd9",
   "dd8ec4070815b11d90c1d29164f441b5bb1064587a004b8864d76310b233fde1",
 ]);
 const TOOLING_PHRASE_HASHES = new Set([
@@ -60,12 +61,17 @@ const TOOLING_PHRASE_HASHES = new Set([
   "f6a9e9badef0f34f3a8488f4683066b699337f299f7b5d9e9d78a968b8d78bfb",
   "5b297a9107ea5e37af6bf265d503ccc183e431f7d7333fde99e1599061abec92",
   "5424d0a347803f203a2dc085aa9e6661e19421e85e324033d146aad739011b8a",
+  "27f7240ef6684cce9b55677b4a2ef17d3dca28e7a93562ba7c02cae0f1e47442",
+  "98f06f4763653f1f6c3aa6e7466ee99a380a1f957faf6a026f53c98a4e5158cc",
 ]);
 
 // The legal pages must name the natural person behind the site (LSSI art. 10,
 // GDPR art. 13); that is the only place the full name is allowed.
 const ALLOWED_NAME_FILES = /^src\/data\/legal\/(notice|privacy)\/(en|es|fr|de)\.json$/;
-const SKIP_FILES = /^(package-lock\.json|public\/images\/)/;
+// What .gitignore already keeps out of GitHub is not read when the tree has
+// to be walked: a tsconfig.tsbuildinfo lists every .d.ts of the program,
+// dependencies included, and that is where forbidden words turn up.
+const SKIP_FILES = /^(package-lock\.json|public\/images\/)|\.tsbuildinfo$/;
 const SKIP_DIRS = new Set([
   ".git", "node_modules", ".next", "dist", "dist-electron",
   "release", "out", "coverage", ".avatars",
@@ -91,7 +97,9 @@ function skipDir(name) {
 const NUL = String.fromCharCode(0);
 
 // Production builds run as a service user that does not own the checkout, so
-// `git ls-files` refuses there ("dubious ownership"): walk the tree instead.
+// plain `git ls-files` refuses there ("dubious ownership"); safe.directory
+// lets it read the list anyway, and only a checkout without git at all
+// (an export) is walked.
 function walk(dir, found) {
   for (const entry of readdirSync(dir === "" ? "." : dir, { withFileTypes: true })) {
     const rel = dir === "" ? entry.name : `${dir}/${entry.name}`;
@@ -106,7 +114,7 @@ function walk(dir, found) {
 
 function filesToCheck() {
   try {
-    const out = execSync("git ls-files -z", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const out = execSync("git -c safe.directory=* ls-files -z", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
     return out.split(NUL).filter(Boolean);
   } catch {
     return walk("", []);
@@ -155,7 +163,7 @@ function findTooling(text) {
   const plain = text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const words = [...plain.matchAll(/[a-z]+/g)];
   for (let i = 0; i < words.length; i++) {
-    if (TOOLING_WORD_HASHES.has(identityHash(words[i][0]))) return lineAt(plain, words[i].index);
+    if (words[i][0].length >= 3 && TOOLING_WORD_HASHES.has(identityHash(words[i][0]))) return lineAt(plain, words[i].index);
     if (i + 1 < words.length && TOOLING_PHRASE_HASHES.has(identityHash(`${words[i][0]} ${words[i + 1][0]}`))) {
       return lineAt(plain, words[i].index);
     }

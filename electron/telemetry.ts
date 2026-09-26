@@ -1,5 +1,5 @@
 // Main-process crash/error reporting. Errors thrown here never reach
-// Chrome DevTools (see the the project guide gotcha) and this app has no other
+// Chrome DevTools (see the project guide's gotcha) and this app has no other
 // logger, so without this a real user's crash leaves no trace at all.
 
 import { app } from "electron";

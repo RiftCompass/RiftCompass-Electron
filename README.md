@@ -30,8 +30,7 @@ npm test
 npm run dist         # NSIS installer in release/
 ```
 
-Node 22+ and Windows. the project guide is the engineering guide (architecture,
-security model, League client integration, Overwolf overlay).
+Node 22+ and Windows.
 
 ## Reporting a problem
 
