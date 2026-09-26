@@ -233,9 +233,11 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
     padding: "7px 8px",
     margin: "0 -8px",
     width: "calc(100% + 16px)",
-    borderTop: `1px solid ${COLORS.cardBorder}`,
     background: "none",
     border: "none",
+    // After the reset, or the shorthand wipes it: the line between the
+    // series of one day, the same as the web's (owner, 2026-09-26).
+    borderTop: `1px solid ${COLORS.cardBorder}`,
     color: COLORS.text,
     textAlign: "left",
     cursor: played ? "pointer" : "default",

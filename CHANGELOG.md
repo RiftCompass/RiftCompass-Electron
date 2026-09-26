@@ -5,6 +5,12 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.36
+
+- En Esports, las series de un mismo día van separadas por una línea: la
+  que había estaba anulada por el estilo del botón y dos resultados se
+  leían como uno solo.
+
 ## 0.3.35
 
 Ronda 43: dos textos que no decían lo que pasaba.
