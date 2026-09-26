@@ -216,7 +216,7 @@ export function markMainWindowQuitting(): void {
 // in-game window instead (via the overlay package's own createWindow(),
 // injected into League's process so it survives real exclusive
 // fullscreen — a normal top-level window like this one never does,
-// see the root the project guide's "Por qué Electron" for why). main.ts only
+// see the root project guide's "Por qué Electron" for why). main.ts only
 // calls this one when overlayEngine.isOverwolfRuntime() is false.
 // Ventana propia para champ select: el acompañante de draft y build.
 //

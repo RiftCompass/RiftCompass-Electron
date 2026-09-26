@@ -77,7 +77,7 @@ no vía datos de Riot). No hay atajo mágico que nos estemos perdiendo — es un
 limitación real y compartida por todos.
 
 **Si se implementa esto en RiftCompass**, la única forma honesta (y coherente
-con la política de "Honestidad de datos" del `the project guide`) es: marcado manual
+con la política de "Honestidad de datos" del the project guide) es: marcado manual
 por el jugador + cooldown base sacado de Data Dragon `summoner.json` (mismo
 mecanismo que ya usa `ddragon.ts`/`fetchChampionMap` para campeones, no
 hardcodear los segundos a mano porque cambian con las temporadas) + reducción
@@ -173,7 +173,7 @@ llegan) y quizá inhibidores/torretas (mismo mecanismo, mismo array `Events`).
 | Cooldown de ulti (propio/aliados) | — | ✅ (portrait de aliados) | — | Solo posible vía Overwolf GEP (`ult_cd`, team-scoped) — no disponible fuera de una app Overwolf. **No implementable en Tauri sin ese runtime** |
 | Sugerencia de pick en champ select | ✅ | ✅ | — | Lógica propia sobre datos de composición — **RiftCompass ya lo tiene** (`draft-help.ts`) |
 | Import de última build | — | ✅ | — | LCU match-history del propio jugador — **RiftCompass ya lo tiene** (`build-import.ts`) |
-| Orden de habilidades sugerido | ✅ | ✅ | — | Requiere datos agregados de build/winrate que RiftCompass no tiene (política de "no fabricar stats" del `the project guide`) — no aplicable sin una fuente de datos real |
+| Orden de habilidades sugerido | ✅ | ✅ | — | Requiere datos agregados de build/winrate que RiftCompass no tiene (política de "no fabricar stats" del the project guide) — no aplicable sin una fuente de datos real |
 | Valor total de objetos por jugador | ✅ | ✅ | — | Suma de `price` de `playeritems` — **RiftCompass ya lo tiene parcialmente** (se muestran los iconos, no el total en número) |
 
 ## Resumen accionable para cuando se retome el overlay

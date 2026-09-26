@@ -89,7 +89,7 @@ export function errorMessageKey(error: string, status?: number): string {
 
 // Disabled with a visible countdown instead of a bare "Retry" that just
 // fails again immediately against the same still-saturated quota — Riot's
-// rate limit window is real (see RiftCompass-Web the project guide's own docs on
+// rate limit window is real (see the web's project guide own docs on
 // this), so a rate-limited failure gets a genuinely longer wait than a
 // plain network hiccup. Remounted with a fresh `key` per attempt (see the
 // call site) so the countdown always restarts at the right length instead

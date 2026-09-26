@@ -1,6 +1,6 @@
 # Historial del proyecto de escritorio
 
-Registro condensado de hitos y decisiones. El estado actual, la arquitectura y las reglas viven en `the project guide`; aquí solo queda el porqué de las decisiones que ya no se deducen del código. La versión Tauri (`RiftCompass-Tauri`) se retiró el 2026-08-31 y su repo de GitHub se borró; este fichero es lo único que queda de esa etapa.
+Registro condensado de hitos y decisiones. El estado actual, la arquitectura y las reglas viven en the project guide; aquí solo queda el porqué de las decisiones que ya no se deducen del código. La versión Tauri (`RiftCompass-Tauri`) se retiró el 2026-08-31 y su repo de GitHub se borró; este fichero es lo único que queda de esa etapa.
 
 ## Etapa Tauri (hasta 2026-08-31)
 
@@ -17,7 +17,7 @@ Registro condensado de hitos y decisiones. El estado actual, la arquitectura y l
 ## Migración a Electron (2026-08-30 a 2026-08-31)
 
 - Backend Rust portado módulo a módulo a `electron/*.ts`; frontend `src/` reutilizado casi sin cambios (solo `bridge/index.ts` y `WindowControls.tsx` tocaban la API nativa). Mismo aspecto visual, mismo backend remoto.
-- Bug real encontrado: Electron 20+ sandboxa el preload por defecto, lo que bloqueaba en silencio todo `window.riftcompass` (ver Gotchas en `the project guide`).
+- Bug real encontrado: Electron 20+ sandboxa el preload por defecto, lo que bloqueaba en silencio todo `window.riftcompass` (ver Gotchas en the project guide).
 - Verificado end-to-end contra el LCU real: detección del cliente, auto-apertura, perfil con datos reales, sesión de cuenta persistida (DPAPI) y validada contra `/api/v1/me`. Cuatro partidas personalizadas seguidas resolviendo los 5 carriles propios.
 - Empaquetado (`electron-builder --dir`), icono propio, acceso directo del escritorio apuntando a `release/win-unpacked/RiftCompass.exe`, CSP inicial, `.gitignore`. `RiftCompass-Tauri/` borrada tras confirmar paridad.
 

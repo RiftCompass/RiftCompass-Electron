@@ -2,8 +2,8 @@
 
 **Estado: enviado el 2026-08-30.** La cuenta de desarrollador de Overwolf
 se creó con la cuenta personal de Google del propietario (no con
-`riftcompass@gmail.com`) y the tooling rellenó y envió el formulario de propuesta de app en
-<https://dev.overwolf.com/app-idea-form> con su autorización explícita.
+`riftcompass@gmail.com`), y desde ella se envió el formulario de propuesta
+de app en <https://dev.overwolf.com/app-idea-form>.
 Confirmación recibida: "Proposal Sent — We got you!" — Overwolf dice que
 contactarán en unos días (revisar spam si no llega nada en 48h). Mientras
 no llegue la aprobación, la cuenta queda en estado "Developer status:
@@ -55,8 +55,8 @@ Es decir: hay que solicitar acceso también en el Riot Developer Portal
 aprobación, y mandarle a Overwolf una captura de esa aprobación junto con
 la descripción enviada a Riot. **Ese registro en el Riot Developer
 Portal solo puede iniciarlo el propietario** (cuenta propia, igual que pasó
-con Overwolf) — the tooling puede ayudar a redactar/rellenar la descripción de la
-app una vez exista la cuenta, igual que se hizo aquí.
+con Overwolf); la descripción de la app se prepara aparte y se pega ahí,
+igual que se hizo aquí.
 
 ## Qué queda pendiente
 
@@ -69,7 +69,7 @@ app una vez exista la cuenta, igual que se hizo aquí.
 - Solo entonces Overwolf da acceso a `@overwolf/ow-electron`,
   `@overwolf/ow-electron-builder` y `@overwolf/electron-is-overwolf` —
   con eso se completa el Paso 4 de la migración a Electron (ver
-  `RiftCompass-Electron/the project guide`).
+  the desktop project guide).
 - Si Riot u Overwolf piden más información o rechazan: revisar el motivo
   exacto contra la sección "Hallazgo importante" de arriba antes de
   reenviar.
@@ -168,7 +168,7 @@ Lo que el propio correo pide antes de empezar:
   (GEP) Overview y su Developers Roadmap. Ofrecen soporte respondiendo a
   ese mismo correo, y tienen comunidad de desarrolladores.
 
-Qué queda, por orden (la lista viva está en el `the project guide` de la carpeta
+Qué queda, por orden (la lista viva está en el the project guide de la carpeta
 raíz del proyecto, sección "Overlay y Overwolf"):
 
 1. Activar Dev Mode.

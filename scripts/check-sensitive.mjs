@@ -40,13 +40,35 @@ const OWNER_NAME_HASHES = new Set([
   "469644242386509abcfd69e14a27b78a98a8e373378e88b82137aa747ce758ed",
 ]);
 
+// The tools this project is built with are not part of it either (owner's
+// rule, 2026-09-26): no mention of them, or of the field they belong to,
+// anywhere in the repository. Hashed for the same reason the identity is.
+// Single lowercase words in the first set, two-word phrases in the second;
+// add one with the same recipe as above.
+const TOOLING_WORD_HASHES = new Set([
+  "628d533c3440d2bda04f78d1e24310b2565197182c5859754bab5fc38391d10a",
+  "7a050d6a668e434dbb9ea4b514646ab290bbd4bb8ac628c697ea65f62424dc76",
+  "9e597889caebcc6bf5ade3d498033b2ad1f066b41a60e34894a2c7d9090f2bad",
+  "a94b7b8c8e4bc462791be3e0e13236912a294270dd025444ddac11000fe20afb",
+  "a196d22949518e30978f237d3657c06da3423e3d0d5f871ebacfac98f7f51bef",
+  "2822a26bb6c63b47773fa74071a2c11976625a3920d765ef5088c43b8fb9d0d1",
+  "3ab0ed7b712774bf1731a86da575dfaacb78cceaa2f6b9fafe557ed4269fcbd9",
+  "dd8ec4070815b11d90c1d29164f441b5bb1064587a004b8864d76310b233fde1",
+]);
+const TOOLING_PHRASE_HASHES = new Set([
+  "3a207236d0952e8371635e5f071c03504c55f1f6f78810c3e86a0e9a05d9e563",
+  "f6a9e9badef0f34f3a8488f4683066b699337f299f7b5d9e9d78a968b8d78bfb",
+  "5b297a9107ea5e37af6bf265d503ccc183e431f7d7333fde99e1599061abec92",
+  "5424d0a347803f203a2dc085aa9e6661e19421e85e324033d146aad739011b8a",
+]);
+
 // The legal pages must name the natural person behind the site (LSSI art. 10,
 // GDPR art. 13); that is the only place the full name is allowed.
 const ALLOWED_NAME_FILES = /^src\/data\/legal\/(notice|privacy)\/(en|es|fr|de)\.json$/;
-const SKIP_FILES = /^(package-lock\.json|\.the tooling\/|public\/images\/)/;
+const SKIP_FILES = /^(package-lock\.json|public\/images\/)/;
 const SKIP_DIRS = new Set([
   ".git", "node_modules", ".next", "dist", "dist-electron",
-  "release", "out", "coverage", ".avatars", ".the tooling",
+  "release", "out", "coverage", ".avatars",
 ]);
 
 // Exact names alone weren't enough. A copy of the build output left inside
@@ -57,6 +79,9 @@ const SKIP_DIRS = new Set([
 function skipDir(name) {
   return (
     SKIP_DIRS.has(name) ||
+    // A dot-directory in a checkout belongs to somebody's own tooling, not
+    // to the project: never walked, and never named here either.
+    name.startsWith(".") ||
     name.startsWith(".next") ||
     name.startsWith("node_modules") ||
     /\.(bak|old|orig)$/.test(name) ||
@@ -125,6 +150,19 @@ function findOwnerName(text) {
   return 0;
 }
 
+// Line of the first word (or pair of words) that names one of those tools.
+function findTooling(text) {
+  const plain = text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const words = [...plain.matchAll(/[a-z]+/g)];
+  for (let i = 0; i < words.length; i++) {
+    if (TOOLING_WORD_HASHES.has(identityHash(words[i][0]))) return lineAt(plain, words[i].index);
+    if (i + 1 < words.length && TOOLING_PHRASE_HASHES.has(identityHash(`${words[i][0]} ${words[i + 1][0]}`))) {
+      return lineAt(plain, words[i].index);
+    }
+  }
+  return 0;
+}
+
 const files = filesToCheck();
 const findings = [];
 for (const file of files) {
@@ -142,6 +180,8 @@ for (const file of files) {
   }
   const accountLine = findOwnerAccount(text);
   if (accountLine) findings.push(`${file}:${accountLine}: owner's personal account`);
+  const toolingLine = findTooling(text);
+  if (toolingLine) findings.push(`${file}:${toolingLine}: the tooling this is built with`);
   if (!ALLOWED_NAME_FILES.test(file)) {
     const nameLine = findOwnerName(text);
     if (nameLine) findings.push(`${file}:${nameLine}: owner's full name`);

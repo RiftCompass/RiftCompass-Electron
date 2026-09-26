@@ -2,7 +2,7 @@
 // (windows.ts's createOverlayWindow, invisible during League's real
 // exclusive-fullscreen mode) for a window actually injected into League's
 // own process via the `ow-electron` overlay package, which does survive
-// exclusive fullscreen — see the root the project guide's "Por qué Electron" for
+// exclusive fullscreen — see the root project guide's "Por qué Electron" for
 // why this migration happened at all.
 //
 // Access is still pending: Overwolf approved the app proposal but, since

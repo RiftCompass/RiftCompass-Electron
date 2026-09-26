@@ -10,5 +10,9 @@ release/
 # no cargan en local, y con ellas dentro del repo (que es publico) seria una fuga.
 .env.overwolf.local
 
-# Ajustes y skills de the tooling son de cada máquina (las skills viven en ~/.the tooling/skills).
-.the tooling/
+# Herramientas y notas de trabajo: de cada máquina, no del proyecto. Cualquier
+# carpeta oculta de la raíz es de quien trabaja aquí, no del repositorio.
+/.*/
+!/.github/
+!/.vscode/
+skills-lock.json
