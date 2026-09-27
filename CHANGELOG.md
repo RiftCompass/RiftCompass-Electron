@@ -5,6 +5,20 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.39
+
+Ronda 45: los resultados ocultos, bien cerrados.
+
+- La ficha de un pro y "Así lo jugaron los pros" ya no dicen Ganada o
+  Perdida en las partidas de una serie que sigue escondida.
+- En el cuadro, un equipo sigue en "?" también en la fase siguiente
+  (los cuartos después del suizo) hasta que muestres las series que lo
+  llevaron allí; en las fases suizas se ven los emparejamientos y solo se
+  esconden los marcadores.
+- El ojo responde al pasar el ratón, la línea entre series ya no aparece
+  bajo el título del día ni se corta antes del ojo, y si el almacén del
+  equipo falla el ojo sigue funcionando durante la sesión.
+
 ## 0.3.38
 
 - Los resultados de Esports empiezan escondidos: cada serie ya jugada se

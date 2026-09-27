@@ -8,6 +8,7 @@ import { COLORS, FONT_HEADING, TYPE } from "../theme";
 import { RunePageView, type RuneIndex, type Translate } from "../tools/build-visuals";
 import { runePageFromPerks } from "./format";
 import { useOpenEsports } from "./esports-navigation";
+import { useRevealedSeries } from "./spoilers";
 import type { CompetitiveBuild } from "./types";
 
 // "How the pros played it" (the web's competitive-build.tsx): the rune
@@ -49,6 +50,7 @@ export function CompetitiveBuildBlock({
       cancelled = true;
     };
   }, [championId]);
+  const revealed = useRevealedSeries();
   if (!build || build.games === 0) return null;
 
   const subTitle = { fontSize: TYPE.label, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase" as const, color: COLORS.muted, margin: 0 };
@@ -103,7 +105,10 @@ export function CompetitiveBuildBlock({
               <>
                 <span>{game.summonerName}</span>
                 {detail ? <span style={{ marginLeft: 6, fontSize: TYPE.label, color: COLORS.muted }}>{detail}</span> : null}
-                <span style={{ marginLeft: 6, fontSize: TYPE.label, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>
+                {/* Won or lost is the series' result: hidden with it (round 45). */}
+                {revealed.has(game.matchId) ? (
+                  <span style={{ marginLeft: 6, fontSize: TYPE.label, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>
+                ) : null}
               </>
             );
             return openEsports ? (

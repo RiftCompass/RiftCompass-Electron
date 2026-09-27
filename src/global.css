@@ -553,3 +553,11 @@ details[open] > summary svg {
     max-width: 100%;
   }
 }
+
+/* Icon-only buttons drawn with no background (the eye beside a series in
+   Esports): the brightness filter above has nothing to brighten, so the
+   hover gets a real background, like the dropdown options. */
+.rc-icon-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4f0f5;
+}

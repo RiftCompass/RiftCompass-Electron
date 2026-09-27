@@ -9,19 +9,30 @@ import { useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "riftcompass:esports:revealed";
 const CHANGE_EVENT = "riftcompass:esports:revealed";
+// What 0.3.37 stored, with the opposite meaning: dropped on first read.
+const OLD_KEY = "riftcompass:esports:hidden";
+
+// The memory is the truth and storage its mirror: when storage refuses,
+// the eye still works for the session, and nothing is remembered. Cleared
+// on a "storage" event, which is another window of the app writing.
+let memory: string[] | null = null;
 
 export function readRevealedSeries(): string[] {
+  if (memory) return memory;
   try {
+    localStorage.removeItem(OLD_KEY);
     const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
+    memory = Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
   } catch {
-    return [];
+    memory = [];
   }
+  return memory;
 }
 
 export function setSeriesRevealed(id: string, revealed: boolean): void {
   const current = readRevealedSeries();
   const next = revealed ? (current.includes(id) ? current : [...current, id]) : current.filter((other) => other !== id);
+  memory = next;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
@@ -31,11 +42,15 @@ export function setSeriesRevealed(id: string, revealed: boolean): void {
 }
 
 function subscribe(listener: () => void): () => void {
+  const fromOtherWindow = () => {
+    memory = null;
+    listener();
+  };
   window.addEventListener(CHANGE_EVENT, listener);
-  window.addEventListener("storage", listener);
+  window.addEventListener("storage", fromOtherWindow);
   return () => {
     window.removeEventListener(CHANGE_EVENT, listener);
-    window.removeEventListener("storage", listener);
+    window.removeEventListener("storage", fromOtherWindow);
   };
 }
 

@@ -12,6 +12,7 @@ import { ESPORTS } from "../tool-meta";
 import { indexRunes, RunePageView, type Translate } from "../tools/build-visuals";
 import { LoadError } from "../tools/LoadError";
 import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickHeadlineMatch, pickVods, roleKey, runePageFromPerks, yearIfNotCurrent } from "./format";
+import { bracketRank, earlierSeriesByTeam, isSwissStage, seriesBefore, type EarlierSeriesMap } from "./bracket-spoilers";
 import { setSeriesRevealed, useRevealedSeries } from "./spoilers";
 import { teamTagColors } from "./team-colors";
 import type { EsportsEntry } from "./esports-navigation";
@@ -204,9 +205,9 @@ function SpoilerToggle({ id, t, withLabel = false, style }: { id: string; t: Tra
     <button
       type="button"
       onClick={() => setSeriesRevealed(id, !revealed)}
-      aria-pressed={revealed}
       aria-label={withLabel ? undefined : label}
       title={withLabel ? undefined : label}
+      className="rc-icon-button"
       style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flexShrink: 0, height: 28, minWidth: 28, padding: withLabel ? "0 8px" : 0, borderRadius: 6, border: "none", background: "none", color: COLORS.muted, cursor: "pointer", font: "inherit", fontSize: TYPE.body, ...style }}
     >
       {revealed ? <EyeSlash size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
@@ -231,8 +232,10 @@ function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false, 
       {days.map((day) => (
         <section key={day.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <h3 style={{ ...OVERLINE, margin: 0, fontWeight: 500 }}>{day.key}</h3>
-          {day.matches.map((match) => (
-            <div key={match.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {day.matches.map((match, index) => (
+            // The line between the series of one day, on the wrapper so it
+            // spans the eye too and never sits under the day's heading.
+            <div key={match.id} style={{ display: "flex", alignItems: "center", gap: 4, borderTop: index ? `1px solid ${COLORS.cardBorder}` : "none" }}>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <MatchRow match={match} onOpen={onOpen} t={t} locale={locale} showNames={showNames} />
               </div>
@@ -265,9 +268,6 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
     width: "calc(100% + 16px)",
     background: "none",
     border: "none",
-    // After the reset, or the shorthand wipes it: the line between the
-    // series of one day, the same as the web's (owner, 2026-09-26).
-    borderTop: `1px solid ${COLORS.cardBorder}`,
     color: COLORS.text,
     textAlign: "left",
     cursor: played ? "pointer" : "default",
@@ -513,6 +513,9 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
   const stored = useMemo(() => new Set(data?.matches.map((match) => match.id) ?? []), [data]);
   const pending = data?.matches.filter((match) => match.state !== "completed") ?? [];
   const played = [...(data?.matches.filter((match) => match.state === "completed") ?? [])].reverse();
+  // The series each team played, across the tournament's brackets, so a
+  // team's presence in a later stage stays masked while they are hidden.
+  const earlier = earlierSeriesByTeam(data?.stages ?? []);
   const headline = data
     ? pickHeadlineMatch(
         data.matches.filter((match) => match.state === "inProgress"),
@@ -562,11 +565,21 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
           {data.stages.length ? (
             <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <SectionTitle>{t("Esports.standings")}</SectionTitle>
-              {data.stages.map((stage) => (
+              {data.stages.map((stage, stageIndex) => (
                 <div key={stage.slug} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <h3 style={{ margin: 0, fontSize: TYPE.body, fontWeight: 600 }}>{stage.name}</h3>
                   {stage.structure.sections.map((section, index) => (
-                    <StageSectionView key={index} section={section} stageName={stage.name} stored={stored} onOpenMatch={openMatch} t={t} />
+                    <StageSectionView
+                      key={index}
+                      section={section}
+                      stageName={stage.name}
+                      stageIndex={stageIndex}
+                      sectionIndex={index}
+                      earlier={earlier}
+                      stored={stored}
+                      onOpenMatch={openMatch}
+                      t={t}
+                    />
                   ))}
                 </div>
               ))}
@@ -596,7 +609,27 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
   );
 }
 
-function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { section: StageSection; stageName: string; stored: Set<string>; onOpenMatch: (id: string) => void; t: Translate }) {
+function StageSectionView({
+  section,
+  stageName,
+  stageIndex,
+  sectionIndex,
+  earlier,
+  stored,
+  onOpenMatch,
+  t,
+}: {
+  section: StageSection;
+  stageName: string;
+  /** Where this section sits in the tournament, for bracket-spoilers.ts. */
+  stageIndex: number;
+  sectionIndex: number;
+  /** Every team's earlier series across the tournament (earlierSeriesByTeam). */
+  earlier: EarlierSeriesMap;
+  stored: Set<string>;
+  onOpenMatch: (id: string) => void;
+  t: Translate;
+}) {
   const revealed = useRevealedSeries();
   // A section named like the stage above it ("Playoffs" inside "Playoffs") is not repeated.
   const heading = section.name && section.name !== stageName ? <Muted size={TYPE.caption}>{section.name}</Muted> : null;
@@ -656,26 +689,15 @@ function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { sect
       </div>
     );
   }
-  // A team in a later column is there because of what happened in an
-  // earlier one: until every one of those earlier series is revealed, the
-  // team is shown as "?", or the next round would give the result away.
-  // Both teams of a series count, since a loser's path tells as much as
-  // the winner's.
-  const earlierSeries = new Map<string, { column: number; id: string }[]>();
-  section.columns.forEach((column, columnIndex) => {
-    for (const cell of column.cells) {
-      for (const match of cell.matches) {
-        if (match.state === "unstarted") continue;
-        for (const slot of match.teams) {
-          if (!slot.team) continue;
-          const list = earlierSeries.get(slot.team.code) ?? [];
-          list.push({ column: columnIndex, id: match.id });
-          earlierSeries.set(slot.team.code, list);
-        }
-      }
-    }
-  });
-  const maskedIn = (code: string, columnIndex: number) => (earlierSeries.get(code) ?? []).some((entry) => entry.column < columnIndex && !revealed.has(entry.id));
+  // A team in a later column is there because of what happened before, in
+  // this section or in an earlier stage: until every one of those series is
+  // revealed, the team is shown as "?", or the next round would give the
+  // result away. Both teams of a series count, since a loser's path tells
+  // as much as the winner's. Not in a Swiss stage: pairings stay, only the
+  // scores hide (bracket-spoilers.ts).
+  const swiss = isSwissStage(stageName) || isSwissStage(section.name);
+  const maskedIn = (code: string, columnIndex: number) =>
+    !swiss && seriesBefore(earlier, code, bracketRank(stageIndex, sectionIndex, columnIndex)).some((id) => !revealed.has(id));
   // Five columns of 180 px with 14 px gaps fit the pane; 210/20 cut the finals column.
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -995,6 +1017,7 @@ const PLACE_TEXT: Record<string, string> = { "1": COLORS.gold, "2": SILVER, "3":
 
 function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open: (view: View) => void; catalogs: Catalogs | null; t: Translate; locale: string }) {
   const { data, error, loading, retry } = useApi<PlayerResponse>(`${API_BASE_URL}/api/v1/esports/player?slug=${encodeURIComponent(slug)}`);
+  const revealed = useRevealedSeries();
   if (error) return isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} />;
   if (loading || !data) return <Muted>…</Muted>;
   const { player, recentGames, champions } = data;
@@ -1101,7 +1124,10 @@ function PlayerScreen({ slug, open, catalogs, t, locale }: { slug: string; open:
                           {game.startedAt ? ` · ${new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...yearIfNotCurrent(game.startedAt) }).format(new Date(game.startedAt))}` : ""}
                         </span>
                       </span>
-                      <span style={{ fontSize: TYPE.label, fontWeight: 500, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>
+                      {/* Won or lost is the series' result: hidden with it (round 45). */}
+                      {revealed.has(game.matchId) ? (
+                        <span style={{ fontSize: TYPE.label, fontWeight: 500, color: game.won === null ? COLORS.muted : game.won ? COLORS.goodMild : COLORS.badMild }}>{game.won === null ? "" : game.won ? t("Esports.pro.won") : t("Esports.pro.lost")}</span>
+                      ) : null}
                     </button>
                   </li>
                 ))}
