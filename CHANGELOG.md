@@ -5,6 +5,15 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.37
+
+- En Esports puedes esconder el resultado de cualquier serie ya jugada con
+  el ojo que hay junto a ella (en la lista, en la serie destacada, en cada
+  casilla del cuadro y en la pantalla de la serie). Escondida, se ve como
+  antes de empezar: "vs", sin ganador señalado; en el cuadro, el equipo que
+  pasó de ronda sale como "?". Se recuerda en este equipo hasta que la
+  vuelvas a mostrar.
+
 ## 0.3.36
 
 - En Esports, las series de un mismo día van separadas por una línea: la

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Medal, Trophy } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, Eye, EyeSlash, Medal, Trophy } from "@phosphor-icons/react";
 import { ChampionSplashAccent } from "../ChampionSplashAccent";
 import { championSquareUrl, fetchChampionMap, fetchItemCatalog, fetchLatestVersion, fetchRuneStyles, itemIconUrl, type ChampionMaps, type ItemCatalog, type RuneStyle } from "../ddragon";
 import { useI18n } from "../i18n";
@@ -12,6 +12,7 @@ import { ESPORTS } from "../tool-meta";
 import { indexRunes, RunePageView, type Translate } from "../tools/build-visuals";
 import { LoadError } from "../tools/LoadError";
 import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickHeadlineMatch, pickVods, roleKey, runePageFromPerks, yearIfNotCurrent } from "./format";
+import { setSeriesHidden, useHiddenSeries } from "./spoilers";
 import { teamTagColors } from "./team-colors";
 import type { EsportsEntry } from "./esports-navigation";
 import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeaguesResponse, MatchDetail, MatchSummary, MatchTeam, PlayerResponse, StageMatchRef, StageSection, TeamTotals } from "./types";
@@ -193,6 +194,26 @@ function dayKey(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", ...yearIfNotCurrent(iso) }).format(new Date(iso));
 }
 
+// The eye next to a result: hides that one series, or shows it again
+// (spoilers.ts). Always a sibling of the row's own button, never inside it.
+function SpoilerToggle({ id, t, withLabel = false, style }: { id: string; t: Translate; withLabel?: boolean; style?: CSSProperties }) {
+  const hidden = useHiddenSeries().has(id);
+  const label = hidden ? t("Esports.showResult") : t("Esports.hideResult");
+  return (
+    <button
+      type="button"
+      onClick={() => setSeriesHidden(id, !hidden)}
+      aria-pressed={hidden}
+      aria-label={withLabel ? undefined : label}
+      title={withLabel ? undefined : label}
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flexShrink: 0, height: 28, minWidth: 28, padding: withLabel ? "0 8px" : 0, borderRadius: 6, border: "none", background: "none", color: COLORS.muted, cursor: "pointer", font: "inherit", fontSize: TYPE.body, ...style }}
+    >
+      {hidden ? <EyeSlash size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+      {withLabel ? label : null}
+    </button>
+  );
+}
+
 // `twoColumns`: the days flow in columns when the list has the whole width
 // because nothing is coming up (round 41).
 function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false, twoColumns = false }: { matches: MatchSummary[]; onOpen: (id: string) => void; emptyLabel: string; t: Translate; locale: string; showNames?: boolean; twoColumns?: boolean }) {
@@ -210,7 +231,12 @@ function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false, 
         <section key={day.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <h3 style={{ ...OVERLINE, margin: 0, fontWeight: 500 }}>{day.key}</h3>
           {day.matches.map((match) => (
-            <MatchRow key={match.id} match={match} onOpen={onOpen} t={t} locale={locale} showNames={showNames} />
+            <div key={match.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <MatchRow match={match} onOpen={onOpen} t={t} locale={locale} showNames={showNames} />
+              </div>
+              {match.state !== "unstarted" ? <SpoilerToggle id={match.id} t={t} /> : null}
+            </div>
           ))}
         </section>
       ))}
@@ -219,6 +245,9 @@ function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false, 
 }
 
 function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary; onOpen: (id: string) => void; t: Translate; locale: string; showNames: boolean }) {
+  // While hidden the row reads as it did before kick-off: "vs", nobody
+  // dimmed (spoilers.ts; the eye beside the row does the hiding).
+  const hidden = useHiddenSeries().has(match.id);
   const played = match.state !== "unstarted";
   const stateKey = matchStateKey(match);
   const team1Won = played && match.team1.wins > match.team2.wins;
@@ -248,12 +277,12 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
     <>
       <span style={{ fontSize: TYPE.body, color: COLORS.muted, fontVariantNumeric: "tabular-nums" }}>{time}</span>
       <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <span style={{ display: "flex", flex: 1, justifyContent: "flex-end", alignItems: "center", gap: 8, minWidth: 0, color: team2Won ? COLORS.muted : COLORS.text }}>
+        <span style={{ display: "flex", flex: 1, justifyContent: "flex-end", alignItems: "center", gap: 8, minWidth: 0, color: team2Won && !hidden ? COLORS.muted : COLORS.text }}>
           {showNames ? <span style={{ fontSize: TYPE.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{match.team1.name}</span> : null}
           <TeamTag code={match.team1.code || t("Esports.tbd")} name={match.team1.name} muted={!match.team1.code} />
         </span>
         <span style={{ width: 48, textAlign: "center", fontFamily: FONT_MONO, fontSize: TYPE.subheading, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-          {played ? (
+          {played && !hidden ? (
             <>
               <span style={{ color: team1Won ? COLORS.text : COLORS.muted, fontWeight: team1Won ? 600 : 400 }}>{match.team1.wins}</span>
               <span style={{ color: COLORS.muted }}> : </span>
@@ -263,7 +292,7 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
             <span style={{ color: COLORS.muted, fontSize: TYPE.body }}>vs</span>
           )}
         </span>
-        <span style={{ display: "flex", flex: 1, alignItems: "center", gap: 8, minWidth: 0, color: team1Won ? COLORS.muted : COLORS.text }}>
+        <span style={{ display: "flex", flex: 1, alignItems: "center", gap: 8, minWidth: 0, color: team1Won && !hidden ? COLORS.muted : COLORS.text }}>
           <TeamTag code={match.team2.code || t("Esports.tbd")} name={match.team2.name} muted={!match.team2.code} />
           {showNames ? <span style={{ fontSize: TYPE.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{match.team2.name}</span> : null}
         </span>
@@ -289,6 +318,7 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
 // round and kick-off above and the state below. The one box on these
 // screens, because it is one button.
 function FeaturedMatch({ match, onOpen, t, locale }: { match: MatchSummary; onOpen: (id: string) => void; t: Translate; locale: string }) {
+  const hidden = useHiddenSeries().has(match.id);
   const played = match.state !== "unstarted";
   const stateKey = matchStateKey(match);
   const team1Won = played && match.team1.wins > match.team2.wins;
@@ -325,9 +355,9 @@ function FeaturedMatch({ match, onOpen, t, locale }: { match: MatchSummary; onOp
         </span>
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        {side(match.team1, team2Won, "end")}
+        {side(match.team1, team2Won && !hidden, "end")}
         <span style={{ flexShrink: 0, fontFamily: FONT_HEADING, fontSize: TYPE.display + 2, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-          {played ? (
+          {played && !hidden ? (
             <>
               <span style={{ color: team1Won ? COLORS.text : COLORS.muted }}>{match.team1.wins}</span>
               <span style={{ color: COLORS.muted }}> : </span>
@@ -337,15 +367,20 @@ function FeaturedMatch({ match, onOpen, t, locale }: { match: MatchSummary; onOp
             <span style={{ color: COLORS.muted, fontSize: TYPE.heading }}>vs</span>
           )}
         </span>
-        {side(match.team2, team1Won, "start")}
+        {side(match.team2, team1Won && !hidden, "start")}
       </span>
       <StateLine stateKey={stateKey} label={t(`Esports.states.${stateKey}`)} size={TYPE.body} />
     </>
   );
+  // The eye sits on the card, outside its button, at the corner the state
+  // line leaves free.
   return played ? (
-    <button onClick={() => onOpen(match.id)} style={box}>
-      {inner}
-    </button>
+    <div style={{ position: "relative" }}>
+      <button onClick={() => onOpen(match.id)} style={box}>
+        {inner}
+      </button>
+      <SpoilerToggle id={match.id} t={t} style={{ position: "absolute", right: 12, bottom: 12 }} />
+    </div>
   ) : (
     <div style={box}>{inner}</div>
   );
@@ -561,6 +596,7 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
 }
 
 function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { section: StageSection; stageName: string; stored: Set<string>; onOpenMatch: (id: string) => void; t: Translate }) {
+  const hidden = useHiddenSeries();
   // A section named like the stage above it ("Playoffs" inside "Playoffs") is not repeated.
   const heading = section.name && section.name !== stageName ? <Muted size={TYPE.caption}>{section.name}</Muted> : null;
   if (section.type === "group") {
@@ -619,6 +655,25 @@ function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { sect
       </div>
     );
   }
+  // A team in a later column is there because of what happened in an
+  // earlier one: while any of those earlier series is hidden, the team is
+  // shown as "?", or the next round would give the result away. Both teams
+  // of a series count, since a loser's path tells as much as the winner's.
+  const earlierSeries = new Map<string, { column: number; id: string }[]>();
+  section.columns.forEach((column, columnIndex) => {
+    for (const cell of column.cells) {
+      for (const match of cell.matches) {
+        if (match.state === "unstarted") continue;
+        for (const slot of match.teams) {
+          if (!slot.team) continue;
+          const list = earlierSeries.get(slot.team.code) ?? [];
+          list.push({ column: columnIndex, id: match.id });
+          earlierSeries.set(slot.team.code, list);
+        }
+      }
+    }
+  });
+  const maskedIn = (code: string, columnIndex: number) => (earlierSeries.get(code) ?? []).some((entry) => entry.column < columnIndex && hidden.has(entry.id));
   // Five columns of 180 px with 14 px gaps fit the pane; 210/20 cut the finals column.
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -631,7 +686,13 @@ function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { sect
                 <div key={cell.slug || cell.name} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={OVERLINE}>{cell.name}</span>
                   {cell.matches.map((match) => (
-                    <BracketMatch key={match.id} match={match} onOpen={stored.has(match.id) ? () => onOpenMatch(match.id) : null} t={t} />
+                    <BracketMatch
+                      key={match.id}
+                      match={match}
+                      onOpen={stored.has(match.id) ? () => onOpenMatch(match.id) : null}
+                      t={t}
+                      maskedSlots={match.teams.map((slot) => (slot.team ? maskedIn(slot.team.code, columnIndex) : false))}
+                    />
                   ))}
                 </div>
               ))}
@@ -643,27 +704,39 @@ function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { sect
   );
 }
 
-function BracketMatch({ match, onOpen, t }: { match: StageMatchRef; onOpen: (() => void) | null; t: Translate }) {
+function BracketMatch({ match, onOpen, t, maskedSlots }: { match: StageMatchRef; onOpen: (() => void) | null; t: Translate; maskedSlots: boolean[] }) {
+  const hidden = useHiddenSeries().has(match.id);
   const decided = match.state === "completed";
+  const played = match.state !== "unstarted";
   const box: CSSProperties = { ...cardStyle({ borderRadius: 8, padding: 0 }), display: "flex", flexDirection: "column", cursor: onOpen ? "pointer" : "default", textAlign: "left", width: "100%", font: "inherit", color: COLORS.text };
   const rows = match.teams.map((slot, index) => {
     const won = decided && slot.outcome === "win";
+    // A team that is only here because of an earlier series still hidden
+    // is a "?" tag of the same size, with no name (esports-sin-spoilers.md).
+    const masked = maskedSlots[index];
     return (
-      <span key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "5px 8px", borderTop: index ? `1px solid ${COLORS.cardBorder}` : "none", color: won || !decided ? COLORS.text : COLORS.muted }}>
+      <span key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: played ? "5px 34px 5px 8px" : "5px 8px", borderTop: index ? `1px solid ${COLORS.cardBorder}` : "none", color: won || !decided || hidden ? COLORS.text : COLORS.muted }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          {slot.team ? <TeamTag code={slot.team.code} name={slot.team.name} size="sm" /> : <TeamTag code={t("Esports.tbd")} size="sm" muted />}
-          <span style={{ fontSize: TYPE.label, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{slot.team?.name ?? ""}</span>
+          {masked ? <TeamTag code="?" size="sm" muted /> : slot.team ? <TeamTag code={slot.team.code} name={slot.team.name} size="sm" /> : <TeamTag code={t("Esports.tbd")} size="sm" muted />}
+          <span style={{ fontSize: TYPE.label, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{masked ? "" : (slot.team?.name ?? "")}</span>
         </span>
-        <span style={{ fontFamily: FONT_MONO, fontSize: TYPE.body, fontVariantNumeric: "tabular-nums", fontWeight: won ? 600 : 400 }}>{match.state === "unstarted" ? "" : slot.gameWins}</span>
+        <span style={{ fontFamily: FONT_MONO, fontSize: TYPE.body, fontVariantNumeric: "tabular-nums", fontWeight: won && !hidden ? 600 : 400, color: hidden ? COLORS.muted : undefined }}>{!played ? "" : hidden ? "·" : slot.gameWins}</span>
       </span>
     );
   });
-  return onOpen ? (
-    <button onClick={onOpen} style={box}>
-      {rows}
-    </button>
-  ) : (
-    <div style={box}>{rows}</div>
+  // The eye is a sibling of the cell's button, over the right edge the rows
+  // leave free.
+  return (
+    <div style={{ position: "relative" }}>
+      {onOpen ? (
+        <button onClick={onOpen} style={box}>
+          {rows}
+        </button>
+      ) : (
+        <div style={box}>{rows}</div>
+      )}
+      {played ? <SpoilerToggle id={match.id} t={t} style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)" }} /> : null}
+    </div>
   );
 }
 
@@ -673,6 +746,7 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
   const { data, error, loading, retry } = useApi<MatchDetail>(`${API_BASE_URL}/api/v1/esports/match?id=${id}`);
   const [selected, setSelected] = useState<string | null>(null);
   const runeIndex = useMemo(() => (catalogs ? indexRunes(catalogs.runeStyles) : null), [catalogs]);
+  const hiddenSeries = useHiddenSeries();
   if (error) return isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} />;
   if (loading || !data) return <Muted>…</Muted>;
   const { match, games } = data;
@@ -689,6 +763,9 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
   const team2Won = played && match.team2.wins > match.team1.wins;
   // The series is decided once a side has more than half of the games.
   const decided = Math.max(match.team1.wins, match.team2.wins) > match.bestOf / 2;
+  // Hidden: the headline says "vs", nobody is dimmed or crowned, and the
+  // games (every tab names its winner) wait behind one sentence.
+  const hidden = hiddenSeries.has(match.id);
   const winner = game?.winnerSide ? (game.winnerSide === "blue" ? game.blue : game.red) : null;
   const vods = game ? pickVods(game.vods, locale) : [];
   const championName = (champion: string) => catalogs?.champions.byInternalId[champion]?.name ?? champion;
@@ -710,13 +787,13 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
         {/* The scoreline as the screen's headline: codes, names and a big
             score, the loser dimmed and a trophy by the winner. */}
         <h1 style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 18px", fontFamily: FONT_HEADING, fontSize: TYPE.heading + 2, fontWeight: 400, margin: 0 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 10, color: team2Won ? COLORS.muted : COLORS.text }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 10, color: team2Won && !hidden ? COLORS.muted : COLORS.text }}>
             <TeamTag code={match.team1.code || t("Esports.tbd")} name={match.team1.name} size="lg" muted={!match.team1.code} />
             <span className="rc-team-name">{match.team1.name}</span>
-            {decided && team1Won ? trophy : null}
+            {decided && team1Won && !hidden ? trophy : null}
           </span>
           <span style={{ fontFamily: FONT_MONO, fontSize: TYPE.display + 6, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-            {played ? (
+            {played && !hidden ? (
               <>
                 <span style={{ color: team1Won ? COLORS.text : COLORS.muted }}>{match.team1.wins}</span>
                 <span style={{ color: COLORS.muted, padding: "0 8px" }}>:</span>
@@ -726,8 +803,8 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
               <span style={{ color: COLORS.muted, fontSize: TYPE.heading }}>vs</span>
             )}
           </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 10, color: team1Won ? COLORS.muted : COLORS.text }}>
-            {decided && team2Won ? trophy : null}
+          <span style={{ display: "flex", alignItems: "center", gap: 10, color: team1Won && !hidden ? COLORS.muted : COLORS.text }}>
+            {decided && team2Won && !hidden ? trophy : null}
             <span className="rc-team-name">{match.team2.name}</span>
             <TeamTag code={match.team2.code || t("Esports.tbd")} name={match.team2.name} size="lg" muted={!match.team2.code} />
           </span>
@@ -739,11 +816,17 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
             {match.team1.name} · {match.team2.name} ·
           </span>
           <StateLine stateKey={stateKey} label={t(`Esports.states.${stateKey}`)} size={TYPE.body} />
+          {played ? <SpoilerToggle id={match.id} t={t} withLabel /> : null}
         </span>
       </div>
 
       {games.length === 0 ? <Muted>{t(`Esports.${emptyKey}`)}</Muted> : null}
-      {game ? (
+      {hidden && games.length > 0 ? (
+        <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6, fontSize: TYPE.body, color: COLORS.muted }}>
+          {t("Esports.resultHidden")}
+          <SpoilerToggle id={match.id} t={t} withLabel style={{ marginLeft: -8 }} />
+        </span>
+      ) : game ? (
         <>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {games.map((candidate) => {
