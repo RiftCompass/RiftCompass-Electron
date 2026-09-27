@@ -137,8 +137,22 @@ export interface EsportsDataQuality {
   updatedAt: string | null;
 }
 
+export interface TournamentSpotlight {
+  league: LeagueSummary;
+  tournament: TournamentSummary;
+  status: "upcoming" | "running" | "finished";
+  /** Whole days until the first day of an upcoming tournament; 0 on the day. */
+  startsInDays: number | null;
+  live: MatchSummary[];
+  next: MatchSummary | null;
+  played: number;
+  total: number;
+}
+
 export interface LeaguesResponse {
   leagues: (LeagueSummary & { live: MatchSummary[]; upcoming: MatchSummary[]; recent: MatchSummary[] })[];
+  /** The international tournament the screen leads with; null when none is known (additive, 2026-09-27). */
+  spotlight?: TournamentSpotlight | null;
   dataQuality: EsportsDataQuality;
 }
 

@@ -13,10 +13,11 @@ import { indexRunes, RunePageView, type Translate } from "../tools/build-visuals
 import { LoadError } from "../tools/LoadError";
 import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickHeadlineMatch, pickVods, roleKey, runePageFromPerks, yearIfNotCurrent } from "./format";
 import { bracketRank, earlierSeriesByTeam, isSwissStage, seriesBefore, type EarlierSeriesMap } from "./bracket-spoilers";
+import { isInternationalLeague } from "./leagues";
 import { setSeriesRevealed, useRevealedSeries } from "./spoilers";
 import { teamTagColors } from "./team-colors";
 import type { EsportsEntry } from "./esports-navigation";
-import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeaguesResponse, MatchDetail, MatchSummary, MatchTeam, PlayerResponse, StageMatchRef, StageSection, TeamTotals } from "./types";
+import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeagueSummary, LeaguesResponse, MatchDetail, MatchSummary, MatchTeam, PlayerResponse, StageMatchRef, StageSection, TeamTotals, TournamentSpotlight } from "./types";
 
 // The web's /esports section (esports.md), as one screen with four views:
 // the covered leagues (the series to look at right now drawn big, then
@@ -450,6 +451,15 @@ function Attribution({ t }: { t: Translate }) {
 function LeaguesScreen({ open, t, locale }: { open: (view: View) => void; t: Translate; locale: string }) {
   const { data, error, loading, retry } = useApi<LeaguesResponse>(`${API_BASE_URL}/api/v1/esports/leagues`);
   const openMatch = (id: string) => open({ kind: "match", id });
+  // The front door (esports-portada.md): the nearest international
+  // tournament as a banner, what is live anywhere right now, and a chip per
+  // league to open the one the player follows; the per-league lists live
+  // on the league screen. A kick-off that has passed while the sync still
+  // says "unstarted" counts as live (the rows label it as started).
+  const leagues = data?.leagues ?? [];
+  const live = leagues
+    .map((league) => ({ league, matches: [...league.live, ...league.upcoming.filter((match) => matchStateKey(match) === "started")] }))
+    .filter((entry) => entry.matches.length > 0);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <ChampionSplashAccent championId="Azir" opacity={20} style={{ top: -40, right: -40, width: 520, height: 340, transform: "rotate(2deg)" }} />
@@ -459,58 +469,141 @@ function LeaguesScreen({ open, t, locale }: { open: (view: View) => void; t: Tra
           {t("Esports.title")}
         </h1>
         <Muted>{t("Esports.intro")}</Muted>
-        {data?.leagues.length ? <Muted size={TYPE.label}>{t("Esports.coverage", { leagues: data.leagues.map((league) => league.name).join(", ") })}</Muted> : null}
       </div>
       {error ? isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} /> : null}
       {loading ? <Muted>…</Muted> : null}
-      {data && data.leagues.length === 0 ? <Muted>{t("Esports.noData")}</Muted> : null}
-      {data?.leagues.map((league) => {
-        const headline = pickHeadlineMatch(league.live, league.upcoming, league.recent);
-        // A kick-off that has passed while the sync still says "unstarted"
-        // belongs under "live" (the rows label it as started).
-        const liveNow = league.live.length > 0 || league.upcoming.some((match) => matchStateKey(match) === "started");
-        const ahead = [...league.live, ...league.upcoming];
-        // Between splits there is nothing coming up: the sections stack and
-        // the results take the width, their days in columns (round 41).
-        const wide = ahead.length === 0;
-        return (
-          <section key={league.id} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {/* The league as a band: name, region and the way into its full
-                schedule on one underlined line. */}
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "6px 16px", paddingBottom: 10, borderBottom: `1px solid ${COLORS.cardBorder}` }}>
-              <button onClick={() => open({ kind: "league", slug: league.slug })} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "baseline", gap: 10, color: COLORS.text }}>
-                <span style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading + 2 }}>{league.name}</span>
-                <span style={OVERLINE}>{league.region}</span>
-              </button>
-              <button onClick={() => open({ kind: "league", slug: league.slug })} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: TYPE.body, color: COLORS.roseBright }}>
-                {t("Esports.schedule")}
-                <ArrowRight size={14} aria-hidden="true" />
-              </button>
+      {data && leagues.length === 0 ? <Muted>{t("Esports.noData")}</Muted> : null}
+      {data?.spotlight ? <SpotlightCard spotlight={data.spotlight} open={open} t={t} locale={locale} /> : null}
+      {live.length > 0 ? (
+        <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <h2 style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 }}>
+            <LiveDot />
+            {t("Esports.live")}
+          </h2>
+          {live.map((entry) => (
+            <div key={entry.league.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={OVERLINE}>{entry.league.name}</span>
+              <MatchList matches={entry.matches} onOpen={openMatch} emptyLabel="" t={t} locale={locale} />
             </div>
-            {headline ? <FeaturedMatch match={headline} onOpen={openMatch} t={t} locale={locale} /> : null}
-            <div style={wide ? { display: "flex", flexDirection: "column", gap: 20 } : { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-                <h2 style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: FONT_HEADING, fontSize: TYPE.subheading, fontWeight: 400, margin: 0 }}>
-                  {liveNow ? <LiveDot /> : null}
-                  {liveNow ? t("Esports.live") : t("Esports.upcoming")}
-                </h2>
-                <MatchList matches={ahead} onOpen={openMatch} emptyLabel={t("Esports.noUpcoming")} t={t} locale={locale} />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-                <SectionTitle>{t("Esports.recent")}</SectionTitle>
-                <MatchList matches={league.recent} onOpen={openMatch} emptyLabel={t("Esports.noRecent")} t={t} locale={locale} twoColumns={wide} />
-              </div>
-            </div>
-          </section>
-        );
-      })}
-      {data?.leagues.length ? <Muted size={TYPE.label}>{t("Esports.timeZoneNote")}</Muted> : null}
+          ))}
+          <Muted size={TYPE.label}>{t("Esports.timeZoneNote")}</Muted>
+        </section>
+      ) : null}
+      {leagues.length > 0 ? <LeaguePicker leagues={leagues} open={open} t={t} /> : null}
       {data ? <DataNote games={data.dataQuality.games} updatedAt={data.dataQuality.updatedAt} t={t} locale={locale} /> : null}
     </div>
   );
 }
 
-// ---- league ---------------------------------------------------------------
+/** A tournament's day, date-only: formatted in UTC so nobody's clock shifts it. */
+function tournamentDay(iso: string, locale: string, withYear: boolean): string {
+  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", timeZone: "UTC", ...(withYear ? { year: "numeric" } : {}) }).format(new Date(`${iso}T00:00:00Z`));
+}
+
+// The banner: the international tournament nearest in time, its dates,
+// where it stands and the one series worth naming (live, or the next), and
+// the way into its screen. Never a result (the web's TournamentSpotlightCard).
+function SpotlightCard({ spotlight, open, t, locale }: { spotlight: TournamentSpotlight; open: (view: View) => void; t: Translate; locale: string }) {
+  const { league, tournament, status, live, next } = spotlight;
+  // LoL Esports names an edition by its year ("2026"): the league in front makes it "Worlds 2026".
+  const title = tournament.name.toLowerCase().includes(league.name.toLowerCase()) ? tournament.name : `${league.name} ${tournament.name}`;
+  const sameYear = tournament.startDate.slice(0, 4) === tournament.endDate.slice(0, 4);
+  const liveSeries = live[0] ?? null;
+  const series = (match: MatchSummary) => (
+    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <TeamTag code={match.team1.code || t("Esports.tbd")} name={match.team1.name} size="sm" muted={!match.team1.code} />
+      <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>vs</span>
+      <TeamTag code={match.team2.code || t("Esports.tbd")} name={match.team2.name} size="sm" muted={!match.team2.code} />
+    </span>
+  );
+  return (
+    <section aria-label={t("Esports.spotlight.kicker")} style={{ ...cardStyle({ borderRadius: 12, padding: 24 }), borderColor: `${ESPORTS.accent}66`, display: "flex", flexDirection: "column", gap: 18 }}>
+      <span style={{ ...OVERLINE, display: "flex", alignItems: "center", gap: 8, color: ESPORTS.accent, fontWeight: 500 }}>
+        <Trophy size={14} weight="fill" aria-hidden="true" />
+        {t("Esports.spotlight.kicker")}
+      </span>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "10px 24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <h2 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading + 8, fontWeight: 400, margin: 0 }}>{title}</h2>
+          <Muted>{t("Esports.spotlight.dates", { start: tournamentDay(tournament.startDate, locale, !sameYear), end: tournamentDay(tournament.endDate, locale, true) })}</Muted>
+        </div>
+        <button
+          onClick={() => open({ kind: "league", slug: league.slug, tournament: tournament.slug })}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${ESPORTS.accent}26`, color: ESPORTS.accent, border: "none", borderRadius: 6, padding: "8px 14px", cursor: "pointer", font: "inherit", fontSize: TYPE.body, fontWeight: 500 }}
+        >
+          {t("Esports.spotlight.open")}
+          <ArrowRight size={14} aria-hidden="true" />
+        </button>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 24px", fontSize: TYPE.body }}>
+        {status === "upcoming" ? (
+          <>
+            <span style={{ fontWeight: 500 }}>
+              {spotlight.startsInDays === 0
+                ? t("Esports.spotlight.startsToday", { date: tournamentDay(tournament.startDate, locale, false) })
+                : t("Esports.spotlight.startsIn", { date: tournamentDay(tournament.startDate, locale, false), count: spotlight.startsInDays ?? 0 })}
+            </span>
+            {spotlight.total > 0 ? <Muted>{t("Esports.spotlight.scheduled", { count: spotlight.total })}</Muted> : null}
+          </>
+        ) : (
+          <>
+            <span style={{ fontWeight: 500, color: status === "running" ? ESPORTS.accent : COLORS.muted }}>{status === "running" ? t("Esports.spotlight.running") : t("Esports.spotlight.finished")}</span>
+            <Muted>{t("Esports.spotlight.series", { played: spotlight.played, total: spotlight.total })}</Muted>
+          </>
+        )}
+        {liveSeries ? (
+          <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 500, color: COLORS.roseBright }}>
+              <LiveDot />
+              {t("Esports.live")}
+            </span>
+            {series(liveSeries)}
+            {liveSeries.blockName ? <Muted size={TYPE.label}>{liveSeries.blockName}</Muted> : null}
+          </span>
+        ) : next ? (
+          <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px" }}>
+            <Muted>{t("Esports.spotlight.next")}</Muted>
+            {series(next)}
+            <Muted size={TYPE.label}>
+              {next.blockName ? `${next.blockName} · ` : ""}
+              {new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", ...yearIfNotCurrent(next.startTime), hour: "numeric", minute: "2-digit" }).format(new Date(next.startTime))}
+            </Muted>
+          </span>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+// A chip per covered league, the regional ones first and the international
+// events after them, each opening the league's screen (the web's LeaguePicker).
+function LeaguePicker({ leagues, open, t }: { leagues: LeagueSummary[]; open: (view: View) => void; t: Translate }) {
+  const groups = [
+    { key: "regional", label: t("Esports.leaguePicker.regional"), items: leagues.filter((league) => !isInternationalLeague(league.slug)) },
+    { key: "international", label: t("Esports.leaguePicker.international"), items: leagues.filter((league) => isInternationalLeague(league.slug)) },
+  ].filter((group) => group.items.length > 0);
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <SectionTitle>{t("Esports.leaguePicker.title")}</SectionTitle>
+        <Muted>{t("Esports.leaguePicker.hint")}</Muted>
+      </div>
+      {groups.map((group) => (
+        <div key={group.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <span style={OVERLINE}>{group.label}</span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {group.items.map((league) => (
+              <button key={league.id} onClick={() => open({ kind: "league", slug: league.slug })} style={{ ...pillStyle(false), display: "inline-flex", alignItems: "baseline", gap: 8 }}>
+                {league.name}
+                {league.region && !isInternationalLeague(league.slug) ? <span style={{ ...OVERLINE, fontSize: TYPE.label - 1 }}>{league.region}</span> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
 
 function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: string; tournament?: string; open: (view: View) => void; replace: (view: View) => void; t: Translate; locale: string }) {
   const params = new URLSearchParams({ slug });

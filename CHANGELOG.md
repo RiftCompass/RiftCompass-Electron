@@ -5,6 +5,19 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.42
+
+La pantalla de Esports abre con lo que más se consulta.
+
+- Un banner con el torneo internacional más próximo (Worlds, MSI o First
+  Stand): fechas, cuándo empieza o cómo va, la serie en directo o la
+  siguiente, y el botón para abrirlo. Nunca un resultado.
+- Debajo, elige la liga que sigues: cada una tiene su pantalla con
+  calendario, resultados y cuadro. Las listas de todas las ligas juntas
+  desaparecen de la portada; si hay alguna serie en directo, sale arriba.
+- MSI y First Stand se añaden a las ligas cubiertas (su historial se
+  descarga en las próximas horas).
+
 ## 0.3.41
 
 - Cada partido de las listas de Esports es ahora un bloque propio, con
