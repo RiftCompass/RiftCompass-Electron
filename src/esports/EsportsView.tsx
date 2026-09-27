@@ -741,10 +741,33 @@ function BracketMatch({ match, onOpen, t, maskedSlots }: { match: StageMatchRef;
     return (
       <span key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: played ? "5px 34px 5px 8px" : "5px 8px", borderTop: index ? `1px solid ${COLORS.cardBorder}` : "none", color: won || !decided || hidden ? COLORS.text : COLORS.muted }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          {masked ? <TeamTag code="?" size="sm" muted /> : slot.team ? <TeamTag code={slot.team.code} name={slot.team.name} size="sm" /> : <TeamTag code={t("Esports.tbd")} size="sm" muted />}
+          {/* The "?" and the "·" carry a name for assistive tech (round 46): the glyphs alone read as "? · ? ·". */}
+          {masked ? (
+            <>
+              <span aria-hidden="true" style={{ display: "contents" }}>
+                <TeamTag code="?" size="sm" muted />
+              </span>
+              <span className="rc-sr-only">{t("Esports.hiddenTeam")}</span>
+            </>
+          ) : slot.team ? (
+            <TeamTag code={slot.team.code} name={slot.team.name} size="sm" />
+          ) : (
+            <TeamTag code={t("Esports.tbd")} size="sm" muted />
+          )}
           <span style={{ fontSize: TYPE.label, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{masked ? "" : (slot.team?.name ?? "")}</span>
         </span>
-        <span style={{ fontFamily: FONT_MONO, fontSize: TYPE.body, fontVariantNumeric: "tabular-nums", fontWeight: won && !hidden ? 600 : 400, color: hidden ? COLORS.muted : undefined }}>{!played ? "" : hidden ? "·" : slot.gameWins}</span>
+        <span style={{ fontFamily: FONT_MONO, fontSize: TYPE.body, fontVariantNumeric: "tabular-nums", fontWeight: won && !hidden ? 600 : 400, color: hidden ? COLORS.muted : undefined }}>
+          {!played ? (
+            ""
+          ) : hidden ? (
+            <>
+              <span aria-hidden="true">·</span>
+              <span className="rc-sr-only">{t("Esports.hiddenScore")}</span>
+            </>
+          ) : (
+            slot.gameWins
+          )}
+        </span>
       </span>
     );
   });

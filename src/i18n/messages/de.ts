@@ -1004,6 +1004,8 @@ export const de: Messages = {
     hideResult: "Ergebnis verbergen",
     showResult: "Ergebnis anzeigen",
     resultHidden: "Ergebnis verborgen: Die Spiele warten, bis du es anzeigst.",
+    hiddenTeam: "Team verborgen",
+    hiddenScore: "Spielstand verborgen",
     bracketPending: "Bracket noch offen ({count, plural, one {# Serie} other {# Serien}}).",
     bestOf: "Best of {count}",
     tbd: "Offen",

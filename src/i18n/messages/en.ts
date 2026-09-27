@@ -1016,6 +1016,8 @@ export const en = {
     hideResult: "Hide result",
     showResult: "Show result",
     resultHidden: "Result hidden: the games are waiting until you show it.",
+    hiddenTeam: "Team hidden",
+    hiddenScore: "Score hidden",
     bracketPending: "Bracket not drawn yet ({count, plural, one {# series} other {# series}} to be determined).",
     bestOf: "Best of {count}",
     tbd: "TBD",

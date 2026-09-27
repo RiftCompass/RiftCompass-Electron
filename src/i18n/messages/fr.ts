@@ -1004,6 +1004,8 @@ export const fr: Messages = {
     hideResult: "Masquer le résultat",
     showResult: "Voir le résultat",
     resultHidden: "Résultat masqué : les parties attendent que vous l'affichiez.",
+    hiddenTeam: "Équipe masquée",
+    hiddenScore: "Score masqué",
     bracketPending: "Arbre à déterminer ({count, plural, one {# série} other {# séries}}).",
     bestOf: "Best of {count}",
     tbd: "À déterminer",

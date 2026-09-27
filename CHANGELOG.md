@@ -5,6 +5,14 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.40
+
+Ronda 46: los resultados ocultos, también para quien usa lector de
+pantalla.
+
+- En el cuadro, un equipo tapado se lee como "Equipo oculto" y un
+  marcador tapado como "Marcador oculto", en vez de "?" y "·".
+
 ## 0.3.39
 
 Ronda 45: los resultados ocultos, bien cerrados.

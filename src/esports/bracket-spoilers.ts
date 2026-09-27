@@ -23,7 +23,7 @@ export function bracketRank(stage: number, section: number, column: number): num
 }
 
 export function isSwissStage(name: string | null | undefined): boolean {
-  return /swiss|suizo/i.test(name ?? "");
+  return /swiss|suiz/i.test(name ?? "");
 }
 
 export function earlierSeriesByTeam(stages: readonly { structure: { sections: StageSection[] } }[]): EarlierSeriesMap {

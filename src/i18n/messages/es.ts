@@ -1004,6 +1004,8 @@ export const es: Messages = {
     hideResult: "Ocultar resultado",
     showResult: "Ver resultado",
     resultHidden: "Resultado oculto: las partidas esperan a que lo muestres.",
+    hiddenTeam: "Equipo oculto",
+    hiddenScore: "Marcador oculto",
     bracketPending: "Cuadro por determinar ({count, plural, one {# serie} other {# series}}).",
     bestOf: "Al mejor de {count}",
     tbd: "Por determinar",

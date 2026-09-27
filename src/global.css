@@ -561,3 +561,18 @@ details[open] > summary svg {
   background: rgba(255, 255, 255, 0.08);
   color: #f4f0f5;
 }
+
+/* Text for assistive tech only (the name of a masked team or score in
+   Esports): out of the flow and clipped, never display: none, which
+   would hide it from screen readers too. */
+.rc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
