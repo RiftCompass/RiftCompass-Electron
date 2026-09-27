@@ -5,6 +5,13 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.38
+
+- Los resultados de Esports empiezan escondidos: cada serie ya jugada se
+  ve como antes de empezar ("vs", sin ganador señalado; en el cuadro, el
+  equipo que pasó de ronda sale como "?") hasta que pulsas el ojo de esa
+  serie en concreto. Lo que muestras se recuerda en este equipo.
+
 ## 0.3.37
 
 - En Esports puedes esconder el resultado de cualquier serie ya jugada con

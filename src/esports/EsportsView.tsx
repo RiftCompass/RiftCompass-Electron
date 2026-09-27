@@ -12,7 +12,7 @@ import { ESPORTS } from "../tool-meta";
 import { indexRunes, RunePageView, type Translate } from "../tools/build-visuals";
 import { LoadError } from "../tools/LoadError";
 import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickHeadlineMatch, pickVods, roleKey, runePageFromPerks, yearIfNotCurrent } from "./format";
-import { setSeriesHidden, useHiddenSeries } from "./spoilers";
+import { setSeriesRevealed, useRevealedSeries } from "./spoilers";
 import { teamTagColors } from "./team-colors";
 import type { EsportsEntry } from "./esports-navigation";
 import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeaguesResponse, MatchDetail, MatchSummary, MatchTeam, PlayerResponse, StageMatchRef, StageSection, TeamTotals } from "./types";
@@ -194,21 +194,22 @@ function dayKey(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", ...yearIfNotCurrent(iso) }).format(new Date(iso));
 }
 
-// The eye next to a result: hides that one series, or shows it again
-// (spoilers.ts). Always a sibling of the row's own button, never inside it.
+// The eye next to a result: shows that one series, or hides it again
+// (spoilers.ts; hidden is how every result starts). Always a sibling of
+// the row's own button, never inside it.
 function SpoilerToggle({ id, t, withLabel = false, style }: { id: string; t: Translate; withLabel?: boolean; style?: CSSProperties }) {
-  const hidden = useHiddenSeries().has(id);
-  const label = hidden ? t("Esports.showResult") : t("Esports.hideResult");
+  const revealed = useRevealedSeries().has(id);
+  const label = revealed ? t("Esports.hideResult") : t("Esports.showResult");
   return (
     <button
       type="button"
-      onClick={() => setSeriesHidden(id, !hidden)}
-      aria-pressed={hidden}
+      onClick={() => setSeriesRevealed(id, !revealed)}
+      aria-pressed={revealed}
       aria-label={withLabel ? undefined : label}
       title={withLabel ? undefined : label}
       style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flexShrink: 0, height: 28, minWidth: 28, padding: withLabel ? "0 8px" : 0, borderRadius: 6, border: "none", background: "none", color: COLORS.muted, cursor: "pointer", font: "inherit", fontSize: TYPE.body, ...style }}
     >
-      {hidden ? <EyeSlash size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+      {revealed ? <EyeSlash size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
       {withLabel ? label : null}
     </button>
   );
@@ -245,9 +246,9 @@ function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false, 
 }
 
 function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary; onOpen: (id: string) => void; t: Translate; locale: string; showNames: boolean }) {
-  // While hidden the row reads as it did before kick-off: "vs", nobody
-  // dimmed (spoilers.ts; the eye beside the row does the hiding).
-  const hidden = useHiddenSeries().has(match.id);
+  // Until revealed the row reads as it did before kick-off: "vs", nobody
+  // dimmed (spoilers.ts; the eye beside the row does the revealing).
+  const hidden = !useRevealedSeries().has(match.id);
   const played = match.state !== "unstarted";
   const stateKey = matchStateKey(match);
   const team1Won = played && match.team1.wins > match.team2.wins;
@@ -318,7 +319,7 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
 // round and kick-off above and the state below. The one box on these
 // screens, because it is one button.
 function FeaturedMatch({ match, onOpen, t, locale }: { match: MatchSummary; onOpen: (id: string) => void; t: Translate; locale: string }) {
-  const hidden = useHiddenSeries().has(match.id);
+  const hidden = !useRevealedSeries().has(match.id);
   const played = match.state !== "unstarted";
   const stateKey = matchStateKey(match);
   const team1Won = played && match.team1.wins > match.team2.wins;
@@ -596,7 +597,7 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
 }
 
 function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { section: StageSection; stageName: string; stored: Set<string>; onOpenMatch: (id: string) => void; t: Translate }) {
-  const hidden = useHiddenSeries();
+  const revealed = useRevealedSeries();
   // A section named like the stage above it ("Playoffs" inside "Playoffs") is not repeated.
   const heading = section.name && section.name !== stageName ? <Muted size={TYPE.caption}>{section.name}</Muted> : null;
   if (section.type === "group") {
@@ -656,9 +657,10 @@ function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { sect
     );
   }
   // A team in a later column is there because of what happened in an
-  // earlier one: while any of those earlier series is hidden, the team is
-  // shown as "?", or the next round would give the result away. Both teams
-  // of a series count, since a loser's path tells as much as the winner's.
+  // earlier one: until every one of those earlier series is revealed, the
+  // team is shown as "?", or the next round would give the result away.
+  // Both teams of a series count, since a loser's path tells as much as
+  // the winner's.
   const earlierSeries = new Map<string, { column: number; id: string }[]>();
   section.columns.forEach((column, columnIndex) => {
     for (const cell of column.cells) {
@@ -673,7 +675,7 @@ function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { sect
       }
     }
   });
-  const maskedIn = (code: string, columnIndex: number) => (earlierSeries.get(code) ?? []).some((entry) => entry.column < columnIndex && hidden.has(entry.id));
+  const maskedIn = (code: string, columnIndex: number) => (earlierSeries.get(code) ?? []).some((entry) => entry.column < columnIndex && !revealed.has(entry.id));
   // Five columns of 180 px with 14 px gaps fit the pane; 210/20 cut the finals column.
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -705,14 +707,14 @@ function StageSectionView({ section, stageName, stored, onOpenMatch, t }: { sect
 }
 
 function BracketMatch({ match, onOpen, t, maskedSlots }: { match: StageMatchRef; onOpen: (() => void) | null; t: Translate; maskedSlots: boolean[] }) {
-  const hidden = useHiddenSeries().has(match.id);
+  const hidden = !useRevealedSeries().has(match.id);
   const decided = match.state === "completed";
   const played = match.state !== "unstarted";
   const box: CSSProperties = { ...cardStyle({ borderRadius: 8, padding: 0 }), display: "flex", flexDirection: "column", cursor: onOpen ? "pointer" : "default", textAlign: "left", width: "100%", font: "inherit", color: COLORS.text };
   const rows = match.teams.map((slot, index) => {
     const won = decided && slot.outcome === "win";
-    // A team that is only here because of an earlier series still hidden
-    // is a "?" tag of the same size, with no name (esports-sin-spoilers.md).
+    // A team that is only here because of an earlier series not yet
+    // revealed is a "?" tag of the same size, with no name (esports-sin-spoilers.md).
     const masked = maskedSlots[index];
     return (
       <span key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: played ? "5px 34px 5px 8px" : "5px 8px", borderTop: index ? `1px solid ${COLORS.cardBorder}` : "none", color: won || !decided || hidden ? COLORS.text : COLORS.muted }}>
@@ -746,7 +748,7 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
   const { data, error, loading, retry } = useApi<MatchDetail>(`${API_BASE_URL}/api/v1/esports/match?id=${id}`);
   const [selected, setSelected] = useState<string | null>(null);
   const runeIndex = useMemo(() => (catalogs ? indexRunes(catalogs.runeStyles) : null), [catalogs]);
-  const hiddenSeries = useHiddenSeries();
+  const revealedSeries = useRevealedSeries();
   if (error) return isNotReady(error) ? <Muted>{t("Esports.noData")}</Muted> : <LoadError onRetry={retry} error={error} />;
   if (loading || !data) return <Muted>…</Muted>;
   const { match, games } = data;
@@ -763,9 +765,9 @@ function MatchScreen({ id, game: requestedNumber, open, catalogs, t, locale }: {
   const team2Won = played && match.team2.wins > match.team1.wins;
   // The series is decided once a side has more than half of the games.
   const decided = Math.max(match.team1.wins, match.team2.wins) > match.bestOf / 2;
-  // Hidden: the headline says "vs", nobody is dimmed or crowned, and the
-  // games (every tab names its winner) wait behind one sentence.
-  const hidden = hiddenSeries.has(match.id);
+  // Until revealed: the headline says "vs", nobody is dimmed or crowned,
+  // and the games (every tab names its winner) wait behind one sentence.
+  const hidden = !revealedSeries.has(match.id);
   const winner = game?.winnerSide ? (game.winnerSide === "blue" ? game.blue : game.red) : null;
   const vods = game ? pickVods(game.vods, locale) : [];
   const championName = (champion: string) => catalogs?.champions.byInternalId[champion]?.name ?? champion;
