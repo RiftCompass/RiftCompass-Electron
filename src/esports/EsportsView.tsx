@@ -230,13 +230,14 @@ function MatchList({ matches, onOpen, emptyLabel, t, locale, showNames = false, 
   return (
     <div style={twoColumns ? { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "14px 28px", alignItems: "start" } : { display: "flex", flexDirection: "column", gap: 14 }}>
       {days.map((day) => (
-        <section key={day.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <section key={day.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <h3 style={{ ...OVERLINE, margin: 0, fontWeight: 500 }}>{day.key}</h3>
-          {day.matches.map((match, index) => (
-            // The line between the series of one day, on the wrapper so it
-            // spans the eye too and never sits under the day's heading.
-            <div key={match.id} style={{ display: "flex", alignItems: "center", gap: 4, borderTop: index ? `1px solid ${COLORS.cardBorder}` : "none" }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
+          {day.matches.map((match) => (
+            // Each series of a day is its own block (owner, 2026-09-27: a line
+            // was still too little to tell where one ends and the next begins):
+            // a soft surface with air between them, the eye inside the block.
+            <div key={match.id} style={{ display: "flex", alignItems: "center", gap: 4, background: COLORS.card, borderRadius: 8, paddingRight: match.state !== "unstarted" ? 6 : 0 }}>
+              <div style={{ minWidth: 0, flex: 1, padding: "0 12px" }}>
                 <MatchRow match={match} onOpen={onOpen} t={t} locale={locale} showNames={showNames} />
               </div>
               {match.state !== "unstarted" ? <SpoilerToggle id={match.id} t={t} /> : null}
@@ -260,7 +261,10 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
   const time = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(new Date(match.startTime));
   const row: CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "3.5rem minmax(0, 1fr) auto",
+    // The teams' column keeps room for two tags and the "vs"; the state
+    // column may shrink and wrap rather than run under the tags in a
+    // narrow column (owner, 2026-09-27).
+    gridTemplateColumns: "3.5rem minmax(11rem, 1fr) minmax(0, auto)",
     alignItems: "center",
     gap: 10,
     padding: "7px 8px",
@@ -298,10 +302,12 @@ function MatchRow({ match, onOpen, t, locale, showNames }: { match: MatchSummary
           {showNames ? <span style={{ fontSize: TYPE.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{match.team2.name}</span> : null}
         </span>
       </span>
-      <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: TYPE.label, color: COLORS.muted, whiteSpace: "nowrap" }}>
-        {match.blockName ? <span>{match.blockName}</span> : null}
-        <span>{t("Esports.bestOf", { count: match.bestOf })}</span>
-        <StateLine stateKey={stateKey} label={t(`Esports.states.${stateKey}`)} />
+      <span style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center", gap: "2px 10px", fontSize: TYPE.label, color: COLORS.muted }}>
+        {match.blockName ? <span style={{ whiteSpace: "nowrap" }}>{match.blockName}</span> : null}
+        <span style={{ whiteSpace: "nowrap" }}>{t("Esports.bestOf", { count: match.bestOf })}</span>
+        <span style={{ whiteSpace: "nowrap" }}>
+          <StateLine stateKey={stateKey} label={t(`Esports.states.${stateKey}`)} />
+        </span>
       </span>
     </>
   );

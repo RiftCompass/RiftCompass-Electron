@@ -5,6 +5,12 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.41
+
+- Cada partido de las listas de Esports es ahora un bloque propio, con
+  aire entre uno y otro: se ve dónde acaba la información de uno y dónde
+  empieza la del siguiente.
+
 ## 0.3.40
 
 Ronda 46: los resultados ocultos, también para quien usa lector de
