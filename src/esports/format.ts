@@ -159,8 +159,22 @@ export function dedupePodiums<T extends { event: string; place: string; team: st
 }
 
 /** A kick-off that has passed while the sync still says "unstarted" reads as started, not upcoming. */
+// A series only changes state with the hourly sync: six hours after
+// kick-off nothing is still being played (the web's LIVE_GRACE_MS).
+const LIVE_GRACE_MS = 6 * 60 * 60 * 1000;
+
+/**
+ * The label of a series row: a kick-off that has passed while the sync
+ * still says "unstarted" reads as started, not upcoming (within the
+ * grace; past it, "upcoming" is the least wrong word for a series nobody
+ * synced or that was moved), and one the sync still calls in progress six
+ * hours later reads as over (round 47).
+ */
 export function matchStateKey(match: { state: string; startTime: string }, nowMs = Date.now()): string {
-  return match.state === "unstarted" && Date.parse(match.startTime) <= nowMs ? "started" : match.state;
+  const sinceKickOff = nowMs - Date.parse(match.startTime);
+  if (match.state === "unstarted" && sinceKickOff >= 0 && sinceKickOff <= LIVE_GRACE_MS) return "started";
+  if (match.state === "inProgress" && sinceKickOff > LIVE_GRACE_MS) return "completed";
+  return match.state;
 }
 
 /** Dates carry their year only when it is not the current one: last year's final read as the November ahead without it. */

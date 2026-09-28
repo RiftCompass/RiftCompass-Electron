@@ -13,11 +13,11 @@ import { indexRunes, RunePageView, type Translate } from "../tools/build-visuals
 import { LoadError } from "../tools/LoadError";
 import { dedupePodiums, dragonKey, formatGameDuration, localizedCountryName, matchStateKey, pickHeadlineMatch, pickVods, roleKey, runePageFromPerks, yearIfNotCurrent } from "./format";
 import { bracketRank, earlierSeriesByTeam, isSwissStage, seriesBefore, type EarlierSeriesMap } from "./bracket-spoilers";
-import { isInternationalLeague } from "./leagues";
+import { isInternationalLeague, regionKey } from "./leagues";
 import { setSeriesRevealed, useRevealedSeries } from "./spoilers";
 import { teamTagColors } from "./team-colors";
 import type { EsportsEntry } from "./esports-navigation";
-import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeagueSummary, LeaguesResponse, MatchDetail, MatchSummary, MatchTeam, PlayerResponse, StageMatchRef, StageSection, TeamTotals, TournamentSpotlight } from "./types";
+import type { GameDetail, GameSide, GameTeam, LeagueResponse, LeagueSummary, LeaguesResponse, MatchDetail, MatchSummary, MatchTeam, PlayerResponse, SpotlightMatch, StageMatchRef, StageSection, TeamTotals, TournamentSpotlight } from "./types";
 
 // The web's /esports section (esports.md), as one screen with four views:
 // the covered leagues (the series to look at right now drawn big, then
@@ -500,20 +500,44 @@ function tournamentDay(iso: string, locale: string, withYear: boolean): string {
   return new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", timeZone: "UTC", ...(withYear ? { year: "numeric" } : {}) }).format(new Date(`${iso}T00:00:00Z`));
 }
 
+/** A league's region in the player's language when the catalogs know it. */
+function regionLabel(region: string, t: Translate): string {
+  const key = regionKey(region);
+  return key ? t(`Esports.regions.${key}`) : region;
+}
+
 // The banner: the international tournament nearest in time, its dates,
 // where it stands and the one series worth naming (live, or the next), and
-// the way into its screen. Never a result (the web's TournamentSpotlightCard).
+// the way into its screen. Never a result: a team that is only in its
+// series because of what it won is masked like the bracket's cells until
+// those series are revealed (the web's TournamentSpotlightCard).
 function SpotlightCard({ spotlight, open, t, locale }: { spotlight: TournamentSpotlight; open: (view: View) => void; t: Translate; locale: string }) {
+  const revealed = useRevealedSeries();
   const { league, tournament, status, live, next } = spotlight;
   // LoL Esports names an edition by its year ("2026"): the league in front makes it "Worlds 2026".
   const title = tournament.name.toLowerCase().includes(league.name.toLowerCase()) ? tournament.name : `${league.name} ${tournament.name}`;
   const sameYear = tournament.startDate.slice(0, 4) === tournament.endDate.slice(0, 4);
-  const liveSeries = live[0] ?? null;
-  const series = (match: MatchSummary) => (
+  const firstDay = tournamentDay(tournament.startDate, locale, false);
+  // Live is what the API said and is still within the grace by this clock.
+  const liveSeries = live.find((match) => matchStateKey(match) !== "completed") ?? null;
+  // The first day, before anything has been played, reads as "starts today".
+  const openingDay = status === "running" && spotlight.played === 0 && !liveSeries;
+  const team = (side: MatchTeam, earlier: string[]) =>
+    earlier.some((id) => !revealed.has(id)) ? (
+      <>
+        <span aria-hidden="true" style={{ display: "contents" }}>
+          <TeamTag code="?" size="sm" muted />
+        </span>
+        <span className="rc-sr-only">{t("Esports.hiddenTeam")}</span>
+      </>
+    ) : (
+      <TeamTag code={side.code || t("Esports.tbd")} name={side.name} size="sm" muted={!side.code} />
+    );
+  const series = (match: SpotlightMatch) => (
     <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <TeamTag code={match.team1.code || t("Esports.tbd")} name={match.team1.name} size="sm" muted={!match.team1.code} />
+      {team(match.team1, match.earlier.team1)}
       <span style={{ fontSize: TYPE.label, color: COLORS.muted }}>vs</span>
-      <TeamTag code={match.team2.code || t("Esports.tbd")} name={match.team2.name} size="sm" muted={!match.team2.code} />
+      {team(match.team2, match.earlier.team2)}
     </span>
   );
   return (
@@ -522,32 +546,21 @@ function SpotlightCard({ spotlight, open, t, locale }: { spotlight: TournamentSp
         <Trophy size={14} weight="fill" aria-hidden="true" />
         {t("Esports.spotlight.kicker")}
       </span>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "10px 24px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <h2 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading + 8, fontWeight: 400, margin: 0 }}>{title}</h2>
-          <Muted>{t("Esports.spotlight.dates", { start: tournamentDay(tournament.startDate, locale, !sameYear), end: tournamentDay(tournament.endDate, locale, true) })}</Muted>
-        </div>
-        <button
-          onClick={() => open({ kind: "league", slug: league.slug, tournament: tournament.slug })}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${ESPORTS.accent}26`, color: ESPORTS.accent, border: "none", borderRadius: 6, padding: "8px 14px", cursor: "pointer", font: "inherit", fontSize: TYPE.body, fontWeight: 500 }}
-        >
-          {t("Esports.spotlight.open")}
-          <ArrowRight size={14} aria-hidden="true" />
-        </button>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <h2 style={{ fontFamily: FONT_HEADING, fontSize: TYPE.heading + 8, fontWeight: 400, margin: 0 }}>{title}</h2>
+        <Muted>{t("Esports.spotlight.dates", { start: tournamentDay(tournament.startDate, locale, !sameYear), end: tournamentDay(tournament.endDate, locale, true) })}</Muted>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 24px", fontSize: TYPE.body }}>
         {status === "upcoming" ? (
           <>
-            <span style={{ fontWeight: 500 }}>
-              {spotlight.startsInDays === 0
-                ? t("Esports.spotlight.startsToday", { date: tournamentDay(tournament.startDate, locale, false) })
-                : t("Esports.spotlight.startsIn", { date: tournamentDay(tournament.startDate, locale, false), count: spotlight.startsInDays ?? 0 })}
-            </span>
+            <span style={{ fontWeight: 500 }}>{t("Esports.spotlight.startsIn", { date: firstDay, count: spotlight.startsInDays ?? 0 })}</span>
             {spotlight.total > 0 ? <Muted>{t("Esports.spotlight.scheduled", { count: spotlight.total })}</Muted> : null}
           </>
         ) : (
           <>
-            <span style={{ fontWeight: 500, color: status === "running" ? ESPORTS.accent : COLORS.muted }}>{status === "running" ? t("Esports.spotlight.running") : t("Esports.spotlight.finished")}</span>
+            <span style={{ fontWeight: 500, color: status === "running" ? ESPORTS.accent : COLORS.muted }}>
+              {openingDay ? t("Esports.spotlight.startsToday", { date: firstDay }) : status === "running" ? t("Esports.spotlight.running") : t("Esports.spotlight.finished")}
+            </span>
             <Muted>{t("Esports.spotlight.series", { played: spotlight.played, total: spotlight.total })}</Muted>
           </>
         )}
@@ -571,6 +584,14 @@ function SpotlightCard({ spotlight, open, t, locale }: { spotlight: TournamentSp
           </span>
         ) : null}
       </div>
+      {/* The button last, after what matters about the tournament: the app's window is often narrow (round 47). */}
+      <button
+        onClick={() => open({ kind: "league", slug: league.slug, tournament: tournament.slug })}
+        style={{ display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: 6, background: `${ESPORTS.accent}26`, color: ESPORTS.accent, border: "none", borderRadius: 6, padding: "8px 14px", cursor: "pointer", font: "inherit", fontSize: TYPE.body, fontWeight: 500 }}
+      >
+        {t("Esports.spotlight.open")}
+        <ArrowRight size={14} aria-hidden="true" />
+      </button>
     </section>
   );
 }
@@ -595,7 +616,7 @@ function LeaguePicker({ leagues, open, t }: { leagues: LeagueSummary[]; open: (v
             {group.items.map((league) => (
               <button key={league.id} onClick={() => open({ kind: "league", slug: league.slug })} style={{ ...pillStyle(false), display: "inline-flex", alignItems: "baseline", gap: 8 }}>
                 {league.name}
-                {league.region && !isInternationalLeague(league.slug) ? <span style={{ ...OVERLINE, fontSize: TYPE.label - 1 }}>{league.region}</span> : null}
+                {league.region && !isInternationalLeague(league.slug) ? <span style={{ ...OVERLINE, fontSize: TYPE.label - 1 }}>{regionLabel(league.region, t)}</span> : null}
               </button>
             ))}
           </div>
@@ -643,7 +664,7 @@ function LeagueScreen({ slug, tournament, open, replace, t, locale }: { slug: st
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <h1 style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 10, fontFamily: FONT_HEADING, fontSize: TYPE.heading, fontWeight: 400, margin: 0 }}>
               {data.league.name}
-              {data.league.region ? <span style={OVERLINE}>{data.league.region}</span> : null}
+              {data.league.region ? <span style={OVERLINE}>{regionLabel(data.league.region, t)}</span> : null}
             </h1>
             {data.tournaments.length > 1 ? (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>

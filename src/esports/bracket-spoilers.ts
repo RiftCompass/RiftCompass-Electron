@@ -53,3 +53,25 @@ export function earlierSeriesByTeam(stages: readonly { structure: { sections: St
 export function seriesBefore(map: EarlierSeriesMap, code: string, at: number): string[] {
   return (map.get(code) ?? []).filter((entry) => entry.at < at).map((entry) => entry.id);
 }
+
+/**
+ * The earlier series of one team at the point of a given match, found in
+ * the tournament's stages (the web's copy feeds the banner of the front
+ * door; here it is the same rule for the same data). None inside a Swiss
+ * stage, and none for a match no bracket holds.
+ */
+export function earlierSeriesForMatch(stages: readonly { name?: string; structure: { sections: StageSection[] } }[], matchId: string, code: string): string[] {
+  if (!code) return [];
+  const map = earlierSeriesByTeam(stages);
+  for (const [stageIndex, stage] of stages.entries()) {
+    for (const [sectionIndex, section] of stage.structure.sections.entries()) {
+      if (section.type !== "bracket") continue;
+      for (const [columnIndex, column] of section.columns.entries()) {
+        if (!column.cells.some((cell) => cell.matches.some((match) => match.id === matchId))) continue;
+        if (isSwissStage(stage.name) || isSwissStage(section.name)) return [];
+        return seriesBefore(map, code, bracketRank(stageIndex, sectionIndex, columnIndex));
+      }
+    }
+  }
+  return [];
+}

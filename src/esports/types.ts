@@ -137,14 +137,17 @@ export interface EsportsDataQuality {
   updatedAt: string | null;
 }
 
+/** A series the banner names, with what masks each team: a quarterfinal's pairing tells who came through the Swiss. */
+export type SpotlightMatch = MatchSummary & { earlier: { team1: string[]; team2: string[] } };
+
 export interface TournamentSpotlight {
   league: LeagueSummary;
   tournament: TournamentSummary;
   status: "upcoming" | "running" | "finished";
   /** Whole days until the first day of an upcoming tournament; 0 on the day. */
   startsInDays: number | null;
-  live: MatchSummary[];
-  next: MatchSummary | null;
+  live: SpotlightMatch[];
+  next: SpotlightMatch | null;
   played: number;
   total: number;
 }

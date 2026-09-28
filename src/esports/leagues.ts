@@ -7,3 +7,20 @@ export const INTERNATIONAL_LEAGUES: readonly string[] = ["worlds", "msi", "first
 export function isInternationalLeague(slug: string): boolean {
   return INTERNATIONAL_LEAGUES.includes(slug);
 }
+
+// LoL Esports names a league's region in English capitals; the screens
+// translate the ones the catalogs know (`Esports.regions`) and show the
+// rest as they come (copy of the web's regions.ts).
+const REGION_KEYS: Record<string, string> = {
+  EMEA: "emea",
+  EUROPE: "emea",
+  KOREA: "korea",
+  CHINA: "china",
+  "NORTH AMERICA": "northAmerica",
+  INTERNATIONAL: "international",
+};
+
+/** The message key of a region, or null for one the catalogs do not know. */
+export function regionKey(region: string): string | null {
+  return REGION_KEYS[region.trim().toUpperCase()] ?? null;
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { StageMatchRef, StageSection } from "./types";
-import { bracketRank, earlierSeriesByTeam, isSwissStage, seriesBefore } from "./bracket-spoilers";
+import { bracketRank, earlierSeriesByTeam, earlierSeriesForMatch, isSwissStage, seriesBefore } from "./bracket-spoilers";
 
 function series(id: string, a: string | null, b: string | null, state: StageMatchRef["state"] = "completed"): StageMatchRef {
   return { id, state, teams: [a, b].map((code) => ({ team: code ? { id: null, code, name: code } : null, gameWins: 0, outcome: null })) };
@@ -58,5 +58,23 @@ describe("earlierSeriesByTeam and seriesBefore", () => {
   it("masks nothing in the first column of the first stage, nor a team it never saw", () => {
     expect(seriesBefore(earlier, "G2", bracketRank(0, 0, 0))).toEqual([]);
     expect(seriesBefore(earlier, "FNC", bracketRank(1, 0, 0))).toEqual([]);
+  });
+});
+
+describe("earlierSeriesForMatch", () => {
+  const named = [
+    { name: "Swiss", structure: { sections: [swiss] } },
+    { name: "Knockouts", structure: { sections: [knockouts] } },
+  ];
+
+  it("finds a match in the brackets and gives the team's series before it", () => {
+    expect(earlierSeriesForMatch(named, "q1", "G2")).toEqual(["s1", "s3"]);
+    expect(earlierSeriesForMatch(named, "q1", "GEN")).toEqual(["s2", "s4"]);
+  });
+
+  it("masks nothing inside a Swiss stage, for an unknown match or for an empty slot", () => {
+    expect(earlierSeriesForMatch(named, "s3", "G2")).toEqual([]);
+    expect(earlierSeriesForMatch(named, "not-there", "G2")).toEqual([]);
+    expect(earlierSeriesForMatch(named, "f1", "")).toEqual([]);
   });
 });

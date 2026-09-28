@@ -1038,6 +1038,13 @@ export const en = {
       regional: "Regional leagues",
       international: "International",
     },
+    regions: {
+      emea: "EMEA",
+      korea: "Korea",
+      china: "China",
+      northAmerica: "North America",
+      international: "International",
+    },
     bracketPending: "Bracket not drawn yet ({count, plural, one {# series} other {# series}} to be determined).",
     bestOf: "Best of {count}",
     tbd: "TBD",

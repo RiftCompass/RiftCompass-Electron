@@ -5,6 +5,20 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.43
+
+Ronda 47: la pantalla de Esports nueva, afinada.
+
+- El banner cuenta los días hasta el torneo por días de calendario (antes
+  cambiaba a mediodía) y dice "Empieza hoy" el día que empieza, no la
+  víspera.
+- En el banner, un equipo que está en su serie por haber ganado otra sale
+  como "?" hasta que muestres esas series, igual que en el cuadro.
+- Una serie que la sincronización aún da por en juego seis horas después de
+  empezar se lee como terminada.
+- Textos en español, francés y alemán iguales a los de la web, regiones de
+  las ligas traducidas y el botón "Ver el torneo" al final del banner.
+
 ## 0.3.42
 
 La pantalla de Esports abre con lo que más se consulta.
