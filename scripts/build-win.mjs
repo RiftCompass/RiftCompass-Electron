@@ -89,8 +89,28 @@ if (args.length === 0) args.push("--win");
 const publishing = args.some((arg) => arg === "--publish" || arg.startsWith("--publish="));
 const draft = publishing ? await ensureDraftRelease() : null;
 
+// Firma de codigo con el certificado de Certum (SimplySign). La clave vive en
+// la nube de Certum: SimplySign Desktop la expone en este PC como una tarjeta
+// virtual mientras hay sesion (la abre el propietario con la app movil), y el
+// certificado aparece en el almacen del usuario. Por eso la firma solo se
+// activa cuando CERTUM_CERT_SHA1 (la huella SHA-1 del certificado, sin
+// espacios) esta en el entorno: en CI no esta y el instalador sale sin firmar,
+// como hasta ahora; en el PC, con SimplySign conectado, electron-builder firma
+// el exe, el desinstalador y el instalador con signtool y sella la hora en
+// Certum. La huella se saca de `Get-ChildItem Cert:\CurrentUser\My` con la
+// sesion abierta. No esta en electron-builder.yml para que el fichero no
+// dependa de la maquina.
+const signing = [];
+if (process.env.CERTUM_CERT_SHA1) {
+  signing.push(
+    `-c.win.signtoolOptions.certificateSha1=${process.env.CERTUM_CERT_SHA1.replace(/\s+/g, "")}`,
+    "-c.win.signtoolOptions.rfc3161TimeStampServer=http://time.certum.pl",
+  );
+  console.log("  • firma con el certificado de Certum (SimplySign) activada");
+}
+
 try {
-  execFileSync("npx", ["electron-builder", ...args, ...(dist ? [`-c.electronDist=${dist}`] : [])], { stdio: "inherit", shell: true });
+  execFileSync("npx", ["electron-builder", ...args, ...signing, ...(dist ? [`-c.electronDist=${dist}`] : [])], { stdio: "inherit", shell: true });
 } finally {
   if (dist) rmSync(dist, { recursive: true, force: true });
 }
