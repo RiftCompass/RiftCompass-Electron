@@ -240,6 +240,7 @@ const api: RiftCompassApi = {
   getSession: (): Promise<{ user: AccountUser | null; endedByServer: boolean }> =>
     tryInvoke(CMD.AccountGetSession, undefined, () => ({ user: null, endedByServer: false })),
   onSessionEnded: (cb) => subscribe(EVT.AccountSessionEnded, cb),
+  onSessionStarted: (cb) => subscribe(EVT.AccountSessionStarted, cb),
   getSavedProfiles: (): Promise<SavedProfilesResult> =>
     tryInvoke(CMD.AccountGetSavedProfiles, undefined, () => ({ ok: true as const, folders: [], profiles: [] })),
   toggleSavedProfile: (platform: string, gameName: string, tagLine: string, puuid?: string): Promise<ToggleSavedProfileResult> =>

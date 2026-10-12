@@ -5,6 +5,16 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.45
+
+Entrar sin teclear la contraseña en la app.
+
+- En Ajustes, el botón "Entrar con Google, Discord o correo desde el
+  navegador" abre riftcompass.com en tu navegador; entras allí como
+  prefieras y la app recoge la sesión sola. Es la misma cuenta de siempre.
+- El instalador registra el enlace `riftcompass://` que la web usa para
+  devolverte a la app.
+
 ## 0.3.44
 
 - El Test de personalidad vuelve a poder empezarse: la pantalla de elegir rol

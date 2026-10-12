@@ -4,6 +4,8 @@
 
 import { app, globalShortcut, session } from "electron";
 import { BACKEND_ORIGIN } from "./backend";
+import * as path from "node:path";
+import * as account from "./account";
 import { CLIENT_HEADER } from "./account";
 import * as gameConnection from "./gameConnection";
 import * as settings from "./settings";
@@ -71,6 +73,43 @@ function applyContentSecurityPolicy(): void {
   });
 }
 
+// Entrar desde el navegador (2026-10-12): la web devuelve a la app un
+// código de un solo uso por `riftcompass://auth?code=...` (ver
+// account.ts, accountExchangeCode). En Windows un enlace con ese esquema
+// abre un proceso nuevo con la URL en argv: si la app ya corre, la
+// instancia viva la recibe en `second-instance`; si no, viene en el argv
+// del arranque. El esquema lo registra el instalador (electron-builder.yml,
+// `protocols`); en desarrollo, con `electron .`, hay que decirle a Windows
+// el ejecutable y el script, si no registra `electron.exe` a secas.
+const DEEP_LINK_SCHEME = "riftcompass";
+if (process.defaultApp && process.argv[1]) {
+  app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME, process.execPath, [path.resolve(process.argv[1])]);
+} else {
+  app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME);
+}
+
+function deepLinkIn(argv: string[]): URL | null {
+  const raw = argv.find((arg) => arg.startsWith(`${DEEP_LINK_SCHEME}://`));
+  if (!raw) return null;
+  try {
+    return new URL(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function handleDeepLink(url: URL): Promise<void> {
+  // `riftcompass://auth?code=...` llega con host "auth" (new URL lo lee así
+  // para un esquema propio). Cualquier otra cosa se ignora: no hay más
+  // enlaces definidos y nadie debe poder abrir pantallas desde fuera.
+  if (url.host !== "auth") return;
+  const code = url.searchParams.get("code");
+  if (!code || !/^[A-Za-z0-9_-]{43}$/.test(code)) return;
+  showMainWindow();
+  const result = await account.accountExchangeCode(code);
+  console.log(`[account] browser login ${result.ok ? "ok" : `failed: ${result.error}`}`);
+}
+
 // A second launch should focus the existing instance, not spawn a
 // duplicate LCU poller/websocket. Must run before anything else creates
 // windows or starts polling.
@@ -78,7 +117,11 @@ const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   app.quit();
 } else {
-  app.on("second-instance", () => showMainWindow());
+  app.on("second-instance", (_event, argv) => {
+    showMainWindow();
+    const link = deepLinkIn(argv);
+    if (link) void handleDeepLink(link);
+  });
 
   app.whenReady().then(() => {
     // Windows agrupa los botones de la barra de tareas por este identificador
@@ -133,6 +176,8 @@ if (!gotSingleInstanceLock) {
     if (!process.argv.includes("--background")) {
       showMainWindow();
     }
+    const startupLink = deepLinkIn(process.argv);
+    if (startupLink) void handleDeepLink(startupLink);
     void gameConnection.run();
   });
 

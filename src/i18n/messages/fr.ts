@@ -409,6 +409,9 @@ export const fr: Messages = {
     loginButton: "Se connecter",
     loggingIn: "Connexion…",
     forgotPassword: "Mot de passe oublié ?",
+    loginWithBrowser: "Se connecter avec Google, Discord ou e-mail depuis le navigateur",
+    loginWithBrowserHint: "Ouvre riftcompass.com dans votre navigateur ; quand vous avez fini là-bas, cette application récupère la session.",
+    loginWithBrowserWaiting: "En attente que vous terminiez dans le navigateur…",
     noAccount: "Pas encore de compte ? S'inscrire",
     sessionEnded: "Votre session est terminée : le mot de passe a été changé, elle a été fermée depuis un autre appareil ou elle a expiré après 90 jours. Reconnectez-vous.",
     errors: {

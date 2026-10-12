@@ -2335,6 +2335,13 @@ function LoginForm({ onLoggedIn, notice }: { onLoggedIn: (user: AccountUser) => 
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  // Entrar desde el navegador (2026-10-12): el botón abre la web, que vuelve
+  // por riftcompass://auth y el proceso principal avisa con la sesión ya
+  // guardada; este formulario se entera igual que si hubiera entrado aquí.
+  const [browserOpened, setBrowserOpened] = useState(false);
+  useEffect(() => {
+    window.riftcompass.onSessionStarted((user) => onLoggedIn(user));
+  }, [onLoggedIn]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -2403,6 +2410,21 @@ function LoginForm({ onLoggedIn, notice }: { onLoggedIn: (user: AccountUser) => 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
         {webLink("/forgot-password", t("Auth.forgotPassword"))}
         {webLink("/signup", t("Auth.noAccount"))}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, paddingTop: 10, borderTop: `1px solid ${COLORS.cardBorder}` }}>
+        <button
+          type="button"
+          onClick={() => {
+            setBrowserOpened(true);
+            void window.riftcompass.openExternal(webUrl(locale, "/desktop/login"));
+          }}
+          style={{ ...smallButtonStyle, alignSelf: "flex-start" }}
+        >
+          {t("Auth.loginWithBrowser")}
+        </button>
+        <span style={{ fontSize: TYPE.label, color: COLORS.muted, lineHeight: 1.5 }}>
+          {browserOpened ? t("Auth.loginWithBrowserWaiting") : t("Auth.loginWithBrowserHint")}
+        </span>
       </div>
     </form>
   );

@@ -146,6 +146,27 @@ export async function accountLogin(email: string, password: string): Promise<unk
   return err(data?.error ?? "unknown");
 }
 
+// Entrar desde el navegador (2026-10-12, lo pidió el QA de Overwolf): la
+// app abre riftcompass.com/<idioma>/desktop/login en el navegador del
+// sistema, la persona entra como prefiera (Google, Discord o correo y
+// contraseña) y la web vuelve por `riftcompass://auth?code=...` (main.ts
+// recibe el enlace). Aquí el código de un solo uso se cambia por el mismo
+// token de 90 días que da el login con contraseña, y la sesión queda
+// guardada igual. Un código caducado o ya usado es "invalidCode".
+export async function accountExchangeCode(code: string): Promise<{ ok: true; user: AccountUser } | { ok: false; error: string }> {
+  const res = await postJson(`${API_BASE_URL}/api/v1/auth/exchange`, { code });
+  if (!res) return err("network");
+  const ok = res.ok;
+  const data = await readJson(res);
+  if (ok && data?.token && data?.user) {
+    persistSession({ token: data.token, user: data.user });
+    sessionEndedByServer = false;
+    broadcast(EVT.AccountSessionStarted, data.user);
+    return { ok: true, user: data.user };
+  }
+  return err(data?.error ?? "unknown");
+}
+
 // Primero se revoca el token en el servidor y después se borra del disco:
 // si se hiciera al revés y la red fallara, el token seguiría valiendo. Si la
 // revocación no llega (sin red), el jugador queda fuera de la app igual y el

@@ -125,4 +125,6 @@ export const EVT = {
   OverlayCalibrationStart: "overlay:calibration-start",
   /** payload: none — riftcompass.com answered 401 to the stored token (password changed, logged out elsewhere, expired): the session is gone (round 27) */
   AccountSessionEnded: "account:session-ended",
+  /** payload: AccountUser — the browser login (riftcompass://auth) just stored a session; every window shows it as logged in */
+  AccountSessionStarted: "account:session-started",
 } as const;

@@ -421,6 +421,9 @@ export const en = {
     loginButton: "Log in",
     loggingIn: "Logging in…",
     forgotPassword: "Forgot password?",
+    loginWithBrowser: "Sign in with Google, Discord or email in the browser",
+    loginWithBrowserHint: "Opens riftcompass.com in your browser; when you finish there, this app picks up the session.",
+    loginWithBrowserWaiting: "Waiting for you to finish in the browser…",
     noAccount: "No account? Sign up",
     sessionEnded: "Your session ended: the password was changed, it was closed from another device or it expired after 90 days. Log in again.",
     errors: {

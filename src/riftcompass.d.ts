@@ -332,6 +332,8 @@ export interface RiftCompassApi {
   getSession: () => Promise<{ user: AccountUser | null; endedByServer: boolean }>;
   /** riftcompass.com rechazó el token guardado: la app ya no tiene sesión (ronda 27). */
   onSessionEnded: (cb: () => void) => void;
+  /** Entrar desde el navegador: la sesión acaba de guardarse por `riftcompass://auth?code=...` (2026-10-12). */
+  onSessionStarted: (cb: (user: AccountUser) => void) => void;
   getSavedProfiles: () => Promise<SavedProfilesResult>;
   toggleSavedProfile: (platform: string, gameName: string, tagLine: string, puuid?: string) => Promise<ToggleSavedProfileResult>;
   updateUsername: (username: string) => Promise<UpdateUsernameResult>;

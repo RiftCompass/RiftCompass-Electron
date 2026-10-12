@@ -409,6 +409,9 @@ export const es: Messages = {
     loginButton: "Iniciar sesión",
     loggingIn: "Iniciando sesión…",
     forgotPassword: "¿Olvidaste tu contraseña?",
+    loginWithBrowser: "Entrar con Google, Discord o correo desde el navegador",
+    loginWithBrowserHint: "Abre riftcompass.com en tu navegador; cuando termines allí, esta app recoge la sesión.",
+    loginWithBrowserWaiting: "Esperando a que termines en el navegador…",
     noAccount: "¿No tienes cuenta? Regístrate",
     sessionEnded: "Tu sesión se ha cerrado: se cambió la contraseña, se cerró desde otro dispositivo o caducó a los 90 días. Vuelve a iniciar sesión.",
     errors: {

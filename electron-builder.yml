@@ -22,6 +22,12 @@ win:
   # releases/latest/download/RiftCompass-Setup.exe URL instead of being
   # edited on every release. electron-updater finds the file via latest.yml.
   artifactName: RiftCompass-Setup.${ext}
+# The installer registers riftcompass:// with Windows so the browser login
+# (riftcompass.com/<locale>/desktop/login) can hand the session back to the
+# app (electron/main.ts, handleDeepLink). Development registers it itself.
+protocols:
+  - name: RiftCompass
+    schemes: [riftcompass]
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
