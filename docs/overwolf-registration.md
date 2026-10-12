@@ -486,7 +486,11 @@ cosas que "recomiendan mucho" mirar:
 
 Siguiente paso según ellos: seguir la conversación en su Developer
 Workspace de Slack; piden confirmar si hay más compañeros que añadir al
-canal y entonces mandan la invitación. Respuesta: solo el propietario.
-La consola (`OW_CLI_API_KEY`, `OW_BUILD_KEY`) y la doble firma siguen sin
-llegar: lo lógico es que se traten ya por Slack.
+canal y entonces mandan la invitación. **Respondido el mismo día** (en
+inglés, desde la misma cuenta): test arreglado en la 0.3.44 que sale esa
+noche por auto-update, SSO en la hoja de ruta (Google y Discord en la web
+más un flujo por navegador en la app; se les pregunta si Overwolf tiene
+proveedor propio para ow-electron), solo el propietario en el canal de
+Slack, y que la consola (`OW_CLI_API_KEY`, `OW_BUILD_KEY`) y las claves
+de firma se traten ya allí.
 
