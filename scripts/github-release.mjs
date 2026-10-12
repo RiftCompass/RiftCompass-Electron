@@ -19,16 +19,31 @@ export function builderConfig() {
   return { owner, repo, artifact };
 }
 
-async function gh(url, token, init = {}) {
-  const res = await fetch(url, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "User-Agent": "riftcompass-build-win",
-      ...(init.headers ?? {}),
-    },
-  });
+// Un fallo de red (`fetch failed`, "other side closed") se reintenta tres
+// veces con dos segundos entre medias: en el runner de GitHub la comprobacion
+// final de la release cayo asi el 2026-10-12 dos veces seguidas, con el
+// borrador ya completo, y el workflow salia en rojo por nada. Un 4xx/5xx de
+// la API no se reintenta: eso si dice algo.
+async function gh(url, token, init = {}, intentos = 3) {
+  let res;
+  for (let i = 1; ; i++) {
+    try {
+      res = await fetch(url, {
+        ...init,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "riftcompass-build-win",
+          ...(init.headers ?? {}),
+        },
+      });
+      break;
+    } catch (error) {
+      if (i >= intentos || init.body instanceof ReadableStream) throw error;
+      console.warn(`  • la red fallo en ${init.method ?? "GET"} ${url} (${error?.cause?.code ?? error?.message}); reintento ${i} de ${intentos - 1}`);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
   if (!res.ok) {
     throw new Error(`GitHub respondio ${res.status} a ${init.method ?? "GET"} ${url}: ${await res.text()}`);
   }
