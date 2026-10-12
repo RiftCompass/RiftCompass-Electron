@@ -5,6 +5,12 @@ copia la sección de la versión que se publica al cuerpo de la release de
 GitHub, así que aquí se escribe para quien instala la app, no para quien la
 programa (eso va en los mensajes de commit).
 
+## 0.3.44
+
+- El Test de personalidad vuelve a poder empezarse: la pantalla de elegir rol
+  salía aplastada en una columna de una palabra por línea, con los botones de
+  los roles debajo. Lo encontró el equipo de QA de Overwolf al revisar la app.
+
 ## 0.3.43
 
 Ronda 47: la pantalla de Esports nueva, afinada.

@@ -458,3 +458,35 @@ visible en partida con `sandbox: true`, resumen post-partida); el material
 de la tienda vive en `/srv/assets/riftcompass/overwolf/` del servidor.
 Siguiente paso: esperar la respuesta (Gmail personal) y, al aprobar, la
 consola (`OW_CLI_API_KEY`, `OW_BUILD_KEY`) y la doble firma.
+
+## Revisión inicial aprobada, con dos avisos — 2026-10-12
+
+Respuesta de QA de Overwolf ("Regarding your build submission", a la Gmail
+personal del propietario; el 2026-10-10 habían avisado de que la cola iba
+más lenta de lo normal): **la app ha pasado la revisión inicial**. Dos
+cosas que "recomiendan mucho" mirar:
+
+1. **SSO**: que se pueda entrar con Discord, Google u Overwolf. Hoy la
+   cuenta de riftcompass.com es solo correo + contraseña (Auth.js con el
+   proveedor `Credentials`) y la app entra con esas mismas credenciales
+   contra la API. Queda como tarea en la guía de la carpeta raíz: añadir
+   proveedores OAuth en la web y un flujo por navegador en la app (abrir
+   el sistema, volver por enlace), porque un OAuth no cabe en un
+   formulario de usuario y contraseña.
+2. **"The personality test is broken"**, con captura: la pantalla de
+   elegir rol salía aplastada en una columna de una palabra por línea
+   (sesión iniciada, panel de perfiles abierto, ventana ~1270 px). Causa:
+   desde la 0.3.12 (ronda 28) esa tarjeta lleva `rc-stack`, que la hace
+   contenedor de consultas (`container-type: inline-size`, sin ancho
+   intrínseco), y sus márgenes automáticos la sacan del estirado de la
+   columna flex de MainView; sin un ancho explícito se quedaba en el
+   relleno. Arreglado en la **0.3.44** (`width: 100%` en esa tarjeta,
+   comentario en `PersonalityTest.tsx`); comprobado en la app de
+   desarrollo. Las pantallas de preguntas y de resultados no lo sufrían.
+
+Siguiente paso según ellos: seguir la conversación en su Developer
+Workspace de Slack; piden confirmar si hay más compañeros que añadir al
+canal y entonces mandan la invitación. Respuesta: solo el propietario.
+La consola (`OW_CLI_API_KEY`, `OW_BUILD_KEY`) y la doble firma siguen sin
+llegar: lo lógico es que se traten ya por Slack.
+

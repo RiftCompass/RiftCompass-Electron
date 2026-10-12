@@ -112,8 +112,17 @@ export function PersonalityTest() {
   }
 
   if (role === null) {
+    // width: 100% is what keeps this card readable, not decoration:
+    // .rc-stack makes it a size container (inline-size containment), so it
+    // has no intrinsic width of its own, and the auto margins that centre
+    // it inside MainView's flex column opt it out of stretching. Without an
+    // explicit width those two together shrank the card to its padding and
+    // every word of the title and subtitle wrapped on its own line (seen by
+    // Overwolf's QA on 2026-10-12, present since 0.3.12). The question card
+    // has no container class and the results card no auto margins, so
+    // neither needed it.
     return (
-      <div className="rc-stack" style={{ ...cardStyle, maxWidth: 620, margin: "0 auto", padding: 28 }}>
+      <div className="rc-stack" style={{ ...cardStyle, width: "100%", maxWidth: 620, margin: "0 auto", padding: 28 }}>
         <h2 style={cardTitleStyle}>{t("PersonalityTest.roleStepTitle")}</h2>
         <p style={cardSubtitleStyle}>{t("PersonalityTest.roleStepSubtitle")}</p>
         <div className="rc-two-col" style={{ display: "grid", gap: 10, marginTop: 18 }}>
